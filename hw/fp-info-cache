@@ -1,4 +1,4 @@
-314399909916309
+327398347467762
 BZ_Capacitor
 CP_4x5.3
 SMD capacitor, aluminum electrolytic, Vishay, 4.0x5.3mm
@@ -209,6 +209,41 @@ Pin Header 50mil spacing 1x6
 0
 6
 6
+BZ_Connector
+PINHDR-THT-50mil-01x07
+Pin Header 50mil spacing 1x7
+
+0
+7
+7
+BZ_Connector
+PINHDR-THT-50mil-02x05
+Pin Header 50mil spacing 2x5
+
+0
+10
+10
+BZ_Connector
+PINHDR-THT-Vert-100mil-01x02
+Through hole straight pin header, 1x2, 2.54mm pitch, single row
+Through hole pin header THT 1x2 2.54mm single row
+0
+2
+2
+BZ_Connector
+PINHDR-THT-Vert-100mil-01x06
+Through hole straight pin header, 1x6, 2.54mm pitch, single row
+Through hole pin header THT 1x6 2.54mm single row
+0
+6
+6
+BZ_Connector
+PINSKT-THT-Vert-100mil-02x10
+Through hole straight socket strip, 2x10, 2.54mm pitch, double cols
+Through hole socket strip THT 2x10 2.54mm double row
+0
+20
+20
 BZ_Connector
 SCREWTERM-2_3.5P
 Screw Terminal 3.0mm pitch, Pheonix MKDS 1/2-3,5, METZ 31060102
@@ -427,6 +462,13 @@ Panasonic Inductor PCC-M1054M series, 10.7x10x5.4mm
 2
 2
 BZ_Mechanical
+Hole-Mech_0.5
+
+
+0
+0
+0
+BZ_Mechanical
 Hole-Mech_M2
 
 
@@ -484,6 +526,20 @@ TE_RCT0805
 1
 BZ_Misc
 TP_Loop
+
+
+0
+1
+1
+BZ_Misc
+TP_THT-Pad-0.6
+
+
+0
+1
+1
+BZ_Misc
+TP_THT-Pad-0.8
 
 
 0
