@@ -1248,8 +1248,6 @@ Wire Wire Line
 Wire Wire Line
 	2350 1050 2450 1050
 Wire Wire Line
-	3650 1600 3650 1950
-Wire Wire Line
 	2750 5900 2850 5900
 Text Label 2000 2250 0    40   ~ 0
 VPP
@@ -1887,8 +1885,6 @@ $EndComp
 Wire Wire Line
 	3550 1300 3550 1150
 Connection ~ 3550 1150
-Wire Wire Line
-	3550 1600 3550 2050
 $Comp
 L BZ_Passive:C C17
 U 1 1 60A538CB
@@ -2513,28 +2509,6 @@ F 3 "" H 5200 3300 40  0001 C CNN
 	1    5200 3300
 	1    0    0    -1  
 $EndComp
-$Comp
-L BZ_Connector:Conn_01x02_MP P3
-U 1 1 60A279CB
-P 2650 1000
-F 0 "P3" H 2700 1000 40  0000 L CNN
-F 1 "BATT" H 2700 1050 40  0000 L CNN
-F 2 "BZ_Connector:JST_SM02B-SRSS-TB" H 2650 950 40  0001 C CNN
-F 3 "~" H 2650 950 40  0001 C CNN
-	1    2650 1000
-	1    0    0    1   
-$EndComp
-$Comp
-L BZ_Power:GND #PWR0106
-U 1 1 60AACCCE
-P 2650 1200
-F 0 "#PWR0106" H 2650 1200 30  0001 C CNN
-F 1 "GND" H 2650 1130 30  0001 C CNN
-F 2 "" H 2650 1200 60  0001 C CNN
-F 3 "" H 2650 1200 60  0001 C CNN
-	1    2650 1200
-	1    0    0    -1  
-$EndComp
 Connection ~ 2800 1700
 $Comp
 L VGMPlayer:PIC16F1503-IMG U6
@@ -2568,10 +2542,6 @@ Text Label 5750 4400 2    40   ~ 0
 BOOT
 Wire Wire Line
 	3950 1600 4000 1600
-Wire Wire Line
-	3550 2050 3450 2050
-Wire Wire Line
-	3450 1950 3650 1950
 Wire Wire Line
 	5450 6600 5900 6600
 Wire Wire Line
@@ -2937,4 +2907,23 @@ Wire Wire Line
 Wire Wire Line
 	1150 5400 1250 5400
 NoConn ~ 1250 5700
+Wire Wire Line
+	3550 1600 3550 1950
+$Comp
+L BZ_Connector:Conn_01x02 P3
+U 1 1 60C059FA
+P 2650 1000
+F 0 "P3" H 2700 950 40  0000 L CNN
+F 1 "BATT" H 2700 1050 40  0000 L CNN
+F 2 "BZ_Connector:MLX_PicoBlade-Horz-01x02-1.25P" H 2650 950 40  0001 C CNN
+F 3 "~" H 2650 950 40  0001 C CNN
+	1    2650 1000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3550 1950 3450 1950
+Wire Wire Line
+	3650 2050 3450 2050
+Wire Wire Line
+	3650 1600 3650 2050
 $EndSCHEMATC

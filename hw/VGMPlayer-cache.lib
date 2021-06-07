@@ -78,20 +78,20 @@ X ~ TNC 0 -200 100 L 40 40 1 1 P
 ENDDRAW
 ENDDEF
 #
-# BZ_Connector_Conn_01x02_MP
+# BZ_Connector_Conn_01x02
 #
-DEF BZ_Connector_Conn_01x02_MP P 0 20 Y N 1 F N
-F0 "P" 0 -140 40 H V C CNN
-F1 "BZ_Connector_Conn_01x02_MP" 0 -200 40 H V C CNN
+DEF BZ_Connector_Conn_01x02 P 0 20 Y N 1 F N
+F0 "P" 0 150 40 H V C CNN
+F1 "BZ_Connector_Conn_01x02" 0 -150 40 H V C CNN
 F2 "" 0 -50 40 H I C CNN
 F3 "" 0 -50 40 H I C CNN
+$FPLIST
+ *01x02*
+$ENDFPLIST
 DRAW
 S -50 100 50 -100 1 1 0 f
-P 2 0 1 0 -50 120 50 120 N
-P 2 0 1 0 0 120 0 150 N
 X Pin_1 1 -200 50 150 R 40 40 1 1 P
 X Pin_2 2 -200 -50 150 R 40 40 1 1 P
-X Mounting MP 0 200 50 D 40 40 1 1 P
 ENDDRAW
 ENDDEF
 #
