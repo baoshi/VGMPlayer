@@ -1,4 +1,4 @@
-329080174984556
+330712732274324
 BZ_Capacitor
 CP_4x5.3
 SMD capacitor, aluminum electrolytic, Vishay, 4.0x5.3mm
@@ -533,6 +533,13 @@ TE_RCT0805
 1
 BZ_Misc
 TP_Loop
+
+
+0
+1
+1
+BZ_Misc
+TP_THT-Pad-0.5
 
 
 0
