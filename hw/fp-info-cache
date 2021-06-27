@@ -1,4 +1,4 @@
-329041096184145
+329080174984556
 BZ_Capacitor
 CP_4x5.3
 SMD capacitor, aluminum electrolytic, Vishay, 4.0x5.3mm
@@ -1204,13 +1204,6 @@ Vishay_TEMT6000X01
 3
 3
 BZ_Standard_IC
-JST_SH_BM02B-SRSS-TB_1x02-1MP_P1.00mm_Vertical
-JST SH series connector, BM02B-SRSS-TB (http://www.jst-mfg.com/product/pdf/eng/eSH.pdf), generated with kicad-footprint-generator
-connector JST SH side entry
-0
-4
-3
-BZ_Standard_IC
 LQFP-64_10x10x0.5P
 
 
@@ -1281,19 +1274,26 @@ SOT-143
 4
 4
 BZ_Standard_IC
-SOT-323-3
+SOT-323
 
 SC-70-3
 0
 3
 3
 BZ_Standard_IC
-SOT-323-6
+SOT-363
 
 SC-70-6
 0
 6
 6
+BZ_Standard_IC
+SOT-523
+
+SOT-523 SC-89
+0
+3
+3
 BZ_Standard_IC
 TSSOP-8_3.0x3.0x0.65P
 
