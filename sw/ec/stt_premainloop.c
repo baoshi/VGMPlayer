@@ -10,7 +10,7 @@ uint16_t timestamp;
 
 void state_premainloop_enter(void)
 {
-    io_main_power_on();
+    //io_main_power_on();
     timestamp = systick;
 }
 

@@ -29,28 +29,27 @@ void    state_premainloop_exit(void);
 // State Machine
 static const struct 
 {
-    uint8_t state;
     void (*enter)(void);
     uint8_t (*loop)(void);
     void (*exit)(void);
 } fsm[] = 
 {
-    { MAIN_STATE_START,               state_start_enter,       state_start_loop,             state_start_exit },
-    { MAIN_STATE_SLEEP,                               0,       state_sleep_loop,                            0 },
-    { MAIN_STATE_PRE_MAINLOOP,  state_premainloop_enter, state_premainloop_loop,       state_premainloop_exit },
-    { MAIN_STATE_MAINLOOP,                            0,                      0,                            0 },
-    { MAIN_STATE_PRE_OFF,                             0,                      0,                            0 },
-    { MAIN_STATE_OFF,                                 0,                      0,                            0 },
-    { MAIN_STATE_CHARGE,             state_charge_enter,      state_charge_loop,            state_charge_exit },
-    { MAIN_STATE_PRE_DFU,                             0,                      0,                            0 },
-    { MAIN_STATE_DFU,                                 0,                      0,                            0 }
+    /* MAIN_STATE_START        */ {        state_start_enter,       state_start_loop,             state_start_exit },
+    /* MAIN_STATE_SLEEP        */ {                        0,       state_sleep_loop,                            0 },
+    /* MAIN_STATE_PRE_MAINLOOP */ {  state_premainloop_enter, state_premainloop_loop,       state_premainloop_exit },
+    /* MAIN_STATE_MAINLOOP     */ {                        0,                      0,                            0 },
+    /* MAIN_STATE_PRE_OFF      */ {                        0,                      0,                            0 },
+    /* MAIN_STATE_OFF          */ {                        0,                      0,                            0 },
+    /* MAIN_STATE_CHARGE       */ {       state_charge_enter,      state_charge_loop,            state_charge_exit },
+    /* MAIN_STATE_PRE_DFU      */ {                        0,                      0,                            0 },
+    /* MAIN_STATE_DFU          */ {                        0,                      0,                            0 }
 };
-
 
 void main(void)
 {
     uint8_t cur_state, nxt_state;
     
+    clock_config();
     // Initialize and start systick
     tick_init();
     enable_peripheral_int();
@@ -76,7 +75,6 @@ void main(void)
         tick_update();
     }
 }
-
 
 #if 0
 
@@ -118,65 +116,28 @@ void main(void)
 
 #endif
 
-
 #if 0
 void main(void)
 {
-    DECLARE_REPEAT_BLOCK(EVERY5MS);
     DECLARE_REPEAT_BLOCK(EVERY200MS);
-    
     clock_config();
-    
     io_prepare_sleep();
-    
+    enable_global_int();
     VREGCONbits.VREGPM = 1;
     SLEEP();    // 7uA
-    
     // -- Wakeup --
-    
     io_init();
-    
     tick_init();
-    
-    bms_start();
-    uplink_start();
-    
-    io_main_power_on();
-    
-    // Enable interrupts
     enable_peripheral_int();
     enable_global_int();
-    
     while (1)
     {
         tick_update();
-        REPEAT_BLOCK_BEGIN(EVERY5MS, 5)
-        io_debounce_inputs();
-        uplink_set_b1(io_input_state);
-        bms_update();
-        uplink_set_b0(bms_battery_voltage);
-        REPEAT_BLOCK_END(EVERY5MS)
-                
         REPEAT_BLOCK_BEGIN(EVERY200MS, 200)
-        LED_Toggle();
+        led_toggle();
         REPEAT_BLOCK_END(EVERY200MS)
-#if 0                
-        if (io_input_state & 0x02)  // Up
-            LED_Off();
-        else
-            LED_On();               // Press
-#endif
-        
-        if (!(io_input_state & 0x04))       // Down pressed
-            bms_stop_charge();      
-        else if (!(io_input_state & 0x08))  // Right pressed
-            bms_set_fast_charge();  
-        else
-            bms_set_slow_charge();
     }
-    
 }
-
 #endif
 
 #if 0
