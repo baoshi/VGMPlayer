@@ -14,7 +14,7 @@ volatile static uint8_t _tick_update;
 
 #define TMR0_PRELOAD 0x06
   
-void tick_config(void)
+void tick_init(void)
 {
     systick = 0;
     _tick_update = 0;

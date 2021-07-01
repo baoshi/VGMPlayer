@@ -27,6 +27,7 @@
 uint8_t volatile adc_vdd;
 uint8_t volatile adc_bat;
 
+
 enum 
 {
     ADC_STATE_STOPPED = 0,
@@ -47,6 +48,7 @@ static union u16_u
         uint8_t hi;
     };
 } m1, m2;
+
 
 void adc_start(void)
 {
@@ -71,7 +73,7 @@ void adc_start(void)
 }
 
 
-void adc_update(void)
+bool adc_update(void)
 {
     switch (state)
     {
@@ -134,14 +136,18 @@ void adc_update(void)
             // VBAT = 2.185 * M2 / M1, scale 30 at both sides
             adc_bat = (uint8_t)(66u * m2.word / m1.word); // m2 will max around 960 (1023 * 15 / 16), 66 * m2 won't overflow
             state = ADC_STATE_SETUP_M1;  // restart
+            return true;
         }
         break;
     }
+    return false;
 }
 
 
 void adc_stop(void)
 {
+    ADCON0bits.GO_nDONE = 0;
+    ADCON0bits.ADON = 0;
     state = 0;
 }
 

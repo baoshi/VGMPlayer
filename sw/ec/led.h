@@ -16,10 +16,10 @@ extern "C"
 {
 #endif
 
-// LED -> RC4
-#define LED_On io_led_on
-#define LED_Off io_led_off 
-#define LED_Toggle io_led_toggle 
+// LED
+#define led_on() do { io_led_on(); } while (0)
+#define led_off() do { io_led_off(); } while (0)
+#define led_toggle() do { io_led_toggle(); } while (0)
   
 #ifdef	__cplusplus
 }

@@ -17,7 +17,7 @@ extern "C"
 
 extern uint16_t systick;
   
-void tick_config(void);
+void tick_init(void);
 
 void tick_update(void);
 

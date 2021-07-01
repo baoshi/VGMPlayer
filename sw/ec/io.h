@@ -25,25 +25,24 @@ extern "C" {
 extern uint8_t io_input_state;  
 extern uint8_t io_prev_input_state;
 
-#define IO_STATUS_MASK_LEFT     0x01
-#define IO_STATUS_MASK_UP       0x02
-#define IO_STATUS_MASK_CHARGER  0x04
-#define IO_STATUS_MASK_RIGHT    0x10
-#define IO_STATUS_MASK_DOWN     0x20
-  
-void io_config(void);
+#define IO_STATUS_MASK_LEFT         0x01
+#define IO_STATUS_MASK_UP           0x02
+#define IO_STATUS_MASK_RIGHT        0x10
+#define IO_STATUS_MASK_DOWN         0x20
+#define IO_STATUS_MASK_ANYBUTTON    0x33
+#define IO_STATUS_MASK_CHARGER      0x04
+
+void io_init(void);
 void io_debounce_inputs(void);
 void io_main_power_on(void);
 void io_main_power_off(void);
 void io_set_bootsel_low(void);
 void io_set_bootsel_high(void);
-void io_set_fast_charge();
-void io_set_slow_charge();
-void io_stop_charge();
 void io_led_on();
 void io_led_off();
 void io_led_toggle();
 void io_prepare_sleep();
+void io_exit_sleep();
 
 #ifdef	__cplusplus
 }

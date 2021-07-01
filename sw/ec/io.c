@@ -52,7 +52,7 @@ void io_debounce_inputs(void)
 }
 
 
-void io_config(void)
+void io_init(void)
 {
     // PORTA:
     // RA0 - IO_SW_LEFT         Input, WPU
@@ -142,8 +142,6 @@ void io_led_toggle()
 // Set proper levels and enable IOC
 void io_prepare_sleep()
 {
-    io_config();
-    
     // IOC
     // IOC PortA flag
     IOCAF = 0x00;   // IOCAF  [u u 5 4 3 2 1 0]
@@ -151,11 +149,17 @@ void io_prepare_sleep()
     // Negative Edge IOC register
     IOCAN = 0x37;   // IOCAN  [u u 5 4 3 2 1 0]
                     //         0 0 1 1 0 1 1 1  (RA0,1,2,4,5)
-    
     // Positive Edge IOC register
     IOCAP = 0x00;   // IOCAP  [u u 5 4 3 2 1 0]
                     //         0 0 0 0 0 0 0 0  (None)
-    
     // Enable IOCI interrupt 
     INTCONbits.IOCIE = 1; 
+}
+
+
+
+void io_exit_sleep()
+{
+    IOCAF = 0x00;
+    INTCONbits.IOCIE = 0;
 }

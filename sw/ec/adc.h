@@ -8,6 +8,8 @@
 #ifndef ADC_H
 #define	ADC_H
 
+#include <stdint.h>
+#include <stdbool.h>
 
 
 #ifdef	__cplusplus
@@ -19,7 +21,7 @@ extern uint8_t volatile adc_vdd;
 extern uint8_t volatile adc_bat;
 
 void adc_start(void);
-void adc_update(void);
+bool adc_update(void);  // return true if measurements are done
 void adc_stop(void);
 void adc_prepare_sleep(void);
 

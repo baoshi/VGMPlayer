@@ -8,14 +8,85 @@
 #include "led.h"
 #include "adc.h"
 #include "uplink.h"
+#include "state.h"
+
+void    state_start_enter(void);
+uint8_t state_start_loop(void);
+void    state_start_exit(void);
+
+uint8_t state_sleep_loop(void);
+
+
+void    state_charge_enter(void);
+uint8_t state_charge_loop(void);
+void    state_charge_exit(void);
+
+void    state_premainloop_enter(void);
+uint8_t state_premainloop_loop(void);
+void    state_premainloop_exit(void);
+
+
+// State Machine
+static const struct 
+{
+    uint8_t state;
+    void (*enter)(void);
+    uint8_t (*loop)(void);
+    void (*exit)(void);
+} fsm[] = 
+{
+    { MAIN_STATE_START,               state_start_enter,       state_start_loop,             state_start_exit },
+    { MAIN_STATE_SLEEP,                               0,       state_sleep_loop,                            0 },
+    { MAIN_STATE_PRE_MAINLOOP,  state_premainloop_enter, state_premainloop_loop,       state_premainloop_exit },
+    { MAIN_STATE_MAINLOOP,                            0,                      0,                            0 },
+    { MAIN_STATE_PRE_OFF,                             0,                      0,                            0 },
+    { MAIN_STATE_OFF,                                 0,                      0,                            0 },
+    { MAIN_STATE_CHARGE,             state_charge_enter,      state_charge_loop,            state_charge_exit },
+    { MAIN_STATE_PRE_DFU,                             0,                      0,                            0 },
+    { MAIN_STATE_DFU,                                 0,                      0,                            0 }
+};
+
+
+void main(void)
+{
+    uint8_t cur_state, nxt_state;
+    
+    // Initialize and start systick
+    tick_init();
+    enable_peripheral_int();
+    enable_global_int();
+        
+    // Start from START state
+    cur_state = MAIN_STATE_START;
+    state_start_enter();
+    
+    while (1)
+    {
+        if (fsm[cur_state].loop)
+        {
+            nxt_state = fsm[cur_state].loop();
+        }
+        if (nxt_state != cur_state)
+        {
+            // state switch
+            if (fsm[cur_state].exit) fsm[cur_state].exit();
+            if (fsm[nxt_state].enter) fsm[nxt_state].enter();
+            cur_state = nxt_state;
+        }
+        tick_update();
+    }
+}
+
+
+#if 0
 
 void main(void)
 {
     uint8_t status;
     DECLARE_REPEAT_BLOCK(EVERY500MS);
     clock_config();
-    io_config();
-    tick_config();
+    io_init();
+    tick_init();
     adc_start();
     uplink_start();
     enable_peripheral_int();
@@ -45,6 +116,9 @@ void main(void)
     }
 }
 
+#endif
+
+
 #if 0
 void main(void)
 {
@@ -60,9 +134,9 @@ void main(void)
     
     // -- Wakeup --
     
-    io_config();
+    io_init();
     
-    tick_config();
+    tick_init();
     
     bms_start();
     uplink_start();
@@ -116,8 +190,8 @@ void main(void)
     DECLARE_REPEAT_BLOCK(EVERY1S);
     
     clock_config();
-    io_config();
-    tick_config();
+    io_init();
+    tick_init();
     
     bms_start();
     
