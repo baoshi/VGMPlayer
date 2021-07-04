@@ -18,4 +18,5 @@
   (lib (name BZ_Resistor)(type KiCad)(uri ${KIUSRMOD}/Resistor.pretty)(options "")(descr ""))
   (lib (name BZ_Diode)(type KiCad)(uri ${KIUSRMOD}/Diode.pretty)(options "")(descr ""))
   (lib (name BZ_RPi)(type KiCad)(uri "$(KIUSRMOD)/Rpi.pretty")(options "")(descr ""))
+  (lib (name VGMPlayer)(type KiCad)(uri ${KIPRJMOD}/VGMPlayer.pretty)(options "")(descr ""))
 )
