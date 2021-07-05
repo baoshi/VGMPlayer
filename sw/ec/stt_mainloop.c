@@ -8,25 +8,26 @@
 
 uint16_t timestamp;
 
-void state_premainloop_enter(void)
+uint8_t state_mainloop_enter(void)
 {
     //io_main_power_on();
     timestamp = systick;
+    return MAIN_STATE_MAINLOOP;
 }
 
 
-uint8_t state_premainloop_loop(void)
+uint8_t state_mainloop_loop(void)
 {
-    if (systick - timestamp > 200)
+    if (systick - timestamp > 500)
     {
         led_toggle();
         timestamp = systick;
     }
-    return MAIN_STATE_PRE_MAINLOOP;
+    return MAIN_STATE_MAINLOOP;
 }
 
 
-void state_premainloop_exit(void)
+void state_mainloop_exit(void)
 {
     
 }

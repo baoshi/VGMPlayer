@@ -1,6 +1,7 @@
 #include <xc.h>
 #include <stdint.h>
 #include "io.h"
+#include "led.h"
 #include "adc.h"
 #include "tick.h"
 #include "state.h"
@@ -12,7 +13,7 @@
 // SLEEP state
 
 
-void state_start_enter(void)
+uint8_t state_start_enter(void)
 {
     // Make sure I/O is configured as known state
     io_init();
@@ -21,6 +22,7 @@ void state_start_enter(void)
     io_led_off();
     // ADC is to determine if USB is connected
     adc_start();
+    return MAIN_STATE_START;
 }
 
 

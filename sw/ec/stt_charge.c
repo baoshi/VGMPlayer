@@ -17,21 +17,24 @@
 #define MAX_VDD_LOST    100
 static uint8_t num_vdd_lost;
 
-void state_charge_enter(void)
+uint8_t state_charge_enter(void)
 {
     num_vdd_lost = 0;
+    led_on();
+    tick_waste_ms(1000);
     led_off();
     adc_start();
+    return MAIN_STATE_CHARGE;
 }
 
 
 uint8_t state_charge_loop(void)
 {
     io_debounce_inputs();
-    if (~io_input_state & IO_STATUS_MASK_ANYBUTTON)
+    if (~io_input_state & IO_STATUS_MASK_ANY_BUTTON)
     {
         // Any button pressed (LOW)
-        return MAIN_STATE_PRE_MAINLOOP;
+        return MAIN_STATE_MAINLOOP;
     }
     if (adc_update())
     {

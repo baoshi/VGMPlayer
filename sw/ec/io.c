@@ -120,19 +120,19 @@ void io_set_bootsel_high(void)
 }
 
 
-void io_led_on()
+void io_led_on(void)
 {
     LATCbits.LATC4 = 1;
 }
 
 
-void io_led_off()
+void io_led_off(void)
 {
     LATCbits.LATC4 = 0;
 }
 
 
-void io_led_toggle()
+void io_led_toggle(void)
 {
     LATCbits.LATC4 = ~LATCbits.LATC4;
 }
@@ -140,7 +140,7 @@ void io_led_toggle()
 
 // Preparing sleep
 // Set proper levels and enable IOC
-void io_prepare_sleep()
+void io_prepare_sleep(void)
 {
     // IOC
     // IOC PortA flag
@@ -158,7 +158,7 @@ void io_prepare_sleep()
 
 
 
-void io_exit_sleep()
+void io_exit_sleep(void)
 {
     IOCAF = 0x00;
     INTCONbits.IOCIE = 0;

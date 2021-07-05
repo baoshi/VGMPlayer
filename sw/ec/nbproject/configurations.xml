@@ -33,7 +33,7 @@
       <itemPath>stt_start.c</itemPath>
       <itemPath>stt_sleep.c</itemPath>
       <itemPath>stt_charge.c</itemPath>
-      <itemPath>stt_premainloop.c</itemPath>
+      <itemPath>stt_mainloop.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -214,6 +214,7 @@
                   value="Press to browse for a specific firmware version"/>
         <property key="ToolFirmwareOption.UseLatestFirmware" value="true"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
+        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>
