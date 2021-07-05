@@ -10,16 +10,21 @@
 
 #include "io.h"
 
+#define LED_OFF             0x00
+#define LED_ON              0x01
+#define LED_BLINK_DFU       0x02
+#define LED_BLINK_OFF       0x03
+
 
 #ifdef	__cplusplus
 extern "C"
 {
 #endif
 
-// LED
-#define led_on() do { io_led_on(); } while (0)
-#define led_off() do { io_led_off(); } while (0)
-#define led_toggle() do { io_led_toggle(); } while (0)
+
+void led_set(uint8_t pattern);
+void led_update(void);
+
   
 #ifdef	__cplusplus
 }

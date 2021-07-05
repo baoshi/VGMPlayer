@@ -6,29 +6,23 @@
 #include "state.h"
 
 
-uint16_t timestamp;
-
 void state_mainloop_enter(void)
 {
     //io_main_power_on();
-    timestamp = systick;
+    led_set(LED_BLINK_OFF);
 }
 
 
 uint8_t state_mainloop_loop(void)
 {
-    if (systick - timestamp > 500)
-    {
-        led_toggle();
-        timestamp = systick;
-    }
+    led_update();
     return MAIN_STATE_MAINLOOP;
 }
 
 
 void state_mainloop_exit(void)
 {
-    
+    led_set(LED_OFF);
 }
 
 

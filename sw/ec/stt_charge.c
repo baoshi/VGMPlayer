@@ -20,9 +20,6 @@ static uint8_t num_vdd_lost;
 void state_charge_enter(void)
 {
     num_vdd_lost = 0;
-    led_on();
-    tick_waste_ms(1000);
-    led_off();
     adc_start();
 }
 
@@ -42,18 +39,18 @@ uint8_t state_charge_loop(void)
             if (io_input_state & IO_STATUS_MASK_CHARGER)
             {
                 // High -> not charging
-                led_off();
+                led_set(LED_OFF);
             }
             else
             {
-                led_on();
+                led_set(LED_ON);
             }
             num_vdd_lost = 0;
         }
         else
         {
             // Won't be charging if VDD is lost, turn off LED
-            led_off();
+            led_set(LED_OFF);
             ++num_vdd_lost;
             if (num_vdd_lost > MAX_VDD_LOST)
                 return MAIN_STATE_SLEEP;
@@ -66,5 +63,5 @@ uint8_t state_charge_loop(void)
 void state_charge_exit(void)
 {
     adc_stop();
-    led_off();
+    led_set(LED_OFF);
 }
