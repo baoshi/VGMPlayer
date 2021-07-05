@@ -17,14 +17,13 @@
 #define MAX_VDD_LOST    100
 static uint8_t num_vdd_lost;
 
-uint8_t state_charge_enter(void)
+void state_charge_enter(void)
 {
     num_vdd_lost = 0;
     led_on();
     tick_waste_ms(1000);
     led_off();
     adc_start();
-    return MAIN_STATE_CHARGE;
 }
 
 

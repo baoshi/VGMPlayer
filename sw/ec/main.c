@@ -10,39 +10,49 @@
 #include "uplink.h"
 #include "state.h"
 
-uint8_t state_start_enter(void);
+void    state_start_enter(void);
 uint8_t state_start_loop(void);
 void    state_start_exit(void);
 
-uint8_t state_sleep_enter(void);
 uint8_t state_sleep_loop(void);
 
 
-uint8_t state_charge_enter(void);
+void    state_wakeup_enter(void);
+uint8_t state_wakeup_loop(void);
+
+
+void    state_charge_enter(void);
 uint8_t state_charge_loop(void);
 void    state_charge_exit(void);
 
-uint8_t state_mainloop_enter(void);
+void    state_mainloop_enter(void);
 uint8_t state_mainloop_loop(void);
 void    state_mainloop_exit(void);
+
+void    state_pre_dfu_enter(void);
+uint8_t state_pre_dfu_loop(void);
+
+void    state_dfu_enter(void);
+uint8_t state_dfu_loop(void);
+void    state_dfu_exit(void);
 
 
 // State Machine
 static const struct 
 {
-    uint8_t (*enter)(void);
+    void (*enter)(void);
     uint8_t (*loop)(void);
     void (*exit)(void);
 } fsm[] = 
 {
     /* MAIN_STATE_START        */ {        state_start_enter,       state_start_loop,             state_start_exit },
-    /* MAIN_STATE_SLEEP        */ {        state_sleep_enter,       state_sleep_loop,                            0 },
+    /* MAIN_STATE_SLEEP        */ {                        0,       state_sleep_loop,                            0 },
+    /* MAIN_STATE_WAKE         */ {       state_wakeup_enter,      state_wakeup_loop,                            0 },
     /* MAIN_STATE_MAINLOOP     */ {     state_mainloop_enter,    state_mainloop_loop,          state_mainloop_exit },
-    /* MAIN_STATE_PRE_OFF      */ {                        0,                      0,                            0 },
     /* MAIN_STATE_OFF          */ {                        0,                      0,                            0 },
     /* MAIN_STATE_CHARGE       */ {       state_charge_enter,      state_charge_loop,            state_charge_exit },
-    /* MAIN_STATE_PRE_DFU      */ {                        0,                      0,                            0 },
-    /* MAIN_STATE_DFU          */ {                        0,                      0,                            0 }
+    /* MAIN_STATE_PRE_DFU      */ {      state_pre_dfu_enter,     state_pre_dfu_loop,                            0 },
+    /* MAIN_STATE_DFU          */ {          state_dfu_enter,         state_dfu_loop,               state_dfu_exit }
 };
 
 void main(void)
@@ -56,22 +66,19 @@ void main(void)
     enable_global_int();
         
     // Start from START state
-    cur_state = state_start_enter();
+    cur_state = MAIN_STATE_START;
+    state_start_enter();
     
     while (1)
     {
-        if (fsm[cur_state].loop)
-        {
-            nxt_state = fsm[cur_state].loop();
-        }
-        while (nxt_state != cur_state)
+        nxt_state = fsm[cur_state].loop();
+        if (nxt_state != cur_state)
         {
             if (fsm[cur_state].exit) 
                 fsm[cur_state].exit();
             cur_state = nxt_state;
-            // enter can change state also (see SLEEP)
             if (fsm[cur_state].enter)
-                nxt_state = fsm[cur_state].enter();
+                fsm[cur_state].enter();
         }
         tick_update();
     }

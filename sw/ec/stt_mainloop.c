@@ -8,11 +8,10 @@
 
 uint16_t timestamp;
 
-uint8_t state_mainloop_enter(void)
+void state_mainloop_enter(void)
 {
     //io_main_power_on();
     timestamp = systick;
-    return MAIN_STATE_MAINLOOP;
 }
 
 

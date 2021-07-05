@@ -34,6 +34,9 @@
       <itemPath>stt_sleep.c</itemPath>
       <itemPath>stt_charge.c</itemPath>
       <itemPath>stt_mainloop.c</itemPath>
+      <itemPath>stt_pre_dfu.c</itemPath>
+      <itemPath>stt_dfu.c</itemPath>
+      <itemPath>stt_wakeup.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

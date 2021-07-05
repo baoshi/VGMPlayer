@@ -12,7 +12,8 @@ uint16_t systick;
 
 volatile static uint8_t _tick_update;
 
-#define TMR0_PRELOAD 0x14   // experiment value
+// See above, theoratical value 6, measured 20 is better probably due to interrupt overhead
+#define TMR0_PRELOAD 0x14
   
 void tick_init(void)
 {
