@@ -12,7 +12,7 @@ uint16_t systick;
 
 volatile static uint8_t _tick_update;
 
-#define TMR0_PRELOAD 0x06
+#define TMR0_PRELOAD 0x14   // experiment value
   
 void tick_init(void)
 {
@@ -38,7 +38,7 @@ void tick_update(void)
 {
     if (_tick_update)
     {
-        ++systick;
+        systick += _tick_update;
         _tick_update = 0;
     }
 }
@@ -46,10 +46,11 @@ void tick_update(void)
 
 void tick_tmr0_isr(void)
 {
+    // Reload
+    TMR0 = TMR0_PRELOAD;
     // Clear the TMR0 interrupt flag
     INTCONbits.TMR0IF = 0;
-    TMR0 = TMR0_PRELOAD;
-    _tick_update = 1;
+    ++_tick_update;
 }
 
 

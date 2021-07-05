@@ -29,7 +29,7 @@ uint8_t state_sleep_enter(void)
         io_exit_sleep();
         // Read & debounce input. If input is not persistent, wakeup is probably
         // due to glitch and we shall go back sleep
-        for (uint8_t i = 0; i < 100; ++i)
+        for (uint8_t i = 0; i < 30; ++i)    // Around 37ms debounce time
         {
             io_debounce_inputs();
         }
