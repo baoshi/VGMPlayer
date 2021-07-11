@@ -12,27 +12,32 @@
 // Otherwise go to MAINLOOP state
 
 
-static uint16_t entry_time;
+static uint16_t _entry_time;
 
 
 void state_pre_dfu_enter(void)
 {
-    entry_time = systick;
+    _entry_time = systick;
 }
 
 
 uint8_t state_pre_dfu_loop(void)
 {
+    uint8_t r;
     io_debounce_inputs();
-    if (!(~io_input_state & IO_STATUS_MASK_LEFT) || !(~io_input_state & IO_STATUS_MASK_RIGHT))
+    if (!((uint8_t)(~io_input_state) & IO_STATUS_MASK_LEFT) || !((uint8_t)(~io_input_state) & IO_STATUS_MASK_RIGHT))
     {
-        return MAIN_STATE_MAINLOOP;
+        r = MAIN_STATE_MAINLOOP;
     }
-    
-    if (systick - entry_time > 3000)
-        return MAIN_STATE_DFU;
-    
-    return MAIN_STATE_PRE_DFU;
+    else if ((systick - _entry_time) > 3000u)
+    {
+        r = MAIN_STATE_DFU;
+    }
+    else
+    {
+        r = MAIN_STATE_PRE_DFU;
+    }
+    return r;
 }
 
 
