@@ -28,56 +28,64 @@ void state_wakeup_enter(void)
 
 uint8_t state_wakeup_loop(void)
 {
+    uint8_t r;
     io_debounce_inputs();
-    
     if (
-        ((~_wakeup_input_state & IO_STATUS_MASK_ANY_BUTTON) == IO_STATUS_MASK_UP)   // Only UP was pressed
+        (((uint8_t)(~_wakeup_input_state) & IO_STATUS_MASK_ANY_BUTTON) == IO_STATUS_MASK_UP)    // Only UP was pressed
         &&
-        ((io_input_state & IO_STATUS_MASK_UP))                                      // UP now released
+        ((io_input_state & IO_STATUS_MASK_UP) != 0u)                                            // UP now released
        )
     {
         led_set(LED_OFF);
-        return MAIN_STATE_MAINLOOP;
+        r = MAIN_STATE_MAINLOOP;
     }
-    if (
-        ((~_wakeup_input_state & IO_STATUS_MASK_ANY_BUTTON) == IO_STATUS_MASK_DOWN) // Only DOWN was pressed
+    else if (
+        (((uint8_t)(~_wakeup_input_state) & IO_STATUS_MASK_ANY_BUTTON) == IO_STATUS_MASK_DOWN)  // Only DOWN was pressed
         &&
-        ((io_input_state & IO_STATUS_MASK_DOWN))                                    // DOWN now released
+        ((io_input_state & IO_STATUS_MASK_DOWN) != 0u)                                          // DOWN now released
        )
     {
         led_set(LED_OFF);
-        return MAIN_STATE_MAINLOOP;
+        r = MAIN_STATE_MAINLOOP;
     }
-    if (
-        ((~_wakeup_input_state & IO_STATUS_MASK_ANY_BUTTON) == IO_STATUS_MASK_LEFT) // Only LEFT was pressed
+    else if (
+        (((uint8_t)(~_wakeup_input_state) & IO_STATUS_MASK_ANY_BUTTON) == IO_STATUS_MASK_LEFT)  // Only LEFT was pressed
         &&
-        ((io_input_state & IO_STATUS_MASK_LEFT))                                    // LEFT now released
+        ((io_input_state & IO_STATUS_MASK_LEFT) != 0u)                                          // LEFT now released
        )
     {
         led_set(LED_OFF);
-        return MAIN_STATE_MAINLOOP;
+        r = MAIN_STATE_MAINLOOP;
     }
-    if (
-        ((~_wakeup_input_state & IO_STATUS_MASK_ANY_BUTTON) == IO_STATUS_MASK_RIGHT)// Only RIGHT was pressed
+    else if (
+        (((uint8_t)(~_wakeup_input_state) & IO_STATUS_MASK_ANY_BUTTON) == IO_STATUS_MASK_RIGHT) // Only RIGHT was pressed
         &&
-        ((io_input_state & IO_STATUS_MASK_RIGHT))                                   // RIGHT now released
+        ((io_input_state & IO_STATUS_MASK_RIGHT) != 0u)                                         // RIGHT now released
        )
     {
         led_set(LED_OFF);
-        return MAIN_STATE_MAINLOOP;
+        r = MAIN_STATE_MAINLOOP;
     }
     // If L/R both pressed, go into PRE_DFU state
-    if ((~io_input_state & IO_STATUS_MASK_LEFT) && (~io_input_state & IO_STATUS_MASK_RIGHT))
+    else if (
+        (((uint8_t)(~io_input_state) & IO_STATUS_MASK_LEFT) != 0u)
+        &&
+        (((uint8_t)(~io_input_state) & IO_STATUS_MASK_RIGHT) != 0u)
+       )
     {
         led_set(LED_OFF);
-        return MAIN_STATE_PRE_DFU;
+        r = MAIN_STATE_PRE_DFU;
     }
-    // Reach here if nothing happened (button not released, multiple button pressed at same time, etc), go back to sleep
-    if (systick - _wakeup_time > 5000)
+    else if ((systick - _wakeup_time) > 5000u) // Reach here if nothing happened (button not released, multiple button pressed at same time, etc), go back to sleep
     {
         led_set(LED_OFF);
-        return MAIN_STATE_SLEEP;
+        r = MAIN_STATE_SLEEP;
     }
-    return MAIN_STATE_WAKEUP;
+    else
+    {
+        // Just stay in wakeup. Will go into sleep after 5 seconds
+        r = MAIN_STATE_WAKEUP;
+    }
+    return r;
 }
 

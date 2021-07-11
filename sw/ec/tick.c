@@ -37,11 +37,8 @@ void tick_init(void)
 // Call this in main loop
 void tick_update(void)
 {
-    if (_tick_update)
-    {
-        systick += _tick_update;
-        _tick_update = 0;
-    }
+    systick += _tick_update;
+    _tick_update = 0;
 }
 
 
@@ -58,7 +55,7 @@ void tick_tmr0_isr(void)
 void tick_waste_ms(uint16_t ms)
 {
     uint16_t start = systick;
-    while (systick - start < ms)
+    while ((systick - start) < ms)
     {
         tick_update();
     }

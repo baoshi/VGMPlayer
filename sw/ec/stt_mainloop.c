@@ -8,7 +8,7 @@
 
 void state_mainloop_enter(void)
 {
-    //io_main_power_on();
+    io_main_power_on();
     led_set(LED_BLINK_OFF);
 }
 

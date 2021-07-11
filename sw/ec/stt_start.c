@@ -27,20 +27,21 @@ void state_start_enter(void)
 
 uint8_t state_start_loop(void)
 {
+    uint8_t r = MAIN_STATE_START;
     if (adc_update())
     {
-        if (adc_vdd >= 138) // VDD > 138/30 = 4.6V ?
+        if (adc_vdd >= 138u) // VDD > 138/30 = 4.6V ?
         {
             // USB connected
-            return MAIN_STATE_CHARGE;
+            r = MAIN_STATE_CHARGE;
         }
         else
         {
             // USB not connected
-            return MAIN_STATE_SLEEP;
+            r = MAIN_STATE_SLEEP;
         }
     }
-    return MAIN_STATE_START;
+    return r;
 }
 
 

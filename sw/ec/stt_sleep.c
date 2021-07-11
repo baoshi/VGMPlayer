@@ -14,6 +14,7 @@
 
 uint8_t state_sleep_loop(void)
 {
+    uint8_t r;
     io_main_power_off();
     io_set_bootsel_high();
     io_led_off();
@@ -24,19 +25,22 @@ uint8_t state_sleep_loop(void)
     // Wakeup
     io_exit_sleep();
     // Read & debounce input. If input is not persistent, wakeup is probably due to glitch
-    for (uint8_t i = 0; i < 10; ++i)    // Around 10ms debounce time
+    for (uint8_t i = 0; i < 10u; ++i)    // Around 10ms debounce time
     {
         io_debounce_inputs();
     }
-    if (~io_input_state & IO_STATUS_MASK_CHARGER)       // CHARGER_STATUS goes low
+    if (((uint8_t)(~io_input_state) & IO_STATUS_MASK_CHARGER) != 0u)         // CHARGER_STATUS goes low
     {
-        return MAIN_STATE_CHARGE;
+        r = MAIN_STATE_CHARGE;
     }
-    if (~io_input_state & IO_STATUS_MASK_ANY_BUTTON)    // Button down, wake up
+    else if (((uint8_t)(~io_input_state) & IO_STATUS_MASK_ANY_BUTTON) != 0u) // Button down, wake up
     {
-        return MAIN_STATE_WAKEUP;
+        r = MAIN_STATE_WAKEUP;
     }
-    // Nothing caused wakeup, go back sleep
-    return MAIN_STATE_SLEEP;
+    else    // Bogus wakeup, go back sleep
+    {
+        r = MAIN_STATE_SLEEP;
+    }
+    return r;
 }
 

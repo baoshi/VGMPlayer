@@ -25,12 +25,12 @@ extern "C" {
 extern uint8_t io_input_state;  
 extern uint8_t io_prev_input_state;
 
-#define IO_STATUS_MASK_LEFT         0x01
-#define IO_STATUS_MASK_UP           0x02
-#define IO_STATUS_MASK_RIGHT        0x10
-#define IO_STATUS_MASK_DOWN         0x20
-#define IO_STATUS_MASK_ANY_BUTTON   0x33
-#define IO_STATUS_MASK_CHARGER      0x04
+#define IO_STATUS_MASK_LEFT         0x01u
+#define IO_STATUS_MASK_UP           0x02u
+#define IO_STATUS_MASK_RIGHT        0x10u
+#define IO_STATUS_MASK_DOWN         0x20u
+#define IO_STATUS_MASK_ANY_BUTTON   0x33u
+#define IO_STATUS_MASK_CHARGER      0x04u
 
 
 void io_init(void);

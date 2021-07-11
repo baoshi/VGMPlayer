@@ -11,7 +11,7 @@
 #include "io.h"
 
 
-#define MAX_DEBOUNCE_READS  8  // # of reads before a state is determined
+#define MAX_DEBOUNCE_READS  8u  // # of reads before a state is determined
 uint8_t io_input_state = 0x37;
 uint8_t io_prev_input_state = 0x37;
 
@@ -26,12 +26,18 @@ void io_debounce_inputs(void)
     // Idle: 0 0 1 1 1 1 1 1 (No button pressed, Not charging)
     static uint8_t reading[MAX_DEBOUNCE_READS];// = { 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37 };
     static uint8_t idx = 0;
-    uint8_t i, a, b, c;
+    uint8_t i;
+    uint8_t a;
+    uint8_t b;
+    uint8_t c;
     
     // Read new inputs
     reading[idx] = PORTA;    
     ++idx;
-    if (idx >= MAX_DEBOUNCE_READS) idx = 0;
+    if (idx >= MAX_DEBOUNCE_READS)
+    {
+        idx = 0;
+    }
     // Debounce Algorithm:
     // Refer to http://www.ganssle.com/debouncing.htm
     // Add debounce both edges
@@ -43,11 +49,11 @@ void io_debounce_inputs(void)
     for (i = 0; i < MAX_DEBOUNCE_READS; ++i)
     {
         a = a & reading[i];
-        b = b & ~reading[i];
+        b = b & (uint8_t)(~reading[i]);
     }
     c = a ^ b;
     b = io_input_state;    // b no longer needed
-    io_input_state = (a & c) | (io_prev_input_state & (~c));
+    io_input_state = (a & c) | (io_prev_input_state & (uint8_t)(~c));
     io_prev_input_state = b;
 }
 

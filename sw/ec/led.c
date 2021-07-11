@@ -42,7 +42,7 @@ void led_update(void)
         break;
     case LED_BLINK_DFU_ON1:
         io_led_on();
-        if (systick - _timestamp > 200)
+        if ((systick - _timestamp) > 200u)
         {
             _state = LED_BLINK_DFU_OFF1;
             _timestamp = systick;
@@ -50,7 +50,7 @@ void led_update(void)
         break;
     case LED_BLINK_DFU_OFF1:
         io_led_off();
-        if (systick - _timestamp > 100)
+        if ((systick - _timestamp) > 100u)
         {
             _state = LED_BLINK_DFU_ON2;
             _timestamp = systick;
@@ -58,7 +58,7 @@ void led_update(void)
         break;
     case LED_BLINK_DFU_ON2:
         io_led_on();
-        if (systick - _timestamp > 200)
+        if ((systick - _timestamp) > 200u)
         {
             _state = LED_BLINK_DFU_OFF2;
             _timestamp = systick;
@@ -66,7 +66,7 @@ void led_update(void)
         break;
     case LED_BLINK_DFU_OFF2:
         io_led_off();
-        if (systick - _timestamp > 500)
+        if ((systick - _timestamp) > 500u)
         {
             _state = LED_BLINK_DFU_ON1;
             _timestamp = systick;
@@ -74,7 +74,7 @@ void led_update(void)
         break;
     case LED_BLINK_OFF_ON1:
         io_led_on();
-        if (systick - _timestamp > 500)
+        if ((systick - _timestamp) > 500u)
         {
             _state = LED_BLINK_OFF_OFF1;
             _timestamp = systick;
@@ -82,11 +82,13 @@ void led_update(void)
         break;
     case LED_BLINK_OFF_OFF1:
         io_led_off();
-        if (systick - _timestamp > 500)
+        if ((systick - _timestamp) > 500u)
         {
             _state = LED_BLINK_OFF_ON1;
             _timestamp = systick;
         }
+        break;
+    default:
         break;
     }
 }

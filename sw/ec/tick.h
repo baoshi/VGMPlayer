@@ -25,13 +25,6 @@ void tick_tmr0_isr(void);
 
 void tick_waste_ms(uint16_t ms);
 
-#define DECLARE_REPEAT_BLOCK(id) static uint16_t _ts_##id = 0;
-
-#define REPEAT_BLOCK_BEGIN(id, interval) if (systick - _ts_##id > interval) {
-
-#define REPEAT_BLOCK_END(id) _ts_##id = systick; }
-
-
 #ifdef	__cplusplus
 }
 #endif

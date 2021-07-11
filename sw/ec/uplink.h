@@ -38,7 +38,7 @@ void uplink_start(void);
 void uplink_set_b0(uint8_t data);
 void uplink_set_b1(uint8_t data);
 
-extern volatile uint16_t uplink_alive;
+extern volatile uint16_t uplink_activity;
 
 void i2c_slave_bcl_isr(void);
 

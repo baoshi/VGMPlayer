@@ -57,7 +57,8 @@ static const struct
 
 void main(void)
 {
-    uint8_t cur_state, nxt_state;
+    uint8_t cur_state;
+    uint8_t nxt_state;
     
     clock_config();
     // Initialize and start systick
@@ -74,11 +75,15 @@ void main(void)
         nxt_state = fsm[cur_state].loop();
         if (nxt_state != cur_state)
         {
-            if (fsm[cur_state].exit) 
+            if (fsm[cur_state].exit != NULL) 
+            {
                 fsm[cur_state].exit();
+            }
             cur_state = nxt_state;
-            if (fsm[cur_state].enter)
+            if (fsm[cur_state].enter != NULL) 
+            {
                 fsm[cur_state].enter();
+            }
         }
         tick_update();
     }

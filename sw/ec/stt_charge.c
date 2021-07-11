@@ -13,8 +13,7 @@
 // If VDD >= 4.6V, set LED according to charging status
 
 
-
-#define MAX_VDD_LOST    100
+#define MAX_VDD_LOST    100u
 static uint8_t num_vdd_lost;
 
 void state_charge_enter(void)
@@ -26,37 +25,43 @@ void state_charge_enter(void)
 
 uint8_t state_charge_loop(void)
 {
+    uint8_t r = MAIN_STATE_CHARGE;
     io_debounce_inputs();
-    if (~io_input_state & IO_STATUS_MASK_ANY_BUTTON)
+    if (((uint8_t)(~io_input_state) & IO_STATUS_MASK_ANY_BUTTON) != 0u)
     {
         // Any button pressed (LOW)
-        return MAIN_STATE_MAINLOOP;
+        r = MAIN_STATE_MAINLOOP;
     }
-    if (adc_update())
+    else
     {
-        if (adc_vdd >= 138)
+        if (adc_update())
         {
-            if (io_input_state & IO_STATUS_MASK_CHARGER)
+            if (adc_vdd >= 138u)
             {
-                // High -> not charging
-                led_set(LED_OFF);
+                if ((io_input_state & IO_STATUS_MASK_CHARGER) != 0u)
+                {
+                    // High -> not charging
+                    led_set(LED_OFF);
+                }
+                else
+                {
+                    led_set(LED_ON);
+                }
+                num_vdd_lost = 0;
             }
             else
             {
-                led_set(LED_ON);
+                // Won't be charging if VDD is lost, turn off LED
+                led_set(LED_OFF);
+                ++num_vdd_lost;
+                if (num_vdd_lost > MAX_VDD_LOST)
+                {
+                    r = MAIN_STATE_SLEEP;
+                }
             }
-            num_vdd_lost = 0;
-        }
-        else
-        {
-            // Won't be charging if VDD is lost, turn off LED
-            led_set(LED_OFF);
-            ++num_vdd_lost;
-            if (num_vdd_lost > MAX_VDD_LOST)
-                return MAIN_STATE_SLEEP;
         }
     }
-    return MAIN_STATE_CHARGE;
+    return r;
 }
 
 

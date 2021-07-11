@@ -37,9 +37,10 @@ enum
     ADC_STATE_ACQUISITION_M2,
     ADC_STATE_READ_M2_CALC_VOLT
 };
-static uint8_t state = 0;
+static uint8_t _state = 0;
 
-static union u16_u
+
+typedef union u16_u
 {
     uint16_t word;
     struct
@@ -47,7 +48,9 @@ static union u16_u
         uint8_t lo;
         uint8_t hi;
     };
-} m1, m2;
+} u16_ut;
+static u16_ut m1;
+static u16_ut m2;
 
 
 void adc_start(void)
@@ -69,13 +72,14 @@ void adc_start(void)
     // TRGSEL=0000 no auto trigger
     ADCON2 = 0x00;
     // Start from M1 state
-    state = ADC_STATE_SETUP_M1;
+    _state = ADC_STATE_SETUP_M1;
 }
 
 
 bool adc_update(void)
 {
-    switch (state)
+    bool r = false;
+    switch (_state)
     {
     case ADC_STATE_STOPPED:
         break;
@@ -89,13 +93,13 @@ bool adc_update(void)
         ADCON0bits.ADON = 1;
         // Record start acquisition time, using m1 temporary
         m1.word = systick;
-        state = ADC_STATE_ACQUISITION_M1;
+        _state = ADC_STATE_ACQUISITION_M1;
         break;
     case ADC_STATE_ACQUISITION_M1:
-        if (systick - m1.word > 1)  // give acquisition 2ms or less
+        if ((systick - m1.word) > 1u)  // give acquisition 2ms or less
         {
             ADCON0bits.GO_nDONE = 1;
-            state = ADC_STATE_READ_M1_SETUP_M2;
+            _state = ADC_STATE_READ_M1_SETUP_M2;
         }
         break;
     case ADC_STATE_READ_M1_SETUP_M2:
@@ -114,14 +118,14 @@ bool adc_update(void)
             ADCON0bits.ADON = 1;
             // Record start acquisition time, using m2 temporary
             m2.word = systick;
-            state = ADC_STATE_ACQUISITION_M2;
+            _state = ADC_STATE_ACQUISITION_M2;
         }
         break;
     case ADC_STATE_ACQUISITION_M2:
-        if (systick - m2.word > 1) // give acquisition 2ms or less
+        if ((systick - m2.word) > 1u) // give acquisition 2ms or less
         {
             ADCON0bits.GO_nDONE = 1;
-            state = ADC_STATE_READ_M2_CALC_VOLT;
+            _state = ADC_STATE_READ_M2_CALC_VOLT;
         }
         break;
     case ADC_STATE_READ_M2_CALC_VOLT:
@@ -135,12 +139,14 @@ bool adc_update(void)
             adc_vdd = (uint8_t)(62853u / m1.word);   // guarantee m1 > 245 (fails if VDD > 8.5v)
             // VBAT = 2.185 * M2 / M1, scale 30 at both sides
             adc_bat = (uint8_t)(66u * m2.word / m1.word); // m2 will max around 960 (1023 * 15 / 16), 66 * m2 won't overflow
-            state = ADC_STATE_SETUP_M1;  // restart
-            return true;
+            _state = ADC_STATE_SETUP_M1;  // restart
+            r = true;
         }
         break;
+    default:
+        break;
     }
-    return false;
+    return r;
 }
 
 
@@ -148,7 +154,7 @@ void adc_stop(void)
 {
     ADCON0bits.GO_nDONE = 0;
     ADCON0bits.ADON = 0;
-    state = 0;
+    _state = 0;
 }
 
 

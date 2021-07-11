@@ -13,11 +13,11 @@
 #include "uplink.h"
 
 
-#define SLAVE_ADDRESS 0x13
+#define SLAVE_ADDRESS 0x13u
 
-volatile uint16_t uplink_alive;
+volatile uint16_t uplink_activity;
 
-#define UPLINK_DATA_COUNT 2
+#define UPLINK_DATA_COUNT 2u
 static uint8_t data[UPLINK_DATA_COUNT];
 
 
@@ -34,13 +34,14 @@ void uplink_start(void)
     SSP1CON1bits.SSPM = 0b0110;     // I2C slave mode, 7-bit
     SSP1CON2bits.SEN = 1;           // Clock stretching enabled
     SSP1CON3bits.SBCDE = 1;         // Enable slave bus collision interrupts
-    SSP1ADD = (SLAVE_ADDRESS << 1); // Load slave address
+    SSP1ADD = (uint8_t)(SLAVE_ADDRESS << 1); // Load slave address
     SSP1CON1bits.SSPEN = 1;         // Enable MSSP
     // PIR2 config
     PIR2bits.BCL1IF = 0;            // Clear Bus Collision interrupt flag
     PIR1bits.SSP1IF = 0;            // Clear the SSP interrupt flag
     PIE2bits.BCL1IE = 1;            // Enable BCLIF
     PIE1bits.SSP1IE = 1;            // Enable SSPIF
+    uplink_activity = systick;
 }
 
 
@@ -83,6 +84,7 @@ void i2c_slave_ssp_isr(void)
                     SSP1BUF = 0xFF;
                 }
                 // Master NACKed last byte, nothing needed.
+                uplink_activity = systick;
             }
         }
     }
@@ -91,7 +93,7 @@ void i2c_slave_ssp_isr(void)
         // Nothing to do here
         temp = SSP1BUF;
     }
-    PIR1bits.SSP1IF = 0; // Clear SSP1IF   
+    PIR1bits.SSP1IF = 0;    // Clear SSP1IF   
     SSP1CON1bits.CKP = 1;   // Release clock stretch
 }
 
