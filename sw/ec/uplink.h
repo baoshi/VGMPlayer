@@ -20,25 +20,26 @@ extern "C"
 // I2C slave mode, address: 0x13
 //
 // Master read: return 2 bytes
-// 1: Status  [ X X USB CHG L R U D], Matches io_input_state
+// 1: Status  [ X X USB CHG M P U D], Matches io_input_state
 //            bit 7-6: Unimplemented
 //            bit 5: USB, USB is connected = 1
 //            bit 4: CHG, battery is charging = 0
-//            bit 3: Right key status, debounced, pressed = 0
-//            bit 2: Down key status, debounced, pressed = 0
-//            bit 1: Up key status, debounced, pressed = 0
-//            bit 0: Left key status, debounced, pressed = 0
+//            bit 3: PLAY key status, debounced, pressed = 0
+//            bit 2: DOWN key status, debounced, pressed = 0
+//            bit 1: UP key status, debounced, pressed = 0
+//            bit 0: MODE key status, debounced, pressed = 0
 // 2: Battery [7 6 5 4 3 2 1 0]    
 //            V_Battery = Battery / 30.0f
 // Master write: no operation
 //  
 
 void uplink_start(void);
+void uplink_stop(void);
+void uplink_track_activity(void);
 
-void uplink_set_b0(uint8_t data);
-void uplink_set_b1(uint8_t data);
+void uplink_set_byte(uint8_t idx, uint8_t data);
 
-extern volatile uint16_t uplink_activity;
+extern uint16_t uplink_recent_activity;
 
 void i2c_slave_bcl_isr(void);
 

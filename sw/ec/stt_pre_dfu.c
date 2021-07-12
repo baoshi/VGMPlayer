@@ -17,6 +17,7 @@ static uint16_t _entry_time;
 
 void state_pre_dfu_enter(void)
 {
+    led_set(LED_BLINK_PRE_DFU);
     _entry_time = systick;
 }
 
@@ -25,7 +26,11 @@ uint8_t state_pre_dfu_loop(void)
 {
     uint8_t r;
     io_debounce_inputs();
-    if (!((uint8_t)(~io_input_state) & IO_STATUS_MASK_LEFT) || !((uint8_t)(~io_input_state) & IO_STATUS_MASK_RIGHT))
+    if (                                                                // if
+        ((io_input_state & IO_STATUS_MASK_MODE) == IO_STATUS_MASK_MODE) // MODE button released
+        ||                                                              // or
+        ((io_input_state & IO_STATUS_MASK_PLAY) == IO_STATUS_MASK_PLAY) // PLAY button released
+       )
     {
         r = MAIN_STATE_MAINLOOP;
     }
@@ -37,6 +42,7 @@ uint8_t state_pre_dfu_loop(void)
     {
         r = MAIN_STATE_PRE_DFU;
     }
+    led_update();
     return r;
 }
 

@@ -12,8 +12,9 @@
 
 #define LED_OFF             0x00
 #define LED_ON              0x01
-#define LED_BLINK_DFU       0x02
-#define LED_BLINK_OFF       0x03
+#define LED_BLINK_PRE_DFU   0x02
+#define LED_BLINK_DFU       0x03
+#define LED_BLINK_OFF       0x04
 
 
 #ifdef	__cplusplus

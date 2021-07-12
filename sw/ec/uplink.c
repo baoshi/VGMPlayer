@@ -7,6 +7,7 @@
 
 
 #include <xc.h>
+#include <stdbool.h>
 #include "global.h"
 #include "tick.h"
 #include "led.h"
@@ -15,7 +16,9 @@
 
 #define SLAVE_ADDRESS 0x13u
 
-volatile uint16_t uplink_activity;
+uint16_t uplink_recent_activity;
+
+static bool _activity;
 
 #define UPLINK_DATA_COUNT 2u
 static uint8_t data[UPLINK_DATA_COUNT];
@@ -26,7 +29,6 @@ void uplink_start(void)
     // dummy sample data
     data[0] = 0x00;
     data[1] = 0x00;
-    
     // Init I2C slave
     // MSSP config
     SSP1STATbits.SMP = 1;           // Slew rate control disabled
@@ -41,19 +43,37 @@ void uplink_start(void)
     PIR1bits.SSP1IF = 0;            // Clear the SSP interrupt flag
     PIE2bits.BCL1IE = 1;            // Enable BCLIF
     PIE1bits.SSP1IE = 1;            // Enable SSPIF
-    uplink_activity = systick;
+    _activity = false;
+    uplink_recent_activity = systick;
 }
 
 
-void uplink_set_b0(uint8_t val)
+void uplink_stop(void)
 {
-    data[0] = val;
+    SSP1CON1bits.SSPEN = 0;         // Disable MSSP
+    PIR2bits.BCL1IF = 0;            // Clear Bus Collision interrupt flag
+    PIR1bits.SSP1IF = 0;            // Clear the SSP interrupt flag
+    PIE2bits.BCL1IE = 0;            // Clear BCLIF
+    PIE1bits.SSP1IE = 0;            // Clear SSPIF
 }
 
 
-void uplink_set_b1(uint8_t val)
+void uplink_set_byte(uint8_t idx, uint8_t val)
 {
-    data[1] = val;
+    if (idx < UPLINK_DATA_COUNT)
+    {
+        data[idx] = val;
+    }
+}
+
+
+void uplink_track_activity(void)
+{
+    if (_activity)
+    {
+        uplink_recent_activity = systick;
+        _activity = false;
+    }
 }
 
 
@@ -84,7 +104,7 @@ void i2c_slave_ssp_isr(void)
                     SSP1BUF = 0xFF;
                 }
                 // Master NACKed last byte, nothing needed.
-                uplink_activity = systick;
+                _activity = true;
             }
         }
     }

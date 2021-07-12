@@ -10,13 +10,16 @@
 #include "led.h"
 
 
-#define LED_BLINK_DFU_ON1   0x02
-#define LED_BLINK_DFU_OFF1  0x12
-#define LED_BLINK_DFU_ON2   0x22
-#define LED_BLINK_DFU_OFF2  0x32
+#define LED_BLINK_PRE_DFU_ON1  0x02
+#define LED_BLINK_PRE_DFU_OFF1 0x12
 
-#define LED_BLINK_OFF_ON1   0x03
-#define LED_BLINK_OFF_OFF1  0x13
+#define LED_BLINK_DFU_ON1   0x03
+#define LED_BLINK_DFU_OFF1  0x13
+#define LED_BLINK_DFU_ON2   0x23
+#define LED_BLINK_DFU_OFF2  0x33
+
+#define LED_BLINK_OFF_ON1   0x04
+#define LED_BLINK_OFF_OFF1  0x14
 
 
 static uint8_t _state;
@@ -39,6 +42,22 @@ void led_update(void)
         break;
     case LED_ON:
         io_led_on();
+        break;
+    case LED_BLINK_PRE_DFU_ON1:
+        io_led_on();
+        if ((systick - _timestamp) > 100u)
+        {
+            _state = LED_BLINK_PRE_DFU_OFF1;
+            _timestamp = systick;
+        }
+        break;
+    case LED_BLINK_PRE_DFU_OFF1:
+        io_led_off();
+        if ((systick - _timestamp) > 400u)
+        {
+            _state = LED_BLINK_PRE_DFU_ON1;
+            _timestamp = systick;
+        }
         break;
     case LED_BLINK_DFU_ON1:
         io_led_on();
