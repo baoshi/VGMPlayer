@@ -132,9 +132,9 @@ Text Label 8550 1600 0    40   ~ 0
 LCD_BL
 Text Label 8550 2000 0    40   ~ 0
 LCD_CS
-Text Label 8550 2100 0    40   ~ 0
-MOSI
 Text Label 8550 2200 0    40   ~ 0
+MOSI
+Text Label 8550 2100 0    40   ~ 0
 SCLK
 Text Label 8550 2300 0    40   ~ 0
 LCD_RES
