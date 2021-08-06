@@ -29,13 +29,41 @@ uint8_t state_sleep_loop(void)
     {
         io_debounce_inputs();
     }
-    if (((uint8_t)(~io_input_state) & IO_STATUS_MASK_CHARGER) != 0u)         // CHARGER_STATUS goes low
+    if (((uint8_t)(~io_input_state) & IO_STATUS_MASK_CHARGER) != 0u)        // CHARGER_STATUS goes low
     {
         r = MAIN_STATE_CHARGE;
     }
-    else if (((uint8_t)(~io_input_state) & IO_STATUS_MASK_ANY_BUTTON) != 0u) // Button down, wake up
+    else if (((uint8_t)(~io_input_state) & IO_STATUS_MASK_UP) != 0u)        // If UP button down, go main loop
     {
-        r = MAIN_STATE_WAKEUP;
+        r = MAIN_STATE_MAINLOOP;
+    }
+    else if (((uint8_t)(~io_input_state) & IO_STATUS_MASK_DOWN) != 0u)      // If DOWN button down, go main loop
+    {
+        r = MAIN_STATE_MAINLOOP;
+    }
+    else if (
+        (((uint8_t)(~io_input_state) & IO_STATUS_MASK_MODE) != 0u)          // One of PLAY or MODE pressed
+        ||
+        (((uint8_t)(~io_input_state) & IO_STATUS_MASK_PLAY) != 0u)
+       )
+    {
+        // Debounce for some more time
+        for (uint8_t i = 0; i < 80u; ++i)    // Around 80ms debounce time
+        {
+            io_debounce_inputs();
+        }
+        if (
+            (((uint8_t)(~io_input_state) & IO_STATUS_MASK_MODE) != 0u)      // PLAY and MODE pressed
+            &&
+            (((uint8_t)(~io_input_state) & IO_STATUS_MASK_PLAY) != 0u)
+            )
+        {
+            r = MAIN_STATE_PRE_DFU;
+        }
+        else
+        {
+            r = MAIN_STATE_MAINLOOP;
+        }
     }
     else    // Bogus wakeup, go back sleep
     {

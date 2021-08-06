@@ -36,7 +36,6 @@
       <itemPath>stt_mainloop.c</itemPath>
       <itemPath>stt_pre_dfu.c</itemPath>
       <itemPath>stt_dfu.c</itemPath>
-      <itemPath>stt_wakeup.c</itemPath>
       <itemPath>stt_off.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"

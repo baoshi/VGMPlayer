@@ -16,11 +16,6 @@ void    state_start_exit(void);
 
 uint8_t state_sleep_loop(void);
 
-
-void    state_wakeup_enter(void);
-uint8_t state_wakeup_loop(void);
-
-
 void    state_charge_enter(void);
 uint8_t state_charge_loop(void);
 void    state_charge_exit(void);
@@ -50,7 +45,6 @@ static const struct
 {
     /* MAIN_STATE_START        */ {        state_start_enter,       state_start_loop,             state_start_exit },
     /* MAIN_STATE_SLEEP        */ {                        0,       state_sleep_loop,                            0 },
-    /* MAIN_STATE_WAKE         */ {       state_wakeup_enter,      state_wakeup_loop,                            0 },
     /* MAIN_STATE_MAINLOOP     */ {     state_mainloop_enter,    state_mainloop_loop,          state_mainloop_exit },
     /* MAIN_STATE_OFF          */ {          state_off_enter,         state_off_loop,                            0 },
     /* MAIN_STATE_CHARGE       */ {       state_charge_enter,      state_charge_loop,            state_charge_exit },

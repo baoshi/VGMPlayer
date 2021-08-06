@@ -1,5 +1,6 @@
 #include <xc.h>
 #include <stdint.h>
+#include "global.h"
 #include "tick.h"
 #include "io.h"
 #include "adc.h"
@@ -36,7 +37,7 @@ uint8_t state_charge_loop(void)
     {
         if (adc_update())
         {
-            if (adc_vdd >= 138u)
+            if (adc_vdd >= USB_VDD_THRESHOLD)
             {
                 if ((io_input_state & IO_STATUS_MASK_CHARGER) != 0u)
                 {

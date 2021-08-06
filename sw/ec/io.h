@@ -16,21 +16,21 @@
 extern "C" {
 #endif
   
-// RA0 - IO_SW_LEFT
+// RA0 - IO_SW_MODE
 // RA1 - IO_SW_UP
-// RA2 - IO_CHARGER_STATUS
+// RA2 - IO_SW_DOWN
 // RA3 - 0
-// RA4 - IO_SW_RIGHT
-// RA5 - IO_SW_DOWN
+// RA4 - IO_SW_PLAY
+// RA5 - IO_CHARGER_STATUS
 extern uint8_t io_input_state;  
 extern uint8_t io_prev_input_state;
 
 #define IO_STATUS_MASK_MODE         0x01u
 #define IO_STATUS_MASK_UP           0x02u
+#define IO_STATUS_MASK_DOWN         0x04u
 #define IO_STATUS_MASK_PLAY         0x10u
-#define IO_STATUS_MASK_DOWN         0x20u
-#define IO_STATUS_MASK_ANY_BUTTON   0x33u
-#define IO_STATUS_MASK_CHARGER      0x04u
+#define IO_STATUS_MASK_ANY_BUTTON   0x17u
+#define IO_STATUS_MASK_CHARGER      0x20u
 
 
 void io_init(void);

@@ -11,7 +11,7 @@
 
 void state_mainloop_enter(void)
 {
-    led_set(LED_OFF);
+    led_set(LED_ON);
     io_init();
     adc_start();
     uplink_start();
@@ -57,7 +57,7 @@ uint8_t state_mainloop_loop(void)
     }
     uplink_set_byte(0x00, status);
     uplink_track_activity();
-    if ((systick - uplink_recent_activity) > TIME_UPLINK_LOST_TO_OFF)
+    if (0) //((systick - uplink_recent_activity) > TIME_UPLINK_LOST_TO_OFF)
     {
         r = MAIN_STATE_OFF;
     }

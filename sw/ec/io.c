@@ -19,11 +19,11 @@ void io_debounce_inputs(void)
 {
     // RA0 - IO_SW_MODE
     // RA1 - IO_SW_UP
-    // RA2 - IO_CHARGER_STATUS
+    // RA2 - IO_SW_DOWN
     // RA3 - 0
     // RA4 - IO_SW_PLAY
-    // RA5 - IO_SW_DOWN
-    // Idle: 0 0 1 1 1 1 1 1 (No button pressed, Not charging)
+    // RA5 - IO_CHARGER_STATUS
+    // Idle: 0 0 1 1 0 1 1 1 (No button pressed, Not charging)
     static uint8_t reading[MAX_DEBOUNCE_READS];// = { 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37 };
     static uint8_t idx = 0;
     uint8_t i;
@@ -64,9 +64,9 @@ void io_init(void)
     // PORTA:
     // RA0 - IO_SW_MODE         Input, WPU
     // RA1 - IO_SW_UP           Input, WPU
-    // RA2 - IO_CHARGER_STATUS  Input, WPU
+    // RA2 - IO_SW_DOWN         Input, WPU
     // RA4 - IO_SW_PLAY         Input, WPU
-    // RA5 - IO_SW_DOWN         Input, WPU
+    // RA5 - IO_CHARGER_STATUS  Input, WPU
     // PORTA registers
     LATA = 0x00;    // LATA  [u u 5 4 3 2 1 0]
                     //        0 0 0 0 0 0 0 0 -> All 0
