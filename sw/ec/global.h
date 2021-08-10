@@ -9,10 +9,10 @@
 #define	GLOBAL_H
 
 
-//#define _XTAL_FREQ        1000000L
+//#define _XTAL_FREQ                    1000000L
 
 
-#define USB_VDD_THRESHOLD   138u    // When USB connected, VDD > USB_VDD_THRESHOLD (4.6V)
+#define USB_VDD_THRESHOLD               135u        // When USB connected, VDD > USB_VDD_THRESHOLD (4.5V)
 
 
 // For WAKEUP state
@@ -23,7 +23,7 @@
 #define TIME_FIRMWARE_FLASH_TIMEOUT     60000u      // Time to wait in DFU mode if no new firmware upload
 
 // For MAINLOOP state
-#define TIME_UPLINK_LOST_TO_OFF         60000u       // Time from lost of uplink connection to power off
+#define TIME_UPLINK_LOST_TO_OFF         60000u      // Time from lost of uplink connection to power off
 
 // For OFF state
 #define TIME_NOTICE_OFF                 2000u

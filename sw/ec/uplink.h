@@ -24,10 +24,10 @@ extern "C"
 //            bit 7-6: Unimplemented
 //            bit 5: USB, USB is connected = 1
 //            bit 4: CHG, battery is charging = 0
-//            bit 3: PLAY key status, debounced, pressed = 0
-//            bit 2: DOWN key status, debounced, pressed = 0
-//            bit 1: UP key status, debounced, pressed = 0
-//            bit 0: MODE key status, debounced, pressed = 0
+//            bit 3: MODE key status, debounced, pressed = 1
+//            bit 2: PLAY key status, debounced, pressed = 1
+//            bit 1: UP key status, debounced, pressed = 1
+//            bit 0: DOWN key status, debounced, pressed = 1
 // 2: Battery [7 6 5 4 3 2 1 0]    
 //            V_Battery = Battery / 30.0f
 // Master write: no operation
