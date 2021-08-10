@@ -23,7 +23,7 @@ extern "C"
 // 1: Status  [ X X USB CHG M P U D], Matches io_input_state
 //            bit 7-6: Unimplemented
 //            bit 5: USB, USB is connected = 1
-//            bit 4: CHG, battery is charging = 0
+//            bit 4: CHG, battery is charging = 1
 //            bit 3: MODE key status, debounced, pressed = 1
 //            bit 2: PLAY key status, debounced, pressed = 1
 //            bit 1: UP key status, debounced, pressed = 1

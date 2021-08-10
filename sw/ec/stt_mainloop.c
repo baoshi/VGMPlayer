@@ -31,23 +31,23 @@ uint8_t state_mainloop_loop(void)
     io_debounce_inputs();
     // Status  [ X X USB CHG M P U D]
     status = 0x00;
-    if ((io_input_state & IO_STATUS_MASK_DOWN) != 0u)
+    if ((io_input_state & IO_STATUS_MASK_DOWN) == 0u)
     {
         status = 0x01u;
     }
-    if ((io_input_state & IO_STATUS_MASK_UP) != 0u)
+    if ((io_input_state & IO_STATUS_MASK_UP) == 0u)
     {
         status |= 0x02u;
     }
-    if ((io_input_state & IO_STATUS_MASK_PLAY) != 0u)
+    if ((io_input_state & IO_STATUS_MASK_PLAY) == 0u)
     {
         status |= 0x04u;
     }
-    if ((io_input_state & IO_STATUS_MASK_MODE) != 0u)
+    if ((io_input_state & IO_STATUS_MASK_MODE) == 0u)
     {
         status |= 0x08u;
     }
-    if ((io_input_state & IO_STATUS_MASK_CHARGER) != 0u)
+    if ((io_input_state & IO_STATUS_MASK_CHARGER) == 0u)
     {
         status |= 0x10u;
     }
