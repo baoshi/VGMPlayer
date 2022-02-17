@@ -12,17 +12,17 @@
 
 
 #if (DBG_MEM)
-#  define my_mem_init umm_init
-#  define my_malloc umm_malloc
-#  define my_calloc umm_calloc
-#  define my_realloc umm_realloc
-#  define my_free umm_free
+#  define MY_MEM_INIT umm_init
+#  define MY_MALLOC umm_malloc
+#  define MY_CALLOC umm_calloc
+#  define MY_REALLOC umm_realloc
+#  define MY_FREE umm_free
 #else
-#  define my_mem_init()
-#  define my_malloc malloc
-#  define my_calloc calloc
-#  define my_realloc realloc
-#  define my_free free
+#  define MY_MEM_INIT()
+#  define MY_MALLOC malloc
+#  define MY_CALLOC calloc
+#  define MY_REALLOC realloc
+#  define MY_FREE free
 #endif
 
 

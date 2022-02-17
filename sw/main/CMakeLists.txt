@@ -31,6 +31,7 @@ add_executable(${PROJ_NAME}
     my_debug.c
     my_mem.c
     hw_conf.c
+    event.c
     main.c
 )
 

@@ -7,7 +7,7 @@
 #include "hw_conf.h"
 #include "my_debug.h"
 #include "my_mem.h"
-
+#include "event.h"
 
 
 int main()
@@ -19,7 +19,7 @@ int main()
     printf("\033[2J\033[H");  // Clear terminal
     stdio_flush();
 
-    my_mem_init();
+    MY_MEM_INIT();
 
     hw_init();
 

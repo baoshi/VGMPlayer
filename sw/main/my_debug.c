@@ -26,7 +26,7 @@ void my_debugf(const char *format, ...)
 
 void my_assert(const char *file, int line, const char *func, const char *pred)
 {
-    printf("assertion \"%s\" failed: file \"%s\", line %d, function: %s\n", pred, file, line, func);
+    printf("assertion: [%s] at file \"%s\", line %d, function: %s\n", pred, file, line, func);
     fflush(stdout);
     __asm volatile("cpsid i" : : : "memory"); // Disable global interrupts
     while (1) 
