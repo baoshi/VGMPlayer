@@ -21,11 +21,11 @@ pico_sdk_init()
 include_directories(${PROJECT_SOURCE_DIR})
 
 # 3rd party libraries
-add_subdirectory(lib/lvgl)
 add_subdirectory(lib/umm_malloc)
-add_subdirectory(lib/fatfs)
+
 
 # components
+
 
 add_executable(${PROJ_NAME}
     my_debug.c
@@ -36,6 +36,9 @@ add_executable(${PROJ_NAME}
 
 target_link_libraries(${PROJ_NAME} 
     pico_stdlib
+    hardware_gpio
+    hardware_i2c
+    umm_malloc
 )
 
 #target_compile_definitions(${PROJ_NAME} PRIVATE PICO_DEBUG_MALLOC=1)

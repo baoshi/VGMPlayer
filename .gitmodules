@@ -1,0 +1,3 @@
+[submodule "sw/main/lib/umm_malloc/umm_malloc"]
+	path = sw/main/lib/umm_malloc/umm_malloc
+	url = https://github.com/rhempel/umm_malloc.git
