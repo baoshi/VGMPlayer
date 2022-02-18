@@ -32,6 +32,7 @@ add_executable(${PROJ_NAME}
     my_mem.c
     hw_conf.c
     event.c
+    tick.c
     main.c
 )
 
