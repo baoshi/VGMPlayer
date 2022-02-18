@@ -42,7 +42,7 @@ void isr_systick()
                     .code = _slots[i].event,
                     .param = (void *)_millis
                 };
-                event_queue_push_back(&app_event_queue, &e);
+                event_queue_push_back(&e);
             }
             else
             {
@@ -54,7 +54,7 @@ void isr_systick()
                         .code = _slots[i].event,
                         .param = (void *)_millis
                     };
-                    event_queue_push_back(&app_event_queue, &e);
+                    event_queue_push_back(&e);
                     // reset counter for repeated event or delete this client
                     if (_slots[i].repeat)
                     {
@@ -138,6 +138,7 @@ int tick_arm_time_event(uint32_t timeout_ms, bool repeat, int event)
             _slots[i].counter = - (TICK_PERIOD_MS - (TICK_PERIOD_MS * systick_hw->cvr / systick_hw->rvr));
             _slot_used[i] = true;
             ret = i;
+            break;
         }
     }
     if (ret == -1)
