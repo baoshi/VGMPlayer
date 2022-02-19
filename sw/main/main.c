@@ -18,18 +18,10 @@
 #include "splash.h"
 
 
-#define APP_TICK_INTERVAL       10
-#define APP_BACKLIGHT_DIM_MS    10000
-
 // Application level state machione
 typedef struct app_s
 {
     hsm_t super;
-    // app members
-    int         app_bl_alarm;
-    int8_t      app_bl_normal_brightness;
-    int8_t      app_bl_dim_brightness;
-    uint8_t     app_ec_status;
 } app_t;
 
 
@@ -39,35 +31,6 @@ event_t const *app_top(app_t *me, event_t const *evt)
     switch (evt->code)
     {
     case EVT_ENTRY:
-        me->app_bl_alarm = -1;
-        r = 0;
-        break;
-    case EVT_START:
-        hw_init();
-        ec_init();
-        tick_arm_time_event(APP_TICK_INTERVAL, true, EVT_APP_TICK, true);
-        me->app_bl_alarm = tick_arm_time_event(APP_BACKLIGHT_DIM_MS, true, EVT_APP_DIM_SCREEN, true);
-        me->app_ec_status = ec_read_raw0();
-        r = 0;
-        break;
-    case EVT_APP_TICK:
-    {
-        uint32_t now = (uint32_t)(evt->param);
-        ec_update(now);
-        uint8_t ec = ec_read_raw0();
-        if (ec != me->app_ec_status)
-        {
-            me->app_ec_status = ec;
-            tick_reset_time_event(me->app_bl_alarm);
-            backlight_set(me->app_bl_normal_brightness, 100);
-        }
-        backlight_update(now);
-        r = 0;
-        break;
-    }
-    case EVT_APP_DIM_SCREEN:
-        tick_pause_time_event(me->app_bl_alarm);
-        backlight_set(me->app_bl_dim_brightness, 100);
         r = 0;
         break;
     }
@@ -83,6 +46,7 @@ void app_ctor(app_t* me)
 
 int main()
 {
+    uint32_t now;
     app_t app;
 
     // main clock, calculated using vcocalc.py, set sys clock to 120MHz
@@ -99,38 +63,68 @@ int main()
     // in case using memory debugger
     MY_MEM_INIT();
 
-    // initialize display is before everything else so error message can be displayed
-    tick_register_hook(display_tick_hook, (void *)APP_TICK_PERIOD_MS);
+    // initialize display
+    tick_register_hook(display_tick_hook, (void *)TICK_GRANULARITY_MS); // LVGL timer
     display_init();
-    // display a splash screen and turn on backlight
+    // draw splash screen without backlight
     splash();
-    backlight_init();
-    int8_t brightness = 70;
+    // Other H/W initialiation interleave with lvgl update to finish the drawing
+    hw_init();
+    lv_timer_handler();
+    ec_init();
+    int last_ec = ec_read_raw0();
+    // Some more time to finish splash
     for (int i = 0; i < 10; ++i)
     {
         lv_timer_handler();
         sleep_ms(5);
     }
-    for (int8_t b = 0; b <= brightness; ++b)
+    // Turn on backlight
+    backlight_init(backlight_brigntness_normal, backlight_brignthess_dimmed, BACKLIGHT_IDLE_DIM_MS);
+    // Manaul turn on backlight
+    for (int i = 0; i <= backlight_brigntness_normal; ++i)    
     {
-        backlight_set(b, 0);
+        backlight_set_direct(i);
         lv_timer_handler();
-        sleep_ms(5);
+        sleep_ms(1);
     }
-
+    
     // initialize state machine
-    app.app_bl_normal_brightness = brightness;
-    app.app_bl_dim_brightness = 30;
     app_ctor(&app);
     hsm_on_start((hsm_t*)&app);
 
+    // loop timing and control flags
+    now = tick_millis();
+    backlight_keepalive(now);
+    uint32_t last_update_tick = now;
+    
+    // Super Loop
     for (;;)
     {
+        now = tick_millis();
+        if (now - last_update_tick >= SUPERLOOP_UPDATE_INTERVAL_MS)
+        {
+            ec_update(now);
+            // if ec reading changes, restart backlight idle count
+            uint8_t ec = ec_read_raw0();
+            if (ec != last_ec)
+            {
+                backlight_keepalive(now);
+                last_ec = ec;
+            }
+            last_update_tick = now;
+        }
+        backlight_update(now);
+        lv_timer_handler();
+
+        // HSM event loop
         event_t evt;
         while (event_queue_pop(&evt))
         {
             hsm_on_event((hsm_t*)&app, &evt);
         }
+
+        
     }
 
     return 0;

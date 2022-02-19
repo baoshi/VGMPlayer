@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <pico/time.h>
 #include <hardware/gpio.h>
 #include <hardware/pwm.h>
@@ -26,10 +27,15 @@
 #define BL_DEBUGF(x, ...)
 #endif
 
+static int8_t _normal_brightness, _dimmed_brightness;
 static int8_t _current;
 static int _start, _target;
 static uint32_t _timestamp;
 static uint32_t _duration;
+static uint32_t _timeout;
+static uint32_t _idle_start;
+static bool _dimmed;
+
 
 // Backlight PWM values for 0%-100% brightness
 // Use cie1931.py to generate
@@ -45,7 +51,32 @@ static const uint16_t CIE[100] =
 };
 
 
-void backlight_init()
+static void _backlight_set_internal(int8_t percentage, uint32_t duration_ms, uint32_t now)
+{
+    // Set brightness now or set as target and use backlight_update to change
+    if (percentage != _current)
+    {
+        _target = percentage;
+        _duration = duration_ms;
+        if (_duration == 0)
+        {
+            _current = _target;
+            MY_ASSERT((_current >= 0) && (_current <= 99));
+            pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, CIE[_current]);
+            BL_LOGD("BL: %d%%\n", _current);
+        }
+        else
+        {
+            _start = _current;
+            _timestamp = now;    // _timestamp to track brightness changing
+        }
+    }
+    _idle_start = _timestamp;   // _idle_Start to track idle time
+    _dimmed = false;
+}
+
+
+void backlight_init(int8_t normal, int8_t dimmed, uint32_t timeout)
 {
     // Backlight PWM pin
     gpio_set_function(ST7789_BCKL_PIN, GPIO_FUNC_PWM);
@@ -56,6 +87,9 @@ void backlight_init()
     pwm_set_wrap(ST7789_BCKL_PWM_SLICE, 1023);
     pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, 0);  // Light off
     pwm_set_enabled(ST7789_BCKL_PWM_SLICE, true);
+    _normal_brightness = normal;
+    _dimmed_brightness = dimmed;
+    _timeout = timeout;
     _current = 0;
     _target = 0;
     _start = 0;
@@ -68,27 +102,43 @@ void backlight_set(int8_t percentage, uint32_t duration_ms)
 {
     if (percentage < 0) percentage = 0;
     if (percentage > 99) percentage = 99;
-    if (percentage != _current)
+    // set brightness overrides normal brightness
+    _normal_brightness = percentage;
+    // dimmed brightness cannot exceed set brignthess
+    if (percentage < _dimmed_brightness)
+        _dimmed_brightness = percentage;
+    _backlight_set_internal(percentage, duration_ms, tick_millis());
+}
+
+
+void backlight_set_direct(int8_t percentage)
+{
+    _backlight_set_internal(percentage, 0, tick_millis());
+}
+
+
+void backlight_keepalive(uint32_t now)
+{
+    _idle_start = now;
+    if (_dimmed)
     {
-        _target = percentage;
-        _duration = duration_ms;
-        if (_duration == 0)
-        {
-            pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, CIE[_target]);
-            _current = _target;
-            BL_LOGD("BL: %d%%\n", _current);
-        }
-        else
-        {
-            _start = _current;
-            _timestamp = tick_millis();
-        }
+        // retsore normal brightness
+        BL_LOGD("Restore @ %d\n", now);
+        _backlight_set_internal(_normal_brightness, 100, now);
+        _dimmed = false;
     }
 }
 
 
 void backlight_update(uint32_t now)
 {
+    if ((!_dimmed) && (now - _idle_start >= _timeout))
+    {
+        // idle out, dim light
+        BL_LOGD("Dim @ %d\n", now);
+        _backlight_set_internal(_dimmed_brightness, 100, now);
+        _dimmed = true;
+    }
     if ((_duration != 0) && (_target != _current))
     {
         int t;
@@ -97,14 +147,16 @@ void backlight_update(uint32_t now)
             t = _start + (_target - _start) * (now - _timestamp) / _duration;
             if (t > _target) t = _target;
             _current = t;
+            MY_ASSERT((_current >= 0) && (_current <= 99));
             pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, CIE[_current]);
             BL_LOGD("BL: %d%% @ %d\n", _current, now);
         }
         else if (_start > _target)
         {
-            t = _start - (_start- _target) * (now - _timestamp) / _duration;
+            t = _start - (_start - _target) * (now - _timestamp) / _duration;
             if (t < _target) t = _target;
             _current = t;
+            MY_ASSERT((_current >= 0) && (_current <= 99));
             pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, CIE[_current]);
             BL_LOGD("BL: %d%% @ %d\n", _current, now);
         }

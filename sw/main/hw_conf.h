@@ -16,6 +16,11 @@
 #define SDCARD_DAT2_PIN         14
 #define SDCARD_DAT3_PIN         15
 #define SDCARD_CD_PIN           9
+// SD Card in SPI mode
+#define SDCARD_SPI_MOSI_PIN     SDCARD_CMD_PIN
+#define SDCARD_SPI_MISO_PIN     SDCARD_DAT0_PIN
+#define SDCARD_SPI_CS_PIN       SDCARD_DAT3_PIN
+#define SDCARD_SPI_CLK_PIN      SDCARD_CLK_PIN
 
 // ST7789 LCD
 #define ST7789_SPI_INST         spi0
@@ -38,7 +43,6 @@
 #define I2C_TIMEOUT_US  1000
 #define I2C_BAUD_HZ     (400 * 1000)
 
-
 // AUDIO
 #define I2S_DATAOUT_PIN         22
 #define I2S_BCLK_PIN            23
@@ -49,7 +53,6 @@
 #define I2S_PIO_TX_DREQ         DREQ_PIO0_TX0   // I2S TX DREQ on DREQ_PIO0_TX0
 #define I2S_DMA_IRQ             DMA_IRQ_1
 #define I2S_DMA_INTS            ints1
-
 
 //
 // DMA channel allocation

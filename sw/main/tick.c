@@ -32,7 +32,7 @@ static uint32_t _millis;
 
 void isr_systick()
 {
-    _millis += APP_TICK_PERIOD_MS;
+    _millis += TICK_GRANULARITY_MS;
     // Call hook if installed
     if (_hook) _hook(_hook_param);
     // Send time events
@@ -51,7 +51,7 @@ void isr_systick()
             }
             else
             {
-                _slots[i].counter += APP_TICK_PERIOD_MS;
+                _slots[i].counter += TICK_GRANULARITY_MS;
                 if (_slots[i].counter >= _slots[i].timeout)
                 {
                     event_t e = 
@@ -83,7 +83,7 @@ void isr_systick()
 void tick_init()
 {
     uint32_t sysclk = clock_get_hz(clk_sys);
-    systick_hw->rvr = sysclk / 1000 * APP_TICK_PERIOD_MS - 1;
+    systick_hw->rvr = sysclk / 1000 * TICK_GRANULARITY_MS - 1;
     systick_hw->cvr = 0;
     systick_hw->csr = 0x07;     // [31:17]  -
                                 // [16]     COUNTFLAG   RO
@@ -123,8 +123,8 @@ void tick_disarm_time_event(int id)
 
 
 /**
- * @brief Schedule alarm event using systick. Note there is max +TICK_PERIOD_MS error in the actual delay before alarm
- * @param timeout_ms    Alarm time. Set to 0 to alarm at TICK_PERIOD_MS
+ * @brief Schedule alarm event using systick. Note there is max +TICK_GRANULARITY_MS error in the actual delay before alarm
+ * @param timeout_ms    Alarm time. Set to 0 to alarm at TICK_GRANULARITY_MS
  * @param repeat        If the alarm is to be repeated every timeout_ms
  * @param event         Event code. Time event will be posted to the global event queue with millis as param
  * @param start         If counting is to start immediately. If false, use tick_resume_time_event() to start counting
@@ -141,7 +141,7 @@ int tick_arm_time_event(uint32_t timeout_ms, bool repeat, int event, bool start)
             _slots[i].repeat = repeat;
             _slots[i].timeout = timeout_ms;
             // Adjust for already elapsed cycles
-            _slots[i].counter = - (APP_TICK_PERIOD_MS - (APP_TICK_PERIOD_MS * systick_hw->cvr / systick_hw->rvr));
+            _slots[i].counter = - (TICK_GRANULARITY_MS - (TICK_GRANULARITY_MS * systick_hw->cvr / systick_hw->rvr));
             _slot_status[i] = start ? ALARM_ARMED : ALARM_PAUSED;
             ret = i;
             break;
@@ -163,7 +163,7 @@ int tick_arm_time_event(uint32_t timeout_ms, bool repeat, int event, bool start)
 void tick_reset_time_event(int id)
 {
     MY_ASSERT((id >= 0) && (id < TICK_MAX_EVENTS));
-    _slots[id].counter = - (APP_TICK_PERIOD_MS - (APP_TICK_PERIOD_MS * systick_hw->cvr / systick_hw->rvr));
+    _slots[id].counter = - (TICK_GRANULARITY_MS - (TICK_GRANULARITY_MS * systick_hw->cvr / systick_hw->rvr));
     _slot_status[id] = ALARM_ARMED;
 }
 

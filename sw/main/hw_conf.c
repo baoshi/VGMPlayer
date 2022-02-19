@@ -25,10 +25,23 @@ void hw_init()
 {
     // Initialize semophore for I2C exclusive access
     sem_init(&_i2c_sem, 1, 1);  // initial 1, max 1
-    // Initialize I2C bus
+    // Initialize I2C bus shared by EC and WM8978
     i2c_init(I2C_INST, I2C_BAUD_HZ);
     gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_SDA_PIN);
     gpio_pull_up(I2C_SCL_PIN);
+    // Jack detection GPIO pin
+    gpio_init(JACK_DETECTION_PIN);
+    gpio_disable_pulls(JACK_DETECTION_PIN);
+    gpio_set_dir(JACK_DETECTION_PIN, GPIO_IN);
+    // SD card detect GPIO pin
+    gpio_init(SDCARD_CD_PIN);
+    gpio_pull_up(SDCARD_CD_PIN);
+    gpio_set_dir(SDCARD_CD_PIN, GPIO_IN);
+    // Other GPIO configurations are done within respective modules
+    // Backlight GPIO
+    // SD card SPI
+    // LCD SPI
+    // PIO I2S
 }
