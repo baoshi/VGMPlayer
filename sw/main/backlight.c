@@ -26,8 +26,8 @@
 #define BL_DEBUGF(x, ...)
 #endif
 
-static int8_t _current, _target;
-static int _start;
+static int8_t _current;
+static int _start, _target;
 static uint32_t _timestamp;
 static uint32_t _duration;
 
@@ -68,22 +68,26 @@ void backlight_set(int8_t percentage, uint32_t duration_ms)
 {
     if (percentage < 0) percentage = 0;
     if (percentage > 99) percentage = 99;
-    _target = percentage;
-    _duration = duration_ms;
-    if (_duration == 0)
+    if (percentage != _current)
     {
-        pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, CIE[_target]);
-        _current = _target;
-    }
-    else
-    {
-        _start = _current;
-        _timestamp = tick_millis();
+        _target = percentage;
+        _duration = duration_ms;
+        if (_duration == 0)
+        {
+            pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, CIE[_target]);
+            _current = _target;
+            BL_LOGD("BL: %d%%\n", _current);
+        }
+        else
+        {
+            _start = _current;
+            _timestamp = tick_millis();
+        }
     }
 }
 
 
-void backlight_tick(uint32_t now)
+void backlight_update(uint32_t now)
 {
     if ((_duration != 0) && (_target != _current))
     {
@@ -98,7 +102,7 @@ void backlight_tick(uint32_t now)
         }
         else if (_start > _target)
         {
-            t = _start + (_target - _start) * (now - _timestamp) / _duration;
+            t = _start - (_start- _target) * (now - _timestamp) / _duration;
             if (t < _target) t = _target;
             _current = t;
             pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, CIE[_current]);

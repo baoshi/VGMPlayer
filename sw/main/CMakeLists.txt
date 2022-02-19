@@ -22,10 +22,10 @@ include_directories(${PROJECT_SOURCE_DIR})
 
 # 3rd party libraries
 add_subdirectory(lib/umm_malloc)
-
+add_subdirectory(lib/lvgl)
 
 # components
-
+add_subdirectory(modules/display)
 
 add_executable(${PROJ_NAME}
     my_debug.c
@@ -36,6 +36,7 @@ add_executable(${PROJ_NAME}
     hsm.c
     backlight.c
     ec.c
+    splash.c
     main.c
 )
 
@@ -44,6 +45,7 @@ target_link_libraries(${PROJ_NAME}
     hardware_gpio
     hardware_pwm
     hardware_i2c
+    display
     umm_malloc
 )
 

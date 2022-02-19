@@ -3,6 +3,7 @@
 #include <pico/stdlib.h>
 #include <pico/stdio.h>
 #include <hardware/clocks.h>
+#include <lvgl.h>
 #include "sw_conf.h"
 #include "hw_conf.h"
 #include "my_debug.h"
@@ -13,18 +14,22 @@
 #include "tick.h"
 #include "backlight.h"
 #include "ec.h"
+#include "display.h"
+#include "splash.h"
 
 
-#define APP_TICK_INTERVAL   10
+#define APP_TICK_INTERVAL       10
+#define APP_BACKLIGHT_DIM_MS    10000
 
 // Application level state machione
 typedef struct app_s
 {
     hsm_t super;
     // app members
-    int app_alarm_tick;
-    int app_alarm_bl_dimmer;
-    uint32_t app_bl_dimmer_counter;
+    int         app_bl_alarm;
+    int8_t      app_bl_normal_brightness;
+    int8_t      app_bl_dim_brightness;
+    uint8_t     app_ec_status;
 } app_t;
 
 
@@ -34,23 +39,35 @@ event_t const *app_top(app_t *me, event_t const *evt)
     switch (evt->code)
     {
     case EVT_ENTRY:
-        me->app_alarm_tick = -1;
-        me->app_alarm_bl_dimmer = -1;
-        me->app_bl_dimmer_counter = 0;
+        me->app_bl_alarm = -1;
         r = 0;
         break;
     case EVT_START:
         hw_init();
-        backlight_init();
-        me->app_alarm_tick = tick_arm_time_event(APP_TICK_INTERVAL, true, EVT_APP_TICK);
-        backlight_set(70, 2000);
+        ec_init();
+        tick_arm_time_event(APP_TICK_INTERVAL, true, EVT_APP_TICK, true);
+        me->app_bl_alarm = tick_arm_time_event(APP_BACKLIGHT_DIM_MS, true, EVT_APP_DIM_SCREEN, true);
+        me->app_ec_status = ec_read_raw0();
         r = 0;
         break;
     case EVT_APP_TICK:
+    {
+        uint32_t now = (uint32_t)(evt->param);
+        ec_update(now);
+        uint8_t ec = ec_read_raw0();
+        if (ec != me->app_ec_status)
         {
-            uint32_t now = (uint32_t)(evt->param);
-            backlight_tick(now);
+            me->app_ec_status = ec;
+            tick_reset_time_event(me->app_bl_alarm);
+            backlight_set(me->app_bl_normal_brightness, 100);
         }
+        backlight_update(now);
+        r = 0;
+        break;
+    }
+    case EVT_APP_DIM_SCREEN:
+        tick_pause_time_event(me->app_bl_alarm);
+        backlight_set(me->app_bl_dim_brightness, 100);
         r = 0;
         break;
     }
@@ -82,7 +99,28 @@ int main()
     // in case using memory debugger
     MY_MEM_INIT();
 
+    // initialize display is before everything else so error message can be displayed
+    tick_register_hook(display_tick_hook, (void *)APP_TICK_PERIOD_MS);
+    display_init();
+    // display a splash screen and turn on backlight
+    splash();
+    backlight_init();
+    int8_t brightness = 70;
+    for (int i = 0; i < 10; ++i)
+    {
+        lv_timer_handler();
+        sleep_ms(5);
+    }
+    for (int8_t b = 0; b <= brightness; ++b)
+    {
+        backlight_set(b, 0);
+        lv_timer_handler();
+        sleep_ms(5);
+    }
+
     // initialize state machine
+    app.app_bl_normal_brightness = brightness;
+    app.app_bl_dim_brightness = 30;
     app_ctor(&app);
     hsm_on_start((hsm_t*)&app);
 

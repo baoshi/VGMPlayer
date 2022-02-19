@@ -10,7 +10,7 @@
 #define EC_MAX_FAILURE_COUNT 10
 
 #ifndef EC_DEBUG
-# define EC_DEBUG 1
+# define EC_DEBUG 0
 #endif
 
 
@@ -35,7 +35,7 @@ bool ec_charge;      // true if charging
 float ec_battery;    // battery voltage
 uint8_t ec_buttons;   
 
-static uint8_t _data[2];
+static uint8_t _data[2] = { 0, 0 };
 static int _failure_count;
 
 
@@ -84,7 +84,7 @@ void ec_init(void)
 }
 
 
-bool ec_tick(void)
+bool ec_update(uint32_t now)
 {
     int ret;
     i2c_lock();
@@ -105,13 +105,19 @@ bool ec_tick(void)
 }
 
 
+uint8_t ec_read_raw0(void)
+{
+    return _data[0];
+}
+
+
 // bit 3: MODE key status, debounced, pressed = 1
 // bit 2: PLAY key status, debounced, pressed = 1
 // bit 1: UP key status, debounced, pressed = 1
 // bit 0: DOWN key status, debounced, pressed = 1
 
 // Read button, return one of the EC_BUTTON_XX or -1 if nothing pressed
-int8_t ec_button_read(void)
+int8_t ec_read_buttons(void)
 {
     if (ec_buttons & 0x01)
         return EC_BUTTON_DOWN;
