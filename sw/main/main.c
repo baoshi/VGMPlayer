@@ -113,9 +113,9 @@ int main()
                 last_ec = ec;
             }
             last_update_tick = now;
+            backlight_update(now);
+            lv_timer_handler();
         }
-        backlight_update(now);
-        lv_timer_handler();
 
         // HSM event loop
         event_t evt;
@@ -123,8 +123,6 @@ int main()
         {
             hsm_on_event((hsm_t*)&app, &evt);
         }
-
-        
     }
 
     return 0;

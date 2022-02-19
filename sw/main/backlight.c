@@ -28,11 +28,11 @@
 #endif
 
 static int8_t _normal_brightness, _dimmed_brightness;
+static uint32_t _transition;
+static uint32_t _idleout;
 static int8_t _current;
 static int _start, _target;
-static uint32_t _timestamp;
-static uint32_t _duration;
-static uint32_t _timeout;
+static uint32_t _trans_start;
 static uint32_t _idle_start;
 static bool _dimmed;
 
@@ -51,14 +51,14 @@ static const uint16_t CIE[100] =
 };
 
 
-static void _backlight_set_internal(int8_t percentage, uint32_t duration_ms, uint32_t now)
+static void _backlight_set_internal(int8_t percentage, uint32_t transition, uint32_t now)
 {
     // Set brightness now or set as target and use backlight_update to change
     if (percentage != _current)
     {
         _target = percentage;
-        _duration = duration_ms;
-        if (_duration == 0)
+        _transition = transition;
+        if (_transition == 0)
         {
             _current = _target;
             MY_ASSERT((_current >= 0) && (_current <= 99));
@@ -68,15 +68,15 @@ static void _backlight_set_internal(int8_t percentage, uint32_t duration_ms, uin
         else
         {
             _start = _current;
-            _timestamp = now;    // _timestamp to track brightness changing
+            _trans_start = now;   // _trans_start to track brightness transition
         }
     }
-    _idle_start = _timestamp;   // _idle_Start to track idle time
+    _idle_start = now;            // set backlight will bring backlight out of dimming, restart idle counting
     _dimmed = false;
 }
 
 
-void backlight_init(int8_t normal, int8_t dimmed, uint32_t timeout)
+void backlight_init(int8_t normal, int8_t dimmed, uint32_t idleout)
 {
     // Backlight PWM pin
     gpio_set_function(ST7789_BCKL_PIN, GPIO_FUNC_PWM);
@@ -89,16 +89,16 @@ void backlight_init(int8_t normal, int8_t dimmed, uint32_t timeout)
     pwm_set_enabled(ST7789_BCKL_PWM_SLICE, true);
     _normal_brightness = normal;
     _dimmed_brightness = dimmed;
-    _timeout = timeout;
+    _idleout = idleout;
     _current = 0;
     _target = 0;
     _start = 0;
-    _timestamp = 0;
-    _duration = 0;
+    _trans_start = 0;
+    _transition = 0;
 }
 
     
-void backlight_set(int8_t percentage, uint32_t duration_ms)
+void backlight_set(int8_t percentage, uint32_t transition)
 {
     if (percentage < 0) percentage = 0;
     if (percentage > 99) percentage = 99;
@@ -107,13 +107,13 @@ void backlight_set(int8_t percentage, uint32_t duration_ms)
     // dimmed brightness cannot exceed set brignthess
     if (percentage < _dimmed_brightness)
         _dimmed_brightness = percentage;
-    _backlight_set_internal(percentage, duration_ms, tick_millis());
+    _backlight_set_internal(percentage, transition, 0);
 }
 
 
 void backlight_set_direct(int8_t percentage)
 {
-    _backlight_set_internal(percentage, 0, tick_millis());
+    _backlight_set_internal(percentage, 0, 0);
 }
 
 
@@ -132,19 +132,21 @@ void backlight_keepalive(uint32_t now)
 
 void backlight_update(uint32_t now)
 {
-    if ((!_dimmed) && (now - _idle_start >= _timeout))
+    if (_idle_start == 0) _idle_start = now;    // _idle_start == 0 to indicate first time into update since keepalive
+    if (_trans_start == 0) _trans_start = now;  // _trans_start == 0 to indicate first time into update since set
+    if ((!_dimmed) && (now - _idle_start >= _idleout))
     {
         // idle out, dim light
         BL_LOGD("Dim @ %d\n", now);
         _backlight_set_internal(_dimmed_brightness, 100, now);
         _dimmed = true;
     }
-    if ((_duration != 0) && (_target != _current))
+    if ((_transition != 0) && (_target != _current))
     {
         int t;
         if (_start < _target)
         {
-            t = _start + (_target - _start) * (now - _timestamp) / _duration;
+            t = _start + (_target - _start) * (now - _trans_start) / _transition;
             if (t > _target) t = _target;
             _current = t;
             MY_ASSERT((_current >= 0) && (_current <= 99));
@@ -153,7 +155,7 @@ void backlight_update(uint32_t now)
         }
         else if (_start > _target)
         {
-            t = _start - (_start - _target) * (now - _timestamp) / _duration;
+            t = _start - (_start - _target) * (now - _trans_start) / _transition;
             if (t < _target) t = _target;
             _current = t;
             MY_ASSERT((_current >= 0) && (_current <= 99));
