@@ -11,7 +11,9 @@
 #include "hsm.h"
 #include "event_ids.h"
 #include "tick.h"
+#include "backlight.h"
 #include "ec.h"
+
 
 #define APP_TICK_INTERVAL   10
 
@@ -39,16 +41,16 @@ event_t const *app_top(app_t *me, event_t const *evt)
         break;
     case EVT_START:
         hw_init();
-        ec_init();
+        backlight_init();
         me->app_alarm_tick = tick_arm_time_event(APP_TICK_INTERVAL, true, EVT_APP_TICK);
+        backlight_set(70, 2000);
         r = 0;
         break;
     case EVT_APP_TICK:
-        if (!ec_tick())
         {
-            //TODO: enter failure 
+            uint32_t now = (uint32_t)(evt->param);
+            backlight_tick(now);
         }
-        printf("app-tick %d\n", (uint32_t)(evt->param));
         r = 0;
         break;
     }

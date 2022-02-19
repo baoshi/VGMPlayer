@@ -26,6 +26,8 @@ void tick_register_hook(tick_hook_t hook, void* param);
 int  tick_arm_time_event(uint32_t timeout_ms, bool repeat, int event);
 void tick_disarm_time_event(int id);
 
+uint32_t tick_millis();
+
 #ifdef __cplusplus
 }
 #endif

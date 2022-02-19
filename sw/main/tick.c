@@ -147,3 +147,9 @@ int tick_arm_time_event(uint32_t timeout_ms, bool repeat, int event)
     }
     return ret;
 }
+
+
+uint32_t tick_millis()
+{
+    return _millis;
+}

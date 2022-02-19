@@ -34,6 +34,7 @@ add_executable(${PROJ_NAME}
     event_queue.c
     tick.c
     hsm.c
+    backlight.c
     ec.c
     main.c
 )
@@ -41,6 +42,7 @@ add_executable(${PROJ_NAME}
 target_link_libraries(${PROJ_NAME} 
     pico_stdlib
     hardware_gpio
+    hardware_pwm
     hardware_i2c
     umm_malloc
 )
