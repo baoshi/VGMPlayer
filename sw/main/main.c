@@ -7,42 +7,89 @@
 #include "hw_conf.h"
 #include "my_debug.h"
 #include "my_mem.h"
-#include "event_ids.h"
 #include "event_queue.h"
+#include "hsm.h"
+#include "event_ids.h"
 #include "tick.h"
+#include "ec.h"
+
+#define APP_TICK_INTERVAL   10
+
+// Application level state machione
+typedef struct app_s
+{
+    hsm_t super;
+    // app members
+    int app_alarm_tick;
+    int app_alarm_bl_dimmer;
+    uint32_t app_bl_dimmer_counter;
+} app_t;
+
+
+event_t const *app_top(app_t *me, event_t const *evt)
+{
+    event_t const *r = evt;
+    switch (evt->code)
+    {
+    case EVT_ENTRY:
+        me->app_alarm_tick = -1;
+        me->app_alarm_bl_dimmer = -1;
+        me->app_bl_dimmer_counter = 0;
+        r = 0;
+        break;
+    case EVT_START:
+        hw_init();
+        ec_init();
+        me->app_alarm_tick = tick_arm_time_event(APP_TICK_INTERVAL, true, EVT_APP_TICK);
+        r = 0;
+        break;
+    case EVT_APP_TICK:
+        if (!ec_tick())
+        {
+            //TODO: enter failure 
+        }
+        printf("app-tick %d\n", (uint32_t)(evt->param));
+        r = 0;
+        break;
+    }
+    return r;
+}
+
+
+void app_ctor(app_t* me)
+{
+    hsm_ctor((hsm_t*)me, "app", (event_handler_t)app_top);
+}
 
 
 int main()
 {
-    // Calculated using vcocalc.py, set sys clock to 120MHz
+    app_t app;
+
+    // main clock, calculated using vcocalc.py, set sys clock to 120MHz
     set_sys_clock_pll(1440 * MHZ, 6, 2);
 
-    tick_init();
-
-    event_queue_init(10);
-    
-    tick_arm_time_event(100, true, EVENT_TOP_POLL);
-
     stdio_init_all();
-    printf("\033[2J\033[H");  // Clear terminal
+    printf("\033[2J\033[H"); // clear terminal
     stdio_flush();
+
+    // tick timer and event queue
+    tick_init();
+    event_queue_init(10);
+
+    // in case using memory debugger
     MY_MEM_INIT();
 
-    hw_init();
+    // initialize state machine
+    app_ctor(&app);
+    hsm_on_start((hsm_t*)&app);
 
     for (;;)
     {
         event_t evt;
         while (event_queue_pop(&evt))
         {
-            switch (evt.code)
-            {
-            case EVENT_TOP_POLL:
-                printf("Poll %d\n", (int)(evt.param));
-                break;
-            default:
-                break;
-            }
+            hsm_on_event((hsm_t*)&app, &evt);
         }
     }
 

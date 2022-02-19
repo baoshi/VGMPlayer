@@ -3,5 +3,5 @@
 
 enum
 {
-    EVENT_TOP_POLL  = 1,
+    EVT_APP_TICK  = 1,
 };

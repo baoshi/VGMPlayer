@@ -38,8 +38,6 @@
 #define I2C_TIMEOUT_US  1000
 #define I2C_BAUD_HZ     (400 * 1000)
 
-// EC polling interval (ms)
-#define EC_POLLING_MS   20
 
 // AUDIO
 #define I2S_DATAOUT_PIN         22

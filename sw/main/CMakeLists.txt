@@ -33,6 +33,8 @@ add_executable(${PROJ_NAME}
     hw_conf.c
     event_queue.c
     tick.c
+    hsm.c
+    ec.c
     main.c
 )
 
