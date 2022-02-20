@@ -68,10 +68,10 @@ static void _backlight_set_internal(int8_t percentage, uint32_t transition, uint
         else
         {
             _start = _current;
-            _trans_start = now;   // _trans_start to track brightness transition
+            _trans_start = now;
         }
     }
-    _idle_start = now;            // set backlight will bring backlight out of dimming, restart idle counting
+    _idle_start = now;
     _dimmed = false;
 }
 

@@ -101,24 +101,32 @@ int main()
     // Super Loop
     for (;;)
     {
+        event_t evt;
         now = tick_millis();
         if (now - last_update_tick >= SUPERLOOP_UPDATE_INTERVAL_MS)
         {
-            ec_update(now);
-            // if ec reading changes, restart backlight idle count
-            uint8_t ec = ec_read_raw0();
-            if (ec != last_ec)
+            if (ec_update(now))
             {
-                backlight_keepalive(now);
-                last_ec = ec;
+                // if ec reading changes, restart backlight idle count
+                uint8_t ec = ec_read_raw0();
+                if (ec != last_ec)
+                {
+                    backlight_keepalive(now);
+                    last_ec = ec;
+                }
             }
-            last_update_tick = now;
+            else
+            {
+                evt.code = EVT_EC_FAILED;
+                evt.param = 0;
+                event_queue_push_back(&evt);
+            }
             backlight_update(now);
             lv_timer_handler();
+            last_update_tick = now;
         }
 
         // HSM event loop
-        event_t evt;
         while (event_queue_pop(&evt))
         {
             hsm_on_event((hsm_t*)&app, &evt);

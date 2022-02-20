@@ -24,7 +24,9 @@ include_directories(${PROJECT_SOURCE_DIR})
 add_subdirectory(lib/umm_malloc)
 add_subdirectory(lib/lvgl)
 
-# components
+# modules
+add_subdirectory(modules/ec)
+add_subdirectory(modules/backlight)
 add_subdirectory(modules/display)
 
 add_executable(${PROJ_NAME}
@@ -35,8 +37,6 @@ add_executable(${PROJ_NAME}
     event_queue.c
     tick.c
     hsm.c
-    backlight.c
-    ec.c
     splash.c
     main.c
 )
@@ -46,6 +46,8 @@ target_link_libraries(${PROJ_NAME}
     hardware_gpio
     hardware_pwm
     hardware_i2c
+    ec
+    backlight
     display
     umm_malloc
 )

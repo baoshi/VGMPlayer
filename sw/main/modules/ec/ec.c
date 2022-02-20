@@ -129,5 +129,4 @@ int8_t ec_read_buttons(void)
         return EC_BUTTON_MODE;
     // No button pressed
     return -1;
-
 }
