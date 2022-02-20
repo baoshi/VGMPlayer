@@ -23,11 +23,13 @@ include_directories(${PROJECT_SOURCE_DIR})
 # 3rd party libraries
 add_subdirectory(lib/umm_malloc)
 add_subdirectory(lib/lvgl)
+add_subdirectory(lib/fatfs)
 
 # modules
 add_subdirectory(modules/ec)
 add_subdirectory(modules/backlight)
 add_subdirectory(modules/display)
+add_subdirectory(modules/disk)
 
 add_executable(${PROJ_NAME}
     my_debug.c
@@ -46,10 +48,11 @@ target_link_libraries(${PROJ_NAME}
     hardware_gpio
     hardware_pwm
     hardware_i2c
+    umm_malloc
     ec
     backlight
     display
-    umm_malloc
+    disk
 )
 
 #target_compile_definitions(${PROJ_NAME} PRIVATE PICO_DEBUG_MALLOC=1)

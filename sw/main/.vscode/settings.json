@@ -63,7 +63,8 @@
         "tuple": "c",
         "utility": "c",
         "my_mem.h": "c",
-        "random": "c"
+        "random": "c",
+        "event_queue.h": "c"
     },
     "cmake.configureOnOpen": true
 }

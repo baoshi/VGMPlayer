@@ -33,6 +33,10 @@ event_t const *app_top(app_t *me, event_t const *evt)
     case EVT_ENTRY:
         r = 0;
         break;
+    case EVT_APP_TICK:
+        printf("T %d\n", (int)(evt->param));
+        r = 0;
+        break;
     }
     return r;
 }
@@ -98,6 +102,9 @@ int main()
     backlight_keepalive(now);
     uint32_t last_update_tick = now;
     
+    // Testing
+    tick_arm_time_event(10, true, EVT_APP_TICK, true);
+
     // Super Loop
     for (;;)
     {
