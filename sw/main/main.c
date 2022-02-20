@@ -78,28 +78,24 @@ int main()
     display_init();
     // draw splash screen without backlight
     splash();
+    // Some more time to finish render splash screen
+    lv_timer_handler();
+    sleep_ms(5);
+    lv_timer_handler();
+    sleep_ms(5);
+    lv_timer_handler();
     // Other H/W initialiation interleave with lvgl update to finish the drawing
     hw_init();
-    lv_timer_handler();
     ec_init();
     disk_init();
-    lv_timer_handler();
-    // Some more time to finish splash
-    for (int i = 0; i < 10; ++i)
-    {
-        lv_timer_handler();
-        sleep_ms(5);
-    }
     // Turn on backlight
     backlight_init(backlight_brigntness_normal, backlight_brignthess_dimmed, BACKLIGHT_IDLE_DIM_MS);
     // Manaul turn on backlight
     for (int i = 0; i <= backlight_brigntness_normal; ++i)    
     {
         backlight_set_direct(i);
-        lv_timer_handler();
         sleep_ms(1);
     }
-    
     // initialize state machine
     app_ctor(&app);
     hsm_on_start((hsm_t*)&app);
