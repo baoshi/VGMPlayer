@@ -15,6 +15,7 @@
 #include "backlight.h"
 #include "ec.h"
 #include "display.h"
+#include "disk.h"
 #include "splash.h"
 
 
@@ -33,8 +34,13 @@ event_t const *app_top(app_t *me, event_t const *evt)
     case EVT_ENTRY:
         r = 0;
         break;
-    case EVT_APP_TICK:
-        printf("T %d\n", (int)(evt->param));
+    case EVT_DISK_INSERTED:
+        printf("Disk inserted\n");
+        disk_check_dir("/");
+        r = 0;
+        break;
+    case EVT_DISK_EJECTED:
+        printf("Disk ejected\n");
         r = 0;
         break;
     }
@@ -76,7 +82,8 @@ int main()
     hw_init();
     lv_timer_handler();
     ec_init();
-    int last_ec = ec_read_raw0();
+    disk_init();
+    lv_timer_handler();
     // Some more time to finish splash
     for (int i = 0; i < 10; ++i)
     {
@@ -102,33 +109,31 @@ int main()
     backlight_keepalive(now);
     uint32_t last_update_tick = now;
     
-    // Testing
-    tick_arm_time_event(10, true, EVT_APP_TICK, true);
-
     // Super Loop
     for (;;)
     {
+        int ret;
         event_t evt;
         now = tick_millis();
         if (now - last_update_tick >= SUPERLOOP_UPDATE_INTERVAL_MS)
         {
-            if (ec_update(now))
-            {
-                // if ec reading changes, restart backlight idle count
-                uint8_t ec = ec_read_raw0();
-                if (ec != last_ec)
-                {
-                    backlight_keepalive(now);
-                    last_ec = ec;
-                }
-            }
-            else
+            // EC update
+            ret = ec_update(now);
+            if (ret > 0)
+                backlight_keepalive(now);
+            else if (ret < 0)
             {
                 evt.code = EVT_EC_FAILED;
                 evt.param = 0;
                 event_queue_push_back(&evt);
             }
+            // Disk update
+            ret = disk_update(now);
+            if (ret > 0)
+                backlight_keepalive(now);
+            // Backlight update
             backlight_update(now);
+            // LVGL update
             lv_timer_handler();
             last_update_tick = now;
         }

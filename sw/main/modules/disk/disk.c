@@ -55,9 +55,9 @@ int disk_check_dir(const char* dir)
 }
 
 
-void disk_update(uint32_t now)
+int disk_update(uint32_t now)
 {
-    sdcard_ll_task(now);
+    return sdcard_ll_task(now);
 }
 
 

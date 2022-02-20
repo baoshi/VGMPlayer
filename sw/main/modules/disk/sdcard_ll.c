@@ -1304,10 +1304,18 @@ void sdcard_ll_init(card_detect_cb_t callback, void* param)
 }
 
 
-// Call this repeatedly to receive card detect notification
-// Return true if card detected
-void sdcard_ll_task(uint32_t now)
+
+/**
+ * @brief Call this function repeatedly to receive card insert/eject notification
+ * 
+ * @param now       Timestamp
+ * @return * int    1 if card inserted
+ *                  2 if card ejected
+ *                  0 if no change to card
+ */
+int sdcard_ll_task(uint32_t now)
 {
+    int ret = 0;
     bool detected = !gpio_get(SD_CD_PIN);   // SD_CD_PIN low is card detected
     switch (_cd_state)
     {
@@ -1327,28 +1335,31 @@ void sdcard_ll_task(uint32_t now)
         {
             // card inserted
             SD_LOGI("SD card inserted\n");
-            _cd_state = CARD_INSERTED;
+            ret = 1;
             _spi_init();
             _sd_dstatus &= ~STA_NODISK;
             if (_card_detect_cb) _card_detect_cb(true, _card_detect_cb_param);
+            _cd_state = CARD_INSERTED;
         }
         break;
     case CARD_INSERTED:
         if (!detected)
         {
             // no debounce here !
-            _cd_state = CARD_EMPTY;
             SD_LOGI("SD card removed\n");
+            ret = 2;
             if (_card_detect_cb) _card_detect_cb(false, _card_detect_cb_param);
             _spi_deinit();
             _sd_dstatus |= (STA_NODISK | STA_NOINIT);
             _sd_type = SDCARD_NONE;
             gpio_put(SD_SPI_CS_PIN, true);  // Put CS high
+            _cd_state = CARD_EMPTY;
         }
         break;
     default:
         break;
     }
+    return ret;
 }
 
 

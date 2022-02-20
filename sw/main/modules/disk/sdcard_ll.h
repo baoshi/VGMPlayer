@@ -40,7 +40,7 @@ extern "C" {
 typedef void (*card_detect_cb_t)(bool inserted, void* param);
 void sdcard_ll_init(card_detect_cb_t callback, void* param);
 
-void sdcard_ll_task(uint32_t now);
+int sdcard_ll_task(uint32_t now);
 
 bool sdcard_ll_card_detected();
 

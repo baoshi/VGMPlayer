@@ -84,30 +84,39 @@ void ec_init(void)
 }
 
 
-bool ec_update(uint32_t now)
+/**
+ * @brief Perform EC polling
+ * 
+ * @param now   time
+ * @return int  0 if EC is read successfully and nothing in byte 0 has changed since last polling
+ *              1 if EC is read sucessfully and something is changed in byte 0
+ *             -1 if EC failed for more than EC_MAX_FAILURE_COUNT
+ */
+int ec_update(uint32_t now)
 {
     int ret;
+    uint8_t old = _data[0];
     i2c_lock();
     ret = i2c_read_timeout_us(I2C_INST, 0x13, _data, 2, false, I2C_TIMEOUT_US);
     i2c_unlock();
     if (ret == 2)
     {
-        
         _failure_count = 0;
         _decode();
         EC_LOGD("USB=%d, Charge=%d, Button=0x%02x, Batt=%.1fv\n", ec_usb, ec_charge, ec_buttons, ec_battery);
+        if (old == _data[0])
+            ret = 0;
+        else
+            ret = 1;
     }
     else
     {
+        ret = 0;    // assume no change if failed
         ++_failure_count;
+        if (_failure_count >= EC_MAX_FAILURE_COUNT)
+            ret = -1;
     }
-    return (_failure_count >= EC_MAX_FAILURE_COUNT);
-}
-
-
-uint8_t ec_read_raw0(void)
-{
-    return _data[0];
+    return ret;
 }
 
 
