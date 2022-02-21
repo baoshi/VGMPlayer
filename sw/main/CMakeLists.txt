@@ -40,7 +40,9 @@ add_executable(${PROJ_NAME}
     tick.c
     hsm.c
     splash.c
-    main.c
+    path_utils.c
+    browser.c
+    app.c
 )
 
 target_link_libraries(${PROJ_NAME} 

@@ -8,22 +8,17 @@
 #include "hw_conf.h"
 #include "my_debug.h"
 #include "my_mem.h"
+#include "event_ids.h"
 #include "event_queue.h"
 #include "hsm.h"
-#include "event_ids.h"
 #include "tick.h"
 #include "backlight.h"
 #include "ec.h"
 #include "display.h"
 #include "disk.h"
 #include "splash.h"
+#include "app.h"
 
-
-// Application level state machione
-typedef struct app_s
-{
-    hsm_t super;
-} app_t;
 
 
 event_t const *app_top(app_t *me, event_t const *evt)
@@ -31,16 +26,8 @@ event_t const *app_top(app_t *me, event_t const *evt)
     event_t const *r = evt;
     switch (evt->code)
     {
-    case EVT_ENTRY:
-        r = 0;
-        break;
-    case EVT_DISK_INSERTED:
-        printf("Disk inserted\n");
-        disk_check_dir("/");
-        r = 0;
-        break;
-    case EVT_DISK_EJECTED:
-        printf("Disk ejected\n");
+    case EVT_START:
+        STATE_START(me, &me->browser);
         r = 0;
         break;
     }
@@ -51,6 +38,10 @@ event_t const *app_top(app_t *me, event_t const *evt)
 void app_ctor(app_t* me)
 {
     hsm_ctor((hsm_t*)me, "app", (event_handler_t)app_top);
+    state_ctor(&(me->browser), "browser", &((hsm_t*)me)->top, (event_handler_t)browser_handler);
+        state_ctor(&(me->browser_disk), "browser_disk", &(me->browser), (event_handler_t)browser_disk_handler);
+        state_ctor(&(me->browser_nodisk), "browser_nodisk", &(me->browser), (event_handler_t)browser_nodisk_handler);
+        state_ctor(&(me->browser_baddisk), "browser_baddisk", &(me->browser), (event_handler_t)browser_baddisk_handler);
 }
 
 
@@ -74,7 +65,6 @@ int main()
     MY_MEM_INIT();
 
     // initialize display
-    tick_register_hook(display_tick_hook, (void *)TICK_GRANULARITY_MS); // LVGL timer
     display_init();
     // draw splash screen without backlight
     splash();

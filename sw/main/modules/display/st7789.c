@@ -20,7 +20,7 @@
 
 
 #ifndef ST7789_DEBUG
-# define ST7789_DEBUG 1
+# define ST7789_DEBUG 0
 #endif
 
 // Debug log

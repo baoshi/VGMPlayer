@@ -29,18 +29,17 @@ void hsm_on_start(hsm_t* me)
     me->curr = &me->top;
     me->next = 0;
     HANDLE_EVENT(me->curr, me, &evt_entry);   /* call top state handler with ENTRY event */
-    /* if next state is a sub state, revursively call super states' entry action */
-    while (HANDLE_EVENT(me->curr, me, &evt_start), me->next)
+    while (HANDLE_EVENT(me->curr, me, &evt_start), me->next)    /* recursive START current state and entry into next state */
     {
         state_t* path[MAX_STATE_NESTING];
         register state_t** trace = path;
         register state_t* s;
         *trace = 0;
-        for (s = me->next; s != me->curr; s = s->super) /* list of states from next state to current - 1 */
+        for (s = me->next; s != me->curr; s = s->super) /* list of states from next state to below current */
         {
             *(++trace) = s;
         }
-        while (s = *trace--)    /* invoke all the entry actions from curr - 1 to next*/
+        while (s = *trace--)    /* invoke all the entry actions */
         {
             HANDLE_EVENT(s, me, &evt_entry);
         }
@@ -75,7 +74,7 @@ void hsm_on_event(hsm_t* me, event_t const* evt)
                 }
                 me->curr = me->next;        /* set next state */
                 me->next = 0;
-                while (HANDLE_EVENT(me->curr, me, &evt_start), me->next)      /* start next state (may transit again) */
+                while (HANDLE_EVENT(me->curr, me, &evt_start), me->next)      /* start next state (may transit to substate) */
                 {
                     trace = path;
                     *trace = 0;

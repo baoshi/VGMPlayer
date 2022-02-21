@@ -64,7 +64,8 @@
         "utility": "c",
         "my_mem.h": "c",
         "random": "c",
-        "event_queue.h": "c"
+        "event_queue.h": "c",
+        "browser.h": "c"
     },
     "cmake.configureOnOpen": true
 }

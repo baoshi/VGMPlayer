@@ -2,4 +2,4 @@
 
 
 int8_t backlight_brigntness_normal = 70;
-int8_t backlight_brignthess_dimmed = 10;
+int8_t backlight_brignthess_dimmed = 20;

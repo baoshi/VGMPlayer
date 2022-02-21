@@ -63,7 +63,6 @@ static void _backlight_set_internal(int8_t percentage, uint32_t transition, uint
             _current = _target;
             MY_ASSERT((_current >= 0) && (_current <= 99));
             pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, CIE[_current]);
-            BL_LOGD("BL: %d%%\n", _current);
         }
         else
         {
@@ -123,7 +122,7 @@ void backlight_keepalive(uint32_t now)
     if (_dimmed)
     {
         // retsore normal brightness
-        BL_LOGD("Restore @ %d\n", now);
+        BL_LOGI("Restore @ %d\n", now);
         _backlight_set_internal(_normal_brightness, 100, now);
         _dimmed = false;
     }
@@ -137,7 +136,7 @@ void backlight_update(uint32_t now)
     if ((!_dimmed) && (now - _idle_start >= _idleout))
     {
         // idle out, dim light
-        BL_LOGD("Dim @ %d\n", now);
+        BL_LOGI("Dim @ %d\n", now);
         _backlight_set_internal(_dimmed_brightness, 100, now);
         _dimmed = true;
     }
@@ -151,7 +150,6 @@ void backlight_update(uint32_t now)
             _current = t;
             MY_ASSERT((_current >= 0) && (_current <= 99));
             pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, CIE[_current]);
-            BL_LOGD("BL: %d%% @ %d\n", _current, now);
         }
         else if (_start > _target)
         {
@@ -160,7 +158,7 @@ void backlight_update(uint32_t now)
             _current = t;
             MY_ASSERT((_current >= 0) && (_current <= 99));
             pwm_set_chan_level(ST7789_BCKL_PWM_SLICE, ST7789_BCKL_PWM_CHANNEL, CIE[_current]);
-            BL_LOGD("BL: %d%% @ %d\n", _current, now);
+
         }
     }
 }
