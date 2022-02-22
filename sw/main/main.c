@@ -93,7 +93,6 @@ int main()
     }
     // audio powerup stage 2
     printf("since power1: %d\n", tick_millis() - now);
-    now = tick_millis();
     audio_powerup_stage2();
 
     // initialize state machine
