@@ -20,7 +20,6 @@
 #include "app.h"
 
 
-
 event_t const *app_top(app_t *me, event_t const *evt)
 {
     event_t const *r = evt;
@@ -53,10 +52,6 @@ int main()
     // main clock, calculated using vcocalc.py, set sys clock to 120MHz
     set_sys_clock_pll(1440 * MHZ, 6, 2);
 
-    stdio_init_all();
-    printf("\033[2J\033[H"); // clear terminal
-    stdio_flush();
-
     // tick timer and event queue
     tick_init();
     event_queue_init(10);
@@ -74,8 +69,9 @@ int main()
     lv_timer_handler();
     sleep_ms(5);
     lv_timer_handler();
+
     // Other H/W initialiation interleave with lvgl update to finish the drawing
-    hw_init();
+    i2c_init();
     ec_init();
     disk_init();
     // Turn on backlight
@@ -86,6 +82,11 @@ int main()
         backlight_set_direct(i);
         sleep_ms(1);
     }
+
+    stdio_init_all();
+    printf("\033[2J\033[H"); // clear terminal
+    stdio_flush();
+
     // initialize state machine
     app_ctor(&app);
     hsm_on_start((hsm_t*)&app);

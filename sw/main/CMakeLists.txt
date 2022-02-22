@@ -34,15 +34,15 @@ add_subdirectory(modules/disk)
 add_executable(${PROJ_NAME}
     my_debug.c
     my_mem.c
-    hw_conf.c
     sw_conf.c
+    i2c.c
     event_queue.c
     tick.c
     hsm.c
     splash.c
     path_utils.c
     browser.c
-    app.c
+    main.c
 )
 
 target_link_libraries(${PROJ_NAME} 
