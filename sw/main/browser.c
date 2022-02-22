@@ -313,16 +313,31 @@ static void populate_file_list(browser_t* ctx)
 
 event_t const *browser_handler(app_t *me, event_t const *evt)
 {
-    event_t const *r = evt;
+    event_t const *r = 0;
     switch (evt->code)
     {
         case EVT_ENTRY:
             BR_LOGD("Browser: entry\n");
             create_screen(&(me->browser_ctx));
+            me->browser_ctx.alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
             path_set_root(me->browser_ctx.cur_dir);
             me->browser_ctx.cur_selection[0] = '\0';
             STATE_START(me, &me->browser_nodisk);   // default to nodisk state and wait card insertion
             r = 0;
+            break;
+        case EVT_EXIT:
+            tick_disarm_time_event(me->browser_ctx.alarm_ui_update);
+            me->browser_ctx.alarm_ui_update = -1;
+            break;
+        case EVT_BROWSER_UI_UPDATE:
+        {
+            char buf[16];
+            sprintf(buf, "U=%d C=%d B=%.1fv", ec_usb, ec_charge, ec_battery);
+            lv_label_set_text(me->browser_ctx.lbl_top, buf);
+            break;
+        }
+        default:
+            r = evt;
             break;
     }
     return r;
@@ -335,8 +350,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
     switch (evt->code)
     {
         case EVT_ENTRY:
-            BR_LOGD("Browser: Disk: entry\n");
-            me->browser_ctx.alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
+            BR_LOGD("Browser: Disk: entry\n");            
             switch (disk_check_dir(me->browser_ctx.cur_dir))
             {
                 case 1:
@@ -355,17 +369,6 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     break;
             }
             break;
-        case EVT_EXIT:
-            tick_disarm_time_event(me->browser_ctx.alarm_ui_update);
-            me->browser_ctx.alarm_ui_update = -1;
-            break;
-        case EVT_BROWSER_UI_UPDATE:
-        {
-            char buf[16];
-            sprintf(buf, "U=%d C=%d B=%.1fv", ec_usb, ec_charge, ec_battery);
-            lv_label_set_text(me->browser_ctx.lbl_top, buf);
-            break;
-        }
         case EVT_BROWSER_FILE_SELECTED:
             BR_LOGD("Browser: To play %s\n", me->browser_ctx.cur_selection);
             break;
