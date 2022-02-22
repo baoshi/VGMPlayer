@@ -16,6 +16,7 @@
 #include "ec.h"
 #include "display.h"
 #include "disk.h"
+#include "audio.h"
 #include "splash.h"
 #include "app.h"
 
@@ -55,12 +56,21 @@ int main()
     // tick timer and event queue
     tick_init();
     event_queue_init(10);
-
+    // init console
+    stdio_init_all();
+    printf("\033[2J\033[H"); // clear terminal
+    stdio_flush();
     // in case using memory debugger
     MY_MEM_INIT();
-
+    // share bus initialization (i2c)
+    hw_shared_resource_init();
+    // audio powerup stage 1
+    audio_powerdown();
+    sleep_ms(500);
+    now = tick_millis();
+    audio_powerup_stage1();
     // initialize display
-    display_init();
+    display_init();     // 323ms
     // draw splash screen without backlight
     splash();
     // Some more time to finish render splash screen
@@ -68,10 +78,9 @@ int main()
     sleep_ms(5);
     lv_timer_handler();
     sleep_ms(5);
-    lv_timer_handler();
-
+    lv_timer_handler(); // 63ms
     // Other H/W initialiation interleave with lvgl update to finish the drawing
-    i2c_init();
+    hw_shared_resource_init();
     ec_init();
     disk_init();
     // Turn on backlight
@@ -82,10 +91,10 @@ int main()
         backlight_set_direct(i);
         sleep_ms(1);
     }
-
-    stdio_init_all();
-    printf("\033[2J\033[H"); // clear terminal
-    stdio_flush();
+    // audio powerup stage 2
+    printf("since power1: %d\n", tick_millis() - now);
+    now = tick_millis();
+    audio_powerup_stage2();
 
     // initialize state machine
     app_ctor(&app);

@@ -30,12 +30,13 @@ add_subdirectory(modules/ec)
 add_subdirectory(modules/backlight)
 add_subdirectory(modules/display)
 add_subdirectory(modules/disk)
+add_subdirectory(modules/audio)
 
 add_executable(${PROJ_NAME}
     my_debug.c
     my_mem.c
     sw_conf.c
-    i2c.c
+    hw_conf.c
     event_queue.c
     tick.c
     hsm.c
@@ -55,6 +56,7 @@ target_link_libraries(${PROJ_NAME}
     backlight
     display
     disk
+    audio
 )
 
 #target_compile_definitions(${PROJ_NAME} PRIVATE PICO_DEBUG_MALLOC=1)

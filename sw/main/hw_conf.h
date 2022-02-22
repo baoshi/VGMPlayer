@@ -72,7 +72,7 @@ extern "C"
 bool i2c_lock();
 void i2c_unlock();
 
-void hw_init();
+void hw_shared_resource_init();
 
 
 #ifdef __cplusplus

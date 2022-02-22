@@ -209,7 +209,7 @@ static void _send_init_cmds(void)
     {
         uint8_t cmd;
         uint8_t data[16];
-        uint8_t databytes; //No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
+        uint8_t databytes; // # of data in data; bit 7 = delay after set; 0xFF = end of cmds.
     } init_cmds[] = 
     {
         {0xCF, {0x00, 0x83, 0X30}, 3},
@@ -240,12 +240,12 @@ static void _send_init_cmds(void)
         {ST7789_DISPON, {0}, 0x80},
         {0, {0}, 0xff},
     };
-    //Reset the display
+    // Reset the display, Page 48 of ST7789VW datasheet 1.0
     gpio_put(ST7789_RST_PIN, false);
-    sleep_ms(100);
+    sleep_ms(1);    // TRW > 10us
     gpio_put(ST7789_RST_PIN, true);
-    sleep_ms(100);
-    //Send all the commands
+    sleep_ms(120);  // TRT > 120ms
+    // Send all the commands
     uint16_t cmd = 0;
     while (init_cmds[cmd].databytes != 0xff) 
     {

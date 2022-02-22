@@ -7,12 +7,6 @@
 #include "display.h"
 
 
-void display_tick_hook(void* p)
-{
-    lv_tick_inc((uint32_t)p);
-}
-
-
 void display_init()
 {
     lv_init();

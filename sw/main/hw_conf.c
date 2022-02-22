@@ -21,7 +21,7 @@ void i2c_unlock()
 }
 
 
-void i2c_init()
+void hw_shared_resource_init()
 {
     // Initialize semophore for I2C exclusive access
     sem_init(&_i2c_sem, 1, 1);  // initial 1, max 1

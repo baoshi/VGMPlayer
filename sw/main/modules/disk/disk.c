@@ -55,6 +55,14 @@ int disk_check_dir(const char* dir)
 }
 
 
+/**
+ * @brief Call this function repeatedly to receive card insert/eject notification
+ * 
+ * @param now       Timestamp
+ * @return * int    1 if card inserted
+ *                  2 if card ejected
+ *                  0 if no change to card
+ */
 int disk_update(uint32_t now)
 {
     return sdcard_ll_task(now);

@@ -5,8 +5,6 @@ extern "C" {
 #endif
 
 
-void display_tick_hook(void*);
-
 void display_init();
 
 
