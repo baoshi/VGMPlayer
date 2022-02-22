@@ -4,6 +4,8 @@ extern "C" {
 
 #include <stdint.h>
 
+
+
 typedef enum
 {
     WM8978_OUTPUT_SPEAKER = 0,
