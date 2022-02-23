@@ -322,6 +322,9 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
             me->browser_ctx.alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
             path_set_root(me->browser_ctx.cur_dir);
             me->browser_ctx.cur_selection[0] = '\0';
+            r = 0;
+            break;
+        case EVT_START:
             STATE_START(me, &me->browser_nodisk);   // default to nodisk state and wait card insertion
             r = 0;
             break;
