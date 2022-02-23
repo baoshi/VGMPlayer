@@ -83,7 +83,8 @@ static inline void wmc_write_reg(uint8_t reg, uint16_t val)
 
 static void wmc_write(uint8_t reg, uint16_t val)
 {
-    MY_ASSERT(reg >= WMC_NUM_REGISTERS || (wmc_regs[reg] & 0x8000));
+    MY_ASSERT(reg < WMC_NUM_REGISTERS);
+    MY_ASSERT((wmc_regs[reg] & 0x8000) == 0);
     wmc_regs[reg] = val & ~0x8000;
     wmc_write_reg(reg, val);
 }
@@ -106,3 +107,72 @@ static void wmc_write_masked(uint8_t reg, uint16_t bits, uint16_t mask)
     wmc_write(reg, (wmc_regs[reg] & ~mask) | (bits & mask));
 }
 
+
+void wm8978_preinit()
+{
+    wmc_write(WMC_SOFTWARE_RESET, 0x00);    // For pop debugger, not needed if only does once after power up
+    // Mute all analog outputs
+    wmc_set(WMC_LOUT1_HP_VOLUME_CTRL, WMC_MUTE);
+    wmc_set(WMC_ROUT1_HP_VOLUME_CTRL, WMC_MUTE);
+    wmc_set(WMC_LOUT2_SPK_VOLUME_CTRL, WMC_MUTE);
+    wmc_set(WMC_ROUT2_SPK_VOLUME_CTRL, WMC_MUTE);
+    wmc_set(WMC_OUT3_MIXER_CTRL, WMC_MUTE);
+    wmc_set(WMC_OUT4_MONO_MIXER_CTRL, WMC_MUTE);
+    // Set L/RMIXEN = 1 in register R3
+    wmc_write(WMC_POWER_MANAGEMENT3, WMC_RMIXEN | WMC_LMIXEN);
+    // EQ and 3D applied to DAC (Set before DAC enable!)
+    wmc_set(WMC_EQ1_LOW_SHELF, WMC_EQ3DMODE);
+    // Set DACENL/R = 1 in register R3
+    wmc_set(WMC_POWER_MANAGEMENT3, WMC_DACENR | WMC_DACENL);
+    // Set BUFIOEN = 1 and VMIDSEL[1:0] to required value in register R1. Wait for VMID supply to settle
+    wmc_write(WMC_POWER_MANAGEMENT1, WMC_BUFIOEN | WMC_VMIDSEL_300K);
+    //
+    // Should wait for sufficient time before turning on outputs, we take this time to setup digital interface
+    //
+    // From RP2040, output 12MHz MCLK to WM8978
+    clock_gpio_init(I2S_MCLK_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_XOSC_CLKSRC, 1);
+    // WM8978 internal clock setup
+    // Note: The following value are calculated using 48000Hz sample rate and 12MHz MCLK
+    // Refer to WM8978_v4.5.pdf, page 77
+    // MCLK   |  SAMPLE  |  DESIRED  |    F2    |  PRESCALE  | POSTSCALE |    R    |   N   |    K     |
+    // (MHZ)  |   RATE   |  OUTPUT   |   (MHZ)  |   DIVIDE   |  DIVIDE   |  (HEX)  | (HEX) |          |
+    // (F1)   |   (HZ)   |   (MHZ)   |          |            |           |         |       |          |
+    //--------+----------+-----------+----------+------------+-----------+---------+-------+----------|
+    //  12    |   44100  |   11.29   |  90.3168 |     1      |    2      | 7.5264  |   7   |  86c226  |
+    //  12    |   48000  |  12.288   |  98.304  |     1      |    2      | 8.192   |   8   |  3126E9  |
+    //
+    // Clock PLLPRESCALE = 1, POSTSCALE = 2, PLLN = 8, PLLK = 3126E9
+    wmc_write(WMC_PLL_N, 8);
+    // 3126E9 = 0011 0001 0010 0110 1110 1001
+    //          001100 010010011 011101001
+    //              0c        93        e9     
+    wmc_write(WMC_PLL_K1, 0x0c);
+    wmc_write(WMC_PLL_K2, 0x93);
+    wmc_write(WMC_PLL_K3, 0xe9);
+    wmc_write(WMC_CLOCK_GEN_CTRL, WMC_CLKSEL | WMC_MCLKDIV_2);
+    wmc_set(WMC_POWER_MANAGEMENT1, WMC_PLLEN);
+    // Format
+    wmc_write(WMC_AUDIO_INTERFACE, WMC_WL_16 | WMC_FMT_I2S);
+    // DACOSR
+    wmc_write(WMC_DAC_CONTROL, WMC_DACOSR_128);
+    // Slow clock and SR
+    wmc_write(WMC_ADDITIONAL_CTRL, WMC_SR_48KHZ | WMC_SLOWCLKEN);
+    // Jack detection is on GPIO2
+    wmc_write(WMC_JACK_DETECT_CONTROL1, WMC_JD_EN | WMC_JD_SEL_GPIO2);
+    // When earpiece not present, GPIO2 = 0, enable LOUT2/ROUT2 (Speaker), WMC_OUT2_EN0
+    // When earpiece present, GPIO2 = 1, enable LOUT1/ROUT1, WMC_OUT1_EN1
+    wmc_write(WMC_JACK_DETECT_CONTROL2, WMC_OUT1_EN1 | WMC_OUT2_EN0);
+}
+
+
+void wm8978_postinit()
+{
+     // No ADC, no HP filter, no popping
+    wmc_clear(WMC_ADC_CONTROL, WMC_HPFEN);
+    wmc_clear(WMC_LEFT_ADC_BOOST_CTRL, WMC_PGABOOSTL);
+    wmc_clear(WMC_RIGHT_ADC_BOOST_CTRL, WMC_PGABOOSTR);
+    // Set BIASEN = 1 in register R1
+    wmc_set(WMC_POWER_MANAGEMENT1, WMC_BIASEN);
+    // Set L/ROUTEN = 1 in register R2
+    wmc_set(WMC_POWER_MANAGEMENT2, WMC_LOUT1EN | WMC_ROUT1EN);
+}

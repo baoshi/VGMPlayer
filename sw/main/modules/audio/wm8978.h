@@ -13,9 +13,8 @@ typedef enum
 } wm8978_output_t;
 
 
-void wm8978_init();
-void wm8978_powerup_stage1();
-void wm8978_powerup_stage2();
+void wm8978_preinit();
+void wm8978_postinit();
 void wm8978_powerdown();
 void wm8978_set_volume(wm8978_output_t chn, uint8_t vol);
 

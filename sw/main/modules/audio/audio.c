@@ -9,19 +9,18 @@ void audio_init()
 
 void audio_powerup_stage1()
 {
-    wm8978_powerup_stage1();
+    wm8978_preinit();
 }
 
 
 void audio_powerup_stage2()
 {
-    wm8978_powerup_stage2();
+    wm8978_postinit();
 }
 
 
 void audio_powerdown()
 {
-    wm8978_powerdown();
 }
 
 
