@@ -63,8 +63,17 @@ void event_queue_push_back(event_t const *e)
     bool full = ((_event_queue.in + 1) % (_event_queue.size + 1) == _event_queue.out);
     if (!full)
     {
-        memcpy(_event_queue.elems + _event_queue.in, e, sizeof(event_t));
-        _event_queue.in = (_event_queue.in + 1) % (_event_queue.size + 1);
+        int last = (_event_queue.in + _event_queue.size) % (_event_queue.size + 1);
+        // if same event arrives, we just update last event without enqueue
+        if (_event_queue.elems[last].code == e->code)
+        {
+            _event_queue.elems[last].param = e->param;
+        }
+        else
+        {
+            memcpy(_event_queue.elems + _event_queue.in, e, sizeof(event_t));
+            _event_queue.in = (_event_queue.in + 1) % (_event_queue.size + 1);
+        }
     }
     spin_unlock(_event_queue.core.spin_lock, save);
     MY_ASSERT(full == false);
