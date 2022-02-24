@@ -1,7 +1,7 @@
 // Many adopted from RockBox project 
 #pragma once
 
-#define WMC_I2C_ADDR 0x34
+#define WMC_I2C_ADDR 0x1a
 
 /* Registers */
 #define WMC_SOFTWARE_RESET              0x00

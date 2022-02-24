@@ -81,19 +81,17 @@ int audio_update(uint32_t now)
         {
             _jd_timestamp = now;
             _jd_state = JACK_BOUNCING_IN;
-            AUD_LOGD("Audio: Empty->Bin @%d\n", now);
         }
         break;
     case JACK_BOUNCING_IN:
         if (!detected)
         {
             _jd_state = JACK_EMPTY;
-            AUD_LOGD("Audio: Bin->Empty @%d\n", now);
         }
         else if (now - _jd_timestamp >= JACK_DEBOUNCE_MS)
         {
             // jack plugged
-            AUD_LOGI("Earpiece plugged @%d\n", now);
+            AUD_LOGI("Audio: Earpiece plugged @%d\n", now);
             ret = 1;
             _jd_state = JACK_INSERTED;
             EQ_QUICK_PUSH(EVT_EARPIECE_PLUGGED);
@@ -104,19 +102,17 @@ int audio_update(uint32_t now)
         {
             _jd_timestamp = now;
             _jd_state = JACK_BOUNCING_OUT;
-            AUD_LOGD("Audio: Inserted->Bout @%d\n", now);
         }
         break;
     case JACK_BOUNCING_OUT:
         if (detected)
         {
             _jd_state= JACK_INSERTED;
-            AUD_LOGD("Audio: Bout->Inserted @%d\n", now);
         }
         else if (now - _jd_timestamp >= JACK_DEBOUNCE_MS)
         {
             // jack unplugged
-            AUD_LOGI("Earpiece unplugged @%d\n", now);
+            AUD_LOGI("Audio: Earpiece unplugged @%d\n", now);
             ret = 2;
             _jd_state = JACK_EMPTY;
             EQ_QUICK_PUSH(EVT_EARPIECE_UNPLUGGED);

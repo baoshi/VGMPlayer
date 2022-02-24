@@ -65,9 +65,6 @@ int main()
     // share bus initialization (i2c)
     hw_shared_resource_init();
     // audio powerup stage 1
-    audio_powerdown();
-    sleep_ms(500);
-    now = tick_millis();
     audio_preinit();
     // initialize display
     display_init();     // 323ms
@@ -91,8 +88,8 @@ int main()
         backlight_set_direct(i);
         sleep_ms(1);
     }
-    // audio powerup stage 2
-    audio_postinit();
+    // audio powerup stage 2 to be postponed before start play
+    //audio_postinit();
 
     // initialize state machine
     app_ctor(&app);
