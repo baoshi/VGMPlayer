@@ -171,6 +171,8 @@ void wm8978_postinit()
     wmc_clear(WMC_RIGHT_ADC_BOOST_CTRL, WMC_PGABOOSTR);
     // Set BIASEN = 1 in register R1
     wmc_set(WMC_POWER_MANAGEMENT1, WMC_BIASEN | WMC_BUFIOEN);
-    // Set L/ROUTEN = 1 in register R2
+    // Set L/ROUT1EN = 1 in register R2
     wmc_set(WMC_POWER_MANAGEMENT2, WMC_LOUT1EN | WMC_ROUT1EN);
+    // Set L/ROUT2 = 1 in register R3
+    wmc_set(WMC_POWER_MANAGEMENT3, WMC_LOUT2EN | WMC_ROUT2EN);
 }
