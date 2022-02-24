@@ -316,6 +316,7 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
             BR_LOGD("Browser: entry\n");
             create_screen(&(me->browser_ctx));
+            me->browser_ctx.earpiece = false;
             me->browser_ctx.alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
             path_set_root(me->browser_ctx.cur_dir);
             me->browser_ctx.cur_selection[0] = '\0';
@@ -331,11 +332,17 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
             break;
         case EVT_BROWSER_UI_UPDATE:
         {
-            char buf[16];
-            sprintf(buf, "U=%d C=%d B=%.1fv", ec_usb, ec_charge, ec_battery);
+            char buf[32];
+            sprintf(buf, "E=%d U=%d C=%d B=%.1fv", me->browser_ctx.earpiece, ec_usb, ec_charge, ec_battery);
             lv_label_set_text(me->browser_ctx.lbl_top, buf);
             break;
         }
+        case EVT_EARPIECE_PLUGGED:
+            me->browser_ctx.earpiece = true;
+            break;
+        case EVT_EARPIECE_UNPLUGGED:
+            me->browser_ctx.earpiece = false;
+            break;
         default:
             r = evt;
             break;

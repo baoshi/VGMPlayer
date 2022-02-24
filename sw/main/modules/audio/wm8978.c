@@ -126,9 +126,7 @@ void wm8978_preinit()
     wmc_set(WMC_POWER_MANAGEMENT3, WMC_DACENR | WMC_DACENL);
     // Set BUFIOEN = 1 and VMIDSEL[1:0] to required value in register R1. Wait for VMID supply to settle
     wmc_write(WMC_POWER_MANAGEMENT1, WMC_BUFIOEN | WMC_VMIDSEL_300K);
-    //
     // Should wait for sufficient time before turning on outputs, we take this time to setup digital interface
-    //
     // From RP2040, output 12MHz MCLK to WM8978
     clock_gpio_init(I2S_MCLK_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_XOSC_CLKSRC, 1);
     // WM8978 internal clock setup
@@ -151,7 +149,7 @@ void wm8978_preinit()
     wmc_write(WMC_PLL_K3, 0xe9);
     wmc_write(WMC_CLOCK_GEN_CTRL, WMC_CLKSEL | WMC_MCLKDIV_2);
     wmc_set(WMC_POWER_MANAGEMENT1, WMC_PLLEN);
-    // Format
+    // Audio Format
     wmc_write(WMC_AUDIO_INTERFACE, WMC_WL_16 | WMC_FMT_I2S);
     // DACOSR
     wmc_write(WMC_DAC_CONTROL, WMC_DACOSR_128);

@@ -19,6 +19,7 @@ typedef struct browser_s
     lv_obj_t* lbl_bottom; // Bottom label
     lv_obj_t* lst_files;  // File List
     int alarm_ui_update;
+    bool earpiece;
     char cur_dir[FF_LFN_BUF + 1] ;      // current selected directory
     char cur_selection[FF_LFN_BUF + 1]; // current selected file
 } browser_t;

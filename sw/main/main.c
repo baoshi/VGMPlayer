@@ -68,7 +68,7 @@ int main()
     audio_powerdown();
     sleep_ms(500);
     now = tick_millis();
-    audio_powerup_stage1();
+    audio_preinit();
     // initialize display
     display_init();     // 323ms
     // draw splash screen without backlight
@@ -92,8 +92,7 @@ int main()
         sleep_ms(1);
     }
     // audio powerup stage 2
-    printf("since power1: %d\n", tick_millis() - now);
-    audio_powerup_stage2();
+    audio_postinit();
 
     // initialize state machine
     app_ctor(&app);
@@ -122,6 +121,10 @@ int main()
             }
             // Disk update
             ret = disk_update(now);
+            if (ret > 0)
+                backlight_keepalive(now);
+            // Audio update
+            ret = audio_update(now);
             if (ret > 0)
                 backlight_keepalive(now);
             // Backlight update
