@@ -40,14 +40,14 @@ void isr_systick()
     {
         if (ALARM_ARMED == _slot_status[i])
         {
-            if (0 == _slots[i].timeout)   // send along systick event
+            if (0 == _slots[i].timeout)   // repeating tick event
             {
                 event_t e = 
                 {
                     .code = _slots[i].event,
                     .param = (void *)_millis
                 };
-                event_queue_push_back(&e);
+                event_queue_push_back(&e, true);
             }
             else
             {
@@ -59,7 +59,7 @@ void isr_systick()
                         .code = _slots[i].event,
                         .param = (void *)_millis
                     };
-                    event_queue_push_back(&e);
+                    event_queue_push_back(&e, true);
                     // reset counter for repeated event or delete this client
                     if (_slots[i].repeat)
                     {

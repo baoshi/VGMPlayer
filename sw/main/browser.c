@@ -102,10 +102,7 @@ static void play_button_handler(lv_event_t* e)
             const char* file = lv_list_get_btn_text(ctx->lst_files, btn);
             strcpy(ctx->cur_selection, file);    // save selection
             // issue selection event
-            event_t e;
-            e.code = EVT_BROWSER_FILE_SELECTED;
-            e.param = 0;
-            event_queue_push_back(&e);
+            EQ_QUICK_PUSH(EVT_BROWSER_FILE_SELECTED);
         }
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
@@ -182,7 +179,7 @@ static void chdir_down(browser_t* ctx, const char* leaf)
     } while (0);
     if (!success)
     {
-        EQ_PUSH_BACK(EVT_DISK_ERROR);
+        EQ_QUICK_PUSH(EVT_DISK_ERROR);
     }
 }
 
@@ -212,7 +209,7 @@ static void chdir_up(browser_t* ctx)
     } while (0);
     if (!success)
     {
-        EQ_PUSH_BACK(EVT_DISK_ERROR);
+        EQ_QUICK_PUSH(EVT_DISK_ERROR);
     }
 }
 
@@ -233,7 +230,7 @@ static void populate_file_list(browser_t* ctx)
     {
         BR_LOGW("Browser: f_findfirst error %s (%d)\n", disk_result_str(fr), fr);
         event_t e;
-        EQ_PUSH_BACK(EVT_DISK_ERROR);
+        EQ_QUICK_PUSH(EVT_DISK_ERROR);
     }
     char dir_name[FF_LFN_BUF + 3];
     int idx_files = 0;                  // index of first file button
@@ -354,7 +351,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
     {
         case EVT_ENTRY:
             BR_LOGD("Browser: Disk: entry\n");            
-            switch (disk_check_dir(me->browser_ctx.cur_dir))
+            switch (disk_check_dir(me->browser_ctx.cur_dir))    // Could take 6 seconds before failure
             {
                 case 1:
                     // cur_dir is valid and accessible
@@ -368,7 +365,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     break;
                 default:
                     // disk not accessible
-                    EQ_PUSH_BACK(EVT_DISK_ERROR);
+                    EQ_QUICK_PUSH(EVT_DISK_ERROR);
                     break;
             }
             break;

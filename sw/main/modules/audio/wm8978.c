@@ -167,12 +167,12 @@ void wm8978_preinit()
 
 void wm8978_postinit()
 {
-     // No ADC, no HP filter, no popping
+    // No ADC, no HP filter, no popping
     wmc_clear(WMC_ADC_CONTROL, WMC_HPFEN);
     wmc_clear(WMC_LEFT_ADC_BOOST_CTRL, WMC_PGABOOSTL);
     wmc_clear(WMC_RIGHT_ADC_BOOST_CTRL, WMC_PGABOOSTR);
     // Set BIASEN = 1 in register R1
-    wmc_set(WMC_POWER_MANAGEMENT1, WMC_BIASEN);
+    wmc_set(WMC_POWER_MANAGEMENT1, WMC_BIASEN | WMC_BUFIOEN);
     // Set L/ROUTEN = 1 in register R2
     wmc_set(WMC_POWER_MANAGEMENT2, WMC_LOUT1EN | WMC_ROUT1EN);
 }

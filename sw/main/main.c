@@ -118,9 +118,7 @@ int main()
                 backlight_keepalive(now);
             else if (ret < 0)
             {
-                evt.code = EVT_EC_FAILED;
-                evt.param = 0;
-                event_queue_push_back(&evt);
+                EQ_QUICK_PUSH(EVT_EC_FAILED);
             }
             // Disk update
             ret = disk_update(now);

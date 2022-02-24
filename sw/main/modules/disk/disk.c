@@ -12,18 +12,13 @@ static FATFS _sdfatfs;
 
 static void sdcard_cd_handler(bool inserted, void* param)
 {
-    event_t e;
     if (inserted)
     {
-        e.code = EVT_DISK_INSERTED;
-        e.param = 0;
-        event_queue_push_back(&e);
+        EQ_QUICK_PUSH(EVT_DISK_INSERTED);
     }
     else
     {
-        e.code = EVT_DISK_EJECTED;
-        e.param = 0;
-        event_queue_push_back(&e);
+        EQ_QUICK_PUSH(EVT_DISK_EJECTED);
     }
 }
 
