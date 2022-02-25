@@ -67,7 +67,7 @@ static void mode_button_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_SHORT_CLICKED) 
     {
-        BR_LOGD("Browser: mode button pressed\n");
+        EQ_QUICK_PUSH(EVT_BROWSER_MODE_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -78,36 +78,18 @@ static void mode_button_handler(lv_event_t* e)
 
 static void play_button_handler(lv_event_t* e)
 {
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t* btn = lv_event_get_target(e);
-    int type = (int)lv_obj_get_user_data(btn);    // 1 means dir
-    if (code == LV_EVENT_SHORT_CLICKED) 
+    if (code == LV_EVENT_SHORT_CLICKED)
     {
-        if (type == 1)  // dir
-        {
-            bool success = false;
-            const char* leaf = lv_list_get_btn_text(ctx->lst_files, btn);
-            if (strcasecmp(leaf, "[..]"))
-            {
-                chdir_down(ctx, leaf);
-            }
-            else
-            {
-                chdir_up(ctx);
-            }
-        }
-        else if (type == 0)
-        {
-            const char* file = lv_list_get_btn_text(ctx->lst_files, btn);
-            strcpy(ctx->cur_selection, file);    // save selection
-            // issue selection event
-            EQ_QUICK_PUSH(EVT_BROWSER_FILE_SELECTED);
-        }
+        event_t evt;
+        evt.code = EVT_BROWSER_PLAY_CLICKED;
+        evt.param = (void *)btn;
+        event_queue_push_back(&evt, true);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        BR_LOGD("Browser: Long Pressed: %s\n", lv_list_get_btn_text(ctx->lst_files, btn));
+        BR_LOGD("Browser: Play long Pressed\n");
     }
 }
 
@@ -320,11 +302,9 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
             me->browser_ctx.alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
             path_set_root(me->browser_ctx.cur_dir);
             me->browser_ctx.cur_selection[0] = '\0';
-            r = 0;
             break;
         case EVT_START:
             STATE_START(me, &me->browser_nodisk);   // default to nodisk state and wait card insertion
-            r = 0;
             break;
         case EVT_EXIT:
             tick_disarm_time_event(me->browser_ctx.alarm_ui_update);
@@ -354,26 +334,62 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
 event_t const *browser_disk_handler(app_t *me, event_t const *evt)
 {
     event_t const *r = 0;
+    browser_t *ctx = &(me->browser_ctx);
     switch (evt->code)
     {
         case EVT_ENTRY:
             BR_LOGD("Browser: Disk: entry\n");            
-            switch (disk_check_dir(me->browser_ctx.cur_dir))    // Could take 6 seconds before failure
+            switch (disk_check_dir(ctx->cur_dir))    // Could take 6 seconds before failure
             {
                 case 1:
                     // cur_dir is valid and accessible
-                    populate_file_list(&(me->browser_ctx));
+                    populate_file_list(ctx);
                     break;
                 case 2:
                     // cur_dir is not accessible but disk is readable
-                    path_set_root(me->browser_ctx.cur_dir);
-                    me->browser_ctx.cur_selection[0] = '\0';
-                    populate_file_list(&(me->browser_ctx));
+                    path_set_root(ctx->cur_dir);
+                    ctx->cur_selection[0] = '\0';
+                    populate_file_list(ctx);
                     break;
                 default:
                     // disk not accessible
                     EQ_QUICK_PUSH(EVT_DISK_ERROR);
                     break;
+            }
+            break;
+        case EVT_BROWSER_PLAY_CLICKED:
+        {
+            lv_obj_t* btn = (lv_obj_t*)(evt->param);
+            if (btn)
+            {
+                int type = (int)lv_obj_get_user_data(btn);    // 1 means dir
+                if (type == 1)  // dir
+                {
+                    bool success = false;
+                    const char* leaf = lv_list_get_btn_text(ctx->lst_files, btn);
+                    if (strcasecmp(leaf, "[..]"))
+                    {
+                        chdir_down(ctx, leaf);
+                    }
+                    else
+                    {
+                        chdir_up(ctx);
+                    }
+                }
+                else if (type == 0)
+                {
+                    const char* file = lv_list_get_btn_text(ctx->lst_files, btn);
+                    strcpy(ctx->cur_selection, file);    // save selection
+                    // fire selection event
+                    EQ_QUICK_PUSH(EVT_BROWSER_FILE_SELECTED);
+                }
+            }
+            break;
+        }
+        case EVT_BROWSER_MODE_CLICKED:
+            if (!path_is_root(ctx->cur_dir))
+            {
+                chdir_up(ctx);
             }
             break;
         case EVT_BROWSER_FILE_SELECTED:
