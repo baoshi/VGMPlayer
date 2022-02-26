@@ -6,9 +6,10 @@
 extern "C" {
 #endif
 
+
 void audio_preinit();
 void audio_postinit();
-void audio_powerdown();
+void audio_close();
 int audio_update(uint32_t now);
 
 #ifdef __cplusplus

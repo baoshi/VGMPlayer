@@ -178,3 +178,33 @@ void wm8978_postinit()
     // Set L/ROUT2 = 1 in register R3
     wmc_set(WMC_POWER_MANAGEMENT3, WMC_LOUT2EN | WMC_ROUT2EN);
 }
+
+
+void wm8978_powerdown()
+{
+    wm8978_mute(true);
+    wmc_write(WMC_POWER_MANAGEMENT1, 0x000);
+    wmc_write(WMC_POWER_MANAGEMENT2, 0x000);
+    wmc_write(WMC_POWER_MANAGEMENT3, 0x000);
+}
+
+
+void wm8978_mute(bool mute)
+{
+    if (mute)
+    {
+        wmc_set(WMC_LOUT1_HP_VOLUME_CTRL, WMC_MUTE);
+        wmc_set(WMC_ROUT1_HP_VOLUME_CTRL, WMC_MUTE);
+        wmc_set(WMC_LOUT2_SPK_VOLUME_CTRL, WMC_MUTE);
+        wmc_set(WMC_ROUT2_SPK_VOLUME_CTRL, WMC_MUTE);
+    }
+    else
+    {
+        wmc_clear(WMC_LOUT1_HP_VOLUME_CTRL, WMC_MUTE);
+        wmc_clear(WMC_ROUT1_HP_VOLUME_CTRL, WMC_MUTE);
+        wmc_clear(WMC_LOUT2_SPK_VOLUME_CTRL, WMC_MUTE);
+        wmc_clear(WMC_ROUT2_SPK_VOLUME_CTRL, WMC_MUTE);
+    }
+}
+
+

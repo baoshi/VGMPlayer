@@ -2,6 +2,7 @@ add_library(audio INTERFACE)
 
 target_sources(audio INTERFACE
     wm8978.c
+    i2s.c
     audio.c
 )
 

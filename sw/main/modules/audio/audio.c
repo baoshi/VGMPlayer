@@ -7,6 +7,9 @@
 #include "audio.h"
 
 
+#define AUDIO_MAX_BUFFER_LENGTH 1024
+
+
 #ifndef AUDIO_DEBUG
 #  define AUDIO_DEBUG 1
 #endif
@@ -25,6 +28,13 @@
 #define AUD_LOGI(x, ...)
 #define AUD_DEBUGF(x, ...)
 #endif
+
+
+uint32_t tx_buf0[AUDIO_MAX_BUFFER_LENGTH];
+uint32_t tx_buf0_len = 0;
+uint32_t tx_buf1[AUDIO_MAX_BUFFER_LENGTH];
+uint32_t tx_buf1_len = 0;
+bool cur_tx_buf = false;    // current buffer being tx'd. false:buf0; true:buf1
 
 
 // Jack detection fsm
@@ -57,8 +67,10 @@ void audio_postinit()
 }
 
 
-void audio_powerdown()
+void audio_close()
 {
+
+    wm8978_powerdown();
 }
 
 
