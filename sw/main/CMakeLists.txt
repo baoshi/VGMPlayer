@@ -43,6 +43,7 @@ add_executable(${PROJ_NAME}
     splash.c
     path_utils.c
     browser.c
+    player.c
     main.c
 )
 

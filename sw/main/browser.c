@@ -133,6 +133,7 @@ static void create_screen(browser_t* ctx)
     ctx->lst_files = lv_list_create(ctx->screen);
     lv_obj_set_size(ctx->lst_files, 240, 192);
     lv_obj_set_pos(ctx->lst_files, 0, 24);
+    // Load screen
     lv_scr_load(ctx->screen);
 }
 
@@ -293,35 +294,36 @@ static void populate_file_list(browser_t* ctx)
 event_t const *browser_handler(app_t *me, event_t const *evt)
 {
     event_t const *r = 0;
+    browser_t *ctx = &(me->browser_ctx);
     switch (evt->code)
     {
         case EVT_ENTRY:
             BR_LOGD("Browser: entry\n");
-            create_screen(&(me->browser_ctx));
+            create_screen(ctx);
             me->browser_ctx.earpiece = false;
             me->browser_ctx.alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
-            path_set_root(me->browser_ctx.cur_dir);
-            me->browser_ctx.cur_selection[0] = '\0';
+            path_set_root(ctx->cur_dir);
+            ctx->cur_selection[0] = '\0';
             break;
         case EVT_START:
             STATE_START(me, &me->browser_nodisk);   // default to nodisk state and wait card insertion
             break;
         case EVT_EXIT:
             tick_disarm_time_event(me->browser_ctx.alarm_ui_update);
-            me->browser_ctx.alarm_ui_update = -1;
+            ctx->alarm_ui_update = -1;
             break;
         case EVT_BROWSER_UI_UPDATE:
         {
             char buf[32];
-            sprintf(buf, "E=%d U=%d C=%d B=%.1fv", me->browser_ctx.earpiece, ec_usb, ec_charge, ec_battery);
-            lv_label_set_text(me->browser_ctx.lbl_top, buf);
+            sprintf(buf, "E=%d U=%d C=%d B=%.1fv", ctx->earpiece, ec_usb, ec_charge, ec_battery);
+            lv_label_set_text(ctx->lbl_top, buf);
             break;
         }
         case EVT_EARPIECE_PLUGGED:
-            me->browser_ctx.earpiece = true;
+            ctx->earpiece = true;
             break;
         case EVT_EARPIECE_UNPLUGGED:
-            me->browser_ctx.earpiece = false;
+            ctx->earpiece = false;
             break;
         default:
             r = evt;
@@ -381,7 +383,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     const char* file = lv_list_get_btn_text(ctx->lst_files, btn);
                     strcpy(ctx->cur_selection, file);    // save selection
                     // fire selection event
-                    EQ_QUICK_PUSH(EVT_BROWSER_FILE_SELECTED);
+                    EQ_QUICK_PUSH(EVT_BROWSER_PLAY_FILE);
                 }
             }
             break;
@@ -392,8 +394,10 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                 chdir_up(ctx);
             }
             break;
-        case EVT_BROWSER_FILE_SELECTED:
-            BR_LOGD("Browser: To play %s\n", me->browser_ctx.cur_selection);
+        case EVT_BROWSER_PLAY_FILE:
+            BR_LOGD("Browser: To play %s\n", ctx->cur_selection);
+            strcpy(me->player_ctx.file, ctx->cur_selection);
+            STATE_TRAN((hsm_t*)me, &me->player);
             break;
         case EVT_DISK_ERROR:
             STATE_TRAN((hsm_t*)me, &me->browser_baddisk);

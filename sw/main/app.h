@@ -30,6 +30,19 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt);
 event_t const *browser_baddisk_handler(app_t *me, event_t const *evt);
 
 
+//
+// Player
+//
+typedef struct player_s
+{
+    lv_obj_t* screen;
+    lv_obj_t* lbl_top;    // Top indicators
+    int alarm_ui_update;
+    char file[FF_LFN_BUF + 1]; // file to play
+} player_t;
+
+event_t const *player_handler(app_t *me, event_t const *evt);
+
 
 // Application level state machione
 struct app_s
@@ -37,5 +50,7 @@ struct app_s
     hsm_t super;
     state_t browser, browser_disk, browser_nodisk, browser_baddisk;
     browser_t browser_ctx;
+    state_t player;
+    player_t player_ctx;
 };
 
