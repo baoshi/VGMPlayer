@@ -1,3 +1,5 @@
+#include <string.h>
+#include <pico/multicore.h>
 #include <hardware/gpio.h>
 #include "hw_conf.h"
 #include "my_debug.h"
@@ -79,23 +81,80 @@ void audio_close()
 }
 
 
+// context used during playback, shared by audio_xxx and decoder_entry on core 1
+static struct
+{
+    decoder_t *decoder;
+} playback_ctx;
+
+enum 
+{
+    DECODER_CMD_SAMPLE = 1,
+    DECODER_CMD_STOP,
+    DECODER_CMD_FINISH,
+};
+
+// decoder function running on core 1
+void decoder_entry()
+{
+    while (1)
+    {
+        AUD_LOGD("Audio: Core1: wait cmd\n");
+        uint32_t cmd = multicore_fifo_pop_blocking();
+        AUD_LOGD("Audio: Core1: cmd = %d\n", cmd);
+        // find which buffer to receive new samples
+        uint32_t *obuf = cur_tx_buf ? tx_buf0 : tx_buf1;
+        uint32_t *olen = cur_tx_buf ? &tx_buf0_len : &tx_buf1_len;
+        if (cmd == DECODER_CMD_SAMPLE)
+        {
+            *olen = playback_ctx.decoder->get_samples(playback_ctx.decoder, obuf, AUDIO_MAX_BUFFER_LENGTH);
+        }
+        else if (cmd == DECODER_CMD_STOP)
+        {
+            *olen = 0;  // set output sample size to 0 so i2s won't request new samples anymore
+            break;
+        }
+        else if (cmd == DECODER_CMD_FINISH)
+        {
+            break;
+        }
+    }
+    AUD_LOGD("Audio: Core1: exit\n");
+}
+
+
 void i2s_notify_cb(int notify, void *param)
 {
-
+    switch (notify)
+    {
+    case I2S_NOTIFY_SAMPLE_REQUESTED:
+        multicore_fifo_push_blocking(DECODER_CMD_SAMPLE);
+        break;
+    case I2S_NOTIFY_PLAYBACK_FINISHED:
+        multicore_fifo_push_blocking(DECODER_CMD_FINISH);
+        break;
+    }
 }
 
 
-audio_playback_ctx * audio_setup_playback(decoder_t *decoder)
+void audio_setup_playback(decoder_t *decoder)
 {
-    audio_playback_ctx *ctx = MY_ALLOC(sizeof(audio_playback_ctx));
-    MY_ASSERT(ctx);
-    ctx->decoder = decoder;
+    playback_ctx.decoder = decoder;
+    // prepare slient buf0
+    memset(tx_buf0, 0, sizeof(tx_buf0));
+    tx_buf0_len = AUDIO_MAX_BUFFER_LENGTH;
+    cur_tx_buf = false;
+    multicore_reset_core1();
+    multicore_launch_core1(decoder_entry);
+    wm8978_postinit();
 }
 
 
-void audio_playback(audio_playback_ctx *ctx)
+void audio_playback()
 {
-
+    i2s_start_playback(i2s_notify_cb, 0);
+    multicore_fifo_push_blocking(DECODER_CMD_SAMPLE);
+    wm8978_mute(false);
 }
 
 

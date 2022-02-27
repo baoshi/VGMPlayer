@@ -153,6 +153,8 @@ void wm8978_preinit()
     wmc_write(WMC_AUDIO_INTERFACE, WMC_WL_16 | WMC_FMT_I2S);
     // DACOSR
     wmc_write(WMC_DAC_CONTROL, WMC_DACOSR_128);
+    // L/ROUT2 to drive BTL speaker
+    wmc_set(WMC_BEEP_CONTROL, WMC_INVROUT2);
     // Slow clock and SR
     wmc_write(WMC_ADDITIONAL_CTRL, WMC_SR_48KHZ | WMC_SLOWCLKEN);
     // Jack detection is on GPIO2
@@ -195,6 +197,7 @@ void wm8978_mute(bool mute)
 {
     if (mute)
     {
+        wmc_set(WMC_DAC_CONTROL, WMC_SOFT_MUTE);
         wmc_set(WMC_LOUT1_HP_VOLUME_CTRL, WMC_MUTE);
         wmc_set(WMC_ROUT1_HP_VOLUME_CTRL, WMC_MUTE);
         wmc_set(WMC_LOUT2_SPK_VOLUME_CTRL, WMC_MUTE);
@@ -206,6 +209,7 @@ void wm8978_mute(bool mute)
         wmc_clear(WMC_ROUT1_HP_VOLUME_CTRL, WMC_MUTE);
         wmc_clear(WMC_LOUT2_SPK_VOLUME_CTRL, WMC_MUTE);
         wmc_clear(WMC_ROUT2_SPK_VOLUME_CTRL, WMC_MUTE);
+        wmc_clear(WMC_DAC_CONTROL, WMC_SOFT_MUTE);
     }
 }
 

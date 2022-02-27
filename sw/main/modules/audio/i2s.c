@@ -30,41 +30,31 @@ static void i2s_dma_isr()
     if (dma_hw->I2S_DMA_INTS & (1u << DMA_CHANNEL_I2S_TX))  // interript because I2S TX finish
     {   
         dma_hw->I2S_DMA_INTS |= 1u << DMA_CHANNEL_I2S_TX;   // clear the interrupt request
-        if (cur_tx_buf)
+        if (cur_tx_buf && tx_buf0_len > 0)
         {
-            // was transmitting buf1, switch to buf0
-            if (tx_buf0_len > 0)
-            {
-                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, tx_buf0, tx_buf0_len);
-                cur_tx_buf = false;
-                tx_buf1_len = 0;    // default length for next buffer
-                // Notify samples requested
-                if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
-            }
-            else
-            {
-                irq_set_enabled(I2S_DMA_IRQ, false);
-                // Notify playback finished
-                if (nofity_cb) nofity_cb(I2S_NOTIFY_PLAYBACK_FINISHED, notify_cb_param);
-            }
-        }
+            // was transmitting buf1, and buf0 contains data
+            dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, tx_buf0, tx_buf0_len);
+            cur_tx_buf = false;
+            tx_buf1_len = 0;    // default length for next buffer
+            // Notify samples requested
+            if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
+        } 
+        else if (!cur_tx_buf && tx_buf1_len > 0)
+        {
+            // was transmiting buf0, and buf1 contains data
+            dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, tx_buf1, tx_buf1_len);
+            cur_tx_buf = true;
+            tx_buf0_len = 0;    // default length for next buffer
+            // Notify samples requested
+            if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
+        } 
         else
         {
-            // was transmitting buf0, switch to buf1
-            if (tx_buf1_len > 0)
-            {
-                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, tx_buf1, tx_buf1_len);
-                cur_tx_buf = true;
-                tx_buf0_len = 0;    // default length for next buffer
-                // Notify samples requested
-                if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
-            }
-            else
-            {
-                irq_set_enabled(I2S_DMA_IRQ, false);
-                // Notify playback finished
-                if (nofity_cb) nofity_cb(I2S_NOTIFY_PLAYBACK_FINISHED, notify_cb_param);
-            }
+            // no more data
+            irq_set_enabled(I2S_DMA_IRQ, false);
+            pio_sm_set_enabled(I2S_PIO, I2S_PIO_SM, false);
+            // Notify playback finished
+            if (nofity_cb) nofity_cb(I2S_NOTIFY_PLAYBACK_FINISHED, notify_cb_param);
         }
     }
 }
@@ -100,7 +90,7 @@ void i2s_init()
     dma_channel_configure(
         DMA_CHANNEL_I2S_TX, // DMA channel
         &i2s_tx_dma_cfg,
-        &I2S_PIO->txf[0],   // Write address (only need to set this once)
+        &I2S_PIO->txf[I2S_PIO_SM],   // Write address (only need to set this once)
         NULL,               // Don't provide a read address yet
         0,                  // Don't give transfer count yet
         false               // Don't start yet
@@ -139,10 +129,12 @@ void i2s_deinit()
 void i2s_send_buffer_blocking(uint32_t *buf, uint32_t len)
 {
     irq_set_enabled(I2S_DMA_IRQ, false);
+    pio_sm_set_enabled(I2S_PIO, I2S_PIO_SM, true);
     for (uint32_t i = 0; i < len; ++i)
     {
          pio_sm_put_blocking(I2S_PIO, I2S_PIO_SM, buf[i]);
     }
+    pio_sm_set_enabled(I2S_PIO, I2S_PIO_SM, false);
 }
 
 
@@ -151,6 +143,7 @@ void i2s_start_playback(i2s_notify_cb_t notify, void *param)
     nofity_cb = notify;
     notify_cb_param = param;
     irq_set_enabled(I2S_DMA_IRQ, true);
+    pio_sm_set_enabled(I2S_PIO, I2S_PIO_SM, true);
     if (cur_tx_buf)
     {
         dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, tx_buf1, tx_buf1_len);

@@ -10,6 +10,8 @@
 #include "disk.h"
 #include "path_utils.h"
 #include "ec.h"
+#include "audio.h"
+#include "sample_decoder.h"
 #include "app.h"
 
 
@@ -63,7 +65,7 @@ static void button_mode_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("Mode button clicked\n");
+        EQ_QUICK_PUSH(EVT_PLAYER_MOD_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -79,7 +81,7 @@ static void button_play_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("Play button clicked\n");
+        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -188,10 +190,13 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             PL_LOGD("Player: entry\n");
             create_screen(ctx);
             ctx->alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
+            ctx->decoder = 0;
             break;
         case EVT_EXIT:
             tick_disarm_time_event(ctx->alarm_ui_update);
             ctx->alarm_ui_update = -1;
+            if (ctx->decoder)
+                sample_decoder_destroy((sample_decoder_t*)(ctx->decoder));
             break;
         case EVT_PLAYER_UI_UPDATE:
         {
@@ -200,6 +205,11 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             lv_label_set_text(ctx->lbl_top, buf);
             break;
         }
+        case EVT_PLAYER_PLAY_CLICKED:
+            ctx->decoder = (decoder_t*)sample_decoder_create();
+            audio_setup_playback(ctx->decoder);
+            audio_playback();
+            break;
         default:
             r = evt;
             break;

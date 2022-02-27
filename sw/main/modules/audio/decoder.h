@@ -14,9 +14,14 @@
 
 typedef struct decoder_s decoder_t;
 
+typedef char const * (*get_meta_str_t)(decoder_t *me, int key);
+typedef int          (*get_meta_int_t)(decoder_t *me, int key);
+typedef uint32_t     (*get_samples_t)(decoder_t *me, uint32_t *buf, uint32_t len);
+
+
 struct decoder_s
 {
-    char const *    (*get_meta_str)(decoder_t *me, int key);
-    int             (*get_meta_int)(decoder_t *me, int key);
-    uint32_t        (*get_samples)(decoder_t *me, uint32_t *buf, uint32_t len);     // decoder main interface
+    get_meta_str_t get_meta_str;
+    get_meta_int_t get_meta_int;
+    get_samples_t  get_samples;
 };

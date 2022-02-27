@@ -2,6 +2,7 @@
 
 #include <lvgl.h>
 #include <ff.h>
+#include "decoder.h"
 #include "hsm.h"
 
 
@@ -39,6 +40,7 @@ typedef struct player_s
     lv_obj_t* lbl_top;    // Top indicators
     int alarm_ui_update;
     char file[FF_LFN_BUF + 1]; // file to play
+    decoder_t* decoder;
 } player_t;
 
 event_t const *player_handler(app_t *me, event_t const *evt);

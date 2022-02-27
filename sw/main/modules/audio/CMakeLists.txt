@@ -11,6 +11,7 @@ pico_generate_pio_header(audio ${CMAKE_CURRENT_LIST_DIR}/i2s.pio)
 target_link_libraries(audio INTERFACE
     pico_stdlib
     pico_time
+    pico_multicore
     hardware_gpio
     hardware_i2c
     hardware_dma
