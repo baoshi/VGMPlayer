@@ -186,6 +186,8 @@ void wm8978_powerdown()
     wmc_write(WMC_POWER_MANAGEMENT1, 0x000);
     wmc_write(WMC_POWER_MANAGEMENT2, 0x000);
     wmc_write(WMC_POWER_MANAGEMENT3, 0x000);
+    // remove MCLK output
+    gpio_init(I2S_MCLK_PIN);
 }
 
 

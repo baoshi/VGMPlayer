@@ -1,9 +1,11 @@
 #include <hardware/gpio.h>
 #include "hw_conf.h"
 #include "my_debug.h"
+#include "my_mem.h"
 #include "event_ids.h"
 #include "event_queue.h"
 #include "wm8978.h"
+#include "i2s.h"
 #include "audio.h"
 
 
@@ -42,6 +44,7 @@ bool cur_tx_buf = false;    // current buffer being tx'd. false:buf0; true:buf1
 static uint32_t _jd_timestamp = 0;
 static enum 
 {
+    JACK_NONE,
     JACK_EMPTY,
     JACK_BOUNCING_IN,
     JACK_INSERTED,
@@ -51,6 +54,7 @@ static enum
 
 void audio_preinit()
 {
+    i2s_init();
     wm8978_preinit();
     // Jack detection GPIO pin
     gpio_init(JACK_DETECTION_PIN);
@@ -69,8 +73,29 @@ void audio_postinit()
 
 void audio_close()
 {
-
     wm8978_powerdown();
+    i2s_deinit();
+    _jd_state = JACK_NONE;
+}
+
+
+void i2s_notify_cb(int notify, void *param)
+{
+
+}
+
+
+audio_playback_ctx * audio_setup_playback(decoder_t *decoder)
+{
+    audio_playback_ctx *ctx = MY_ALLOC(sizeof(audio_playback_ctx));
+    MY_ASSERT(ctx);
+    ctx->decoder = decoder;
+}
+
+
+void audio_playback(audio_playback_ctx *ctx)
+{
+
 }
 
 
@@ -130,6 +155,8 @@ int audio_update(uint32_t now)
             EQ_QUICK_PUSH(EVT_EARPIECE_UNPLUGGED);
         }
         break;
+    case JACK_NONE:
+        // no break
     default:
         break;
     }

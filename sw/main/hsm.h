@@ -20,49 +20,49 @@ extern "C" {
 #define EVT_EXIT    -3
 
 
-    typedef struct hsm_s hsm_t;
+typedef struct hsm_s hsm_t;
 
-    typedef event_t const* (*event_handler_t)(hsm_t*, event_t const*);
+typedef event_t const * (*event_handler_t)(hsm_t *, event_t const *);
 
-    typedef struct state_s state_t;
+typedef struct state_s state_t;
 
-    struct state_s
-    {
-        char const* name;       /* state name */
-        state_t* super;      /* pointer to superstate */
-        event_handler_t handler;    /* state's handler function */
-    };
+struct state_s
+{
+    char const *name;           /* state name */
+    state_t *super;             /* pointer to superstate */
+    event_handler_t handler;    /* state's handler function */
+};
 
 
-    void state_ctor(state_t* me, char const* name, state_t* super, event_handler_t handler);
+void state_ctor(state_t *me, char const *name, state_t *super, event_handler_t handler);
 
 
 #define HANDLE_EVENT(me_, ctx_, evt_) (*(me_)->handler)((ctx_), (evt_))
 
 
-    struct hsm_s
-    {
-        char const* name;             /* state macine name */
-        state_t* curr;                /* current state */
-        state_t* next;                /* next state */
-        state_t* source;              /* source state during last transition */
-        state_t top;                  /* top-level state object */
-    };
+struct hsm_s
+{
+    char const *name;             /* state macine name */
+    state_t *curr;                /* current state */
+    state_t *next;                /* next state */
+    state_t *source;              /* source state during last transition */
+    state_t top;                  /* top-level state object */
+};
 
 
-    /* Construct HSM */
-    void hsm_ctor(hsm_t* me, char const* name, event_handler_t top_handler);
+/* Construct HSM */
+void hsm_ctor(hsm_t *me, char const *name, event_handler_t top_handler);
 
-    /* Enter and start top state */
-    void hsm_on_start(hsm_t* me);
+/* Enter and start top state */
+void hsm_on_start(hsm_t *me);
 
-    /* Main HSM event engine */
-    void hsm_on_event(hsm_t* me, event_t const* evt);
+/* Main HSM event engine */
+void hsm_on_event(hsm_t *me, event_t const *evt);
 
 
-    /* protected: */
-    unsigned char hsm_to_lca_(hsm_t* me, state_t* target);
-    void hsm_exit_(hsm_t* me, uint8_t levels);
+/* protected: */
+unsigned char hsm_to_lca_(hsm_t *me, state_t *target);
+void hsm_exit_(hsm_t *me, uint8_t levels);
 
     /* get current state */
 #define STATE_CURR(me_) (((hsm_t *)me_)->curr)
