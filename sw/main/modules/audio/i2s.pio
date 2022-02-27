@@ -31,32 +31,3 @@ bitloop0:
     out pins, 1       side 0b00     ;   bit 0. LRC = 0 for for next word
 public entry_point:
     mov x, y          side 0b01     ;   y initially set to 14
-
-
-% c-sdk {
-
-static inline void pio_i2s_program_init(PIO pio, uint sm, uint offset, uint data_pin, uint clock_pin_base)
-{
-    pio_sm_config conf = pio_i2s_program_get_default_config(offset);
-    // DATAOUT pin
-    pio_gpio_init(pio, data_pin);
-    pio_sm_set_consecutive_pindirs(pio, sm, data_pin, 1, true);
-    sm_config_set_out_pins(&conf, data_pin, 1);
-    sm_config_set_out_shift(&conf, /* shift_right */ false, /* autopull */ true, 32);
-    // BCLK and LRC are sideset pins
-    pio_gpio_init(pio, clock_pin_base);
-    pio_gpio_init(pio, clock_pin_base + 1);
-    pio_sm_set_consecutive_pindirs(pio, sm, clock_pin_base, 2, true);
-    sm_config_set_sideset_pins(&conf, clock_pin_base);
-    // Set init pin state
-    uint pin_mask = (1u << data_pin) | (3u << clock_pin_base);
-    pio_sm_set_pins_with_mask(pio, sm, pin_mask, pin_mask); // set all 3 pins to 1 intially
-    // Statemachine init
-    pio_sm_init(pio, sm, offset, &conf);
-    // Set number of bits in y register
-    pio_sm_exec(pio, sm, pio_encode_set(pio_y, 14));
-    // Immediate jump to entry point, statemachine not enabled yet
-    pio_sm_exec(pio, sm, pio_encode_jmp(offset + pio_i2s_offset_entry_point));
-}
-
-%}

@@ -51,7 +51,6 @@
 #define JACK_DETECTION_PIN      25
 #define I2S_PIO                 pio0            // Use pio0 for I2S
 #define I2S_PIO_SM              0               // Use statement machine 0
-#define I2S_PIO_TX_DREQ         DREQ_PIO0_TX0   // I2S TX DREQ on DREQ_PIO0_TX0
 #define I2S_DMA_IRQ             DMA_IRQ_1
 #define I2S_DMA_INTS            ints1
 

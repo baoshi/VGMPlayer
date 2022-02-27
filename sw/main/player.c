@@ -196,7 +196,10 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             tick_disarm_time_event(ctx->alarm_ui_update);
             ctx->alarm_ui_update = -1;
             if (ctx->decoder)
+            {
                 sample_decoder_destroy((sample_decoder_t*)(ctx->decoder));
+                ctx->decoder = 0;
+            }
             break;
         case EVT_PLAYER_UI_UPDATE:
         {
@@ -206,6 +209,8 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             break;
         }
         case EVT_PLAYER_PLAY_CLICKED:
+            if (ctx->decoder)
+                sample_decoder_destroy((sample_decoder_t*)(ctx->decoder));
             ctx->decoder = (decoder_t*)sample_decoder_create();
             audio_setup_playback(ctx->decoder);
             audio_playback();

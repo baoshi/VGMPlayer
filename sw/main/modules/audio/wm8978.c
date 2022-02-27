@@ -162,6 +162,12 @@ void wm8978_preinit()
     // When earpiece not present, GPIO2 = 0, enable LOUT2/ROUT2 (Speaker), WMC_OUT2_EN0
     // When earpiece present, GPIO2 = 1, enable LOUT1/ROUT1, WMC_OUT1_EN1
     wmc_write(WMC_JACK_DETECT_CONTROL2, WMC_OUT1_EN1 | WMC_OUT2_EN0);
+    // Initial volume (still muted)
+    wmc_write_masked(WMC_LOUT1_HP_VOLUME_CTRL, 20, WMC_AVOL);
+    wmc_write_masked(WMC_ROUT1_HP_VOLUME_CTRL, 20, WMC_AVOL);
+    wmc_write_masked(WMC_LOUT2_SPK_VOLUME_CTRL, 20, WMC_AVOL);
+    wmc_write_masked(WMC_ROUT2_SPK_VOLUME_CTRL, 20, WMC_AVOL);
+
 }
 
 

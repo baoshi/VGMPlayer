@@ -15,7 +15,7 @@
 
 
 #ifndef AUDIO_DEBUG
-#  define AUDIO_DEBUG 1
+#  define AUDIO_DEBUG 0
 #endif
 
 // Debug log
@@ -130,8 +130,10 @@ void i2s_notify_cb(int notify, void *param)
     case I2S_NOTIFY_SAMPLE_REQUESTED:
         multicore_fifo_push_blocking(DECODER_CMD_SAMPLE);
         break;
-    case I2S_NOTIFY_PLAYBACK_FINISHED:
+    case I2S_NOTIFY_PLAYBACK_FINISHING:
         multicore_fifo_push_blocking(DECODER_CMD_FINISH);
+        i2s_stop_playback();
+        wm8978_mute(true);
         break;
     }
 }
