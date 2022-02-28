@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define SUPERLOOP_UPDATE_INTERVAL_MS    10
+#define SUPERLOOP_UPDATE_INTERVAL_MS    5
 #define BACKLIGHT_IDLE_DIM_MS           10000
 
 #define TICK_GRANULARITY_MS         1

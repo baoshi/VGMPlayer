@@ -65,7 +65,7 @@ static void button_mode_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        EQ_QUICK_PUSH(EVT_PLAYER_MOD_CLICKED);
+        EQ_QUICK_PUSH(EVT_PLAYER_MODE_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -97,7 +97,7 @@ static void button_up_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("Up button clicked\n");
+        EQ_QUICK_PUSH(EVT_PLAYER_UP_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -113,7 +113,7 @@ static void button_down_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("Down button clicked\n");
+        EQ_QUICK_PUSH(EVT_PLAYER_DOWN_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -216,7 +216,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             audio_setup_playback(ctx->decoder);
             audio_start_playback();
             break;
-        case EVT_PLAYER_MOD_CLICKED:
+        case EVT_PLAYER_MODE_CLICKED:
             {
                 static bool pause = true;
                 if (pause) audio_pause_playback();

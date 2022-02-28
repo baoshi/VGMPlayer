@@ -165,8 +165,8 @@ void wm8978_preinit()
     // Initial volume (still muted)
     wmc_write_masked(WMC_LOUT1_HP_VOLUME_CTRL, 20, WMC_AVOL);
     wmc_write_masked(WMC_ROUT1_HP_VOLUME_CTRL, 20, WMC_AVOL);
-    wmc_write_masked(WMC_LOUT2_SPK_VOLUME_CTRL, 20, WMC_AVOL);
-    wmc_write_masked(WMC_ROUT2_SPK_VOLUME_CTRL, 20, WMC_AVOL);
+    wmc_write_masked(WMC_LOUT2_SPK_VOLUME_CTRL, 50, WMC_AVOL);
+    wmc_write_masked(WMC_ROUT2_SPK_VOLUME_CTRL, 50, WMC_AVOL);
 
 }
 
