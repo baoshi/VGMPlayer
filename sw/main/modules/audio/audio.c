@@ -15,7 +15,7 @@
 
 
 #ifndef AUDIO_DEBUG
-#  define AUDIO_DEBUG 0
+#  define AUDIO_DEBUG 1
 #endif
 
 // Debug log
@@ -39,6 +39,8 @@ uint32_t tx_buf0_len = 0;
 uint32_t tx_buf1[AUDIO_MAX_BUFFER_LENGTH];
 uint32_t tx_buf1_len = 0;
 bool cur_tx_buf = false;    // current buffer being tx'd. false:buf0; true:buf1
+
+static bool paused = false;
 
 
 // Jack detection fsm
@@ -90,6 +92,7 @@ static struct
 enum 
 {
     DECODER_CMD_SAMPLE = 1,
+    DECODER_CMD_SAMPLE_SILENCE,
     DECODER_CMD_STOP,
     DECODER_CMD_FINISH,
 };
@@ -97,17 +100,25 @@ enum
 // decoder function running on core 1
 void decoder_entry()
 {
+    AUD_LOGD("Audio: Core1: entry\n");
     while (1)
     {
-        AUD_LOGD("Audio: Core1: wait cmd\n");
         uint32_t cmd = multicore_fifo_pop_blocking();
         AUD_LOGD("Audio: Core1: cmd = %d\n", cmd);
         // find which buffer to receive new samples
         uint32_t *obuf = cur_tx_buf ? tx_buf0 : tx_buf1;
         uint32_t *olen = cur_tx_buf ? &tx_buf0_len : &tx_buf1_len;
+        static uint32_t last_sample = 0;
         if (cmd == DECODER_CMD_SAMPLE)
         {
             *olen = playback_ctx.decoder->get_samples(playback_ctx.decoder, obuf, AUDIO_MAX_BUFFER_LENGTH);
+            if (*olen > 0) last_sample = obuf[*olen - 1];   // keep last sampled value if we need to output silience later
+            AUD_LOGD("Audio: Core1: %d samples\n", *olen);
+        }
+        else if (cmd == DECODER_CMD_SAMPLE_SILENCE)
+        {
+            memset(obuf, last_sample, AUDIO_MAX_BUFFER_LENGTH * sizeof(uint32_t));
+            *olen = AUDIO_MAX_BUFFER_LENGTH;
         }
         else if (cmd == DECODER_CMD_STOP)
         {
@@ -128,7 +139,7 @@ void i2s_notify_cb(int notify, void *param)
     switch (notify)
     {
     case I2S_NOTIFY_SAMPLE_REQUESTED:
-        multicore_fifo_push_blocking(DECODER_CMD_SAMPLE);
+        multicore_fifo_push_blocking(paused ? DECODER_CMD_SAMPLE_SILENCE : DECODER_CMD_SAMPLE);
         break;
     case I2S_NOTIFY_PLAYBACK_FINISHING:
         multicore_fifo_push_blocking(DECODER_CMD_FINISH);
@@ -141,22 +152,41 @@ void i2s_notify_cb(int notify, void *param)
 
 void audio_setup_playback(decoder_t *decoder)
 {
+    i2s_stop_playback();
     playback_ctx.decoder = decoder;
     // prepare slient buf0
-    memset(tx_buf0, 0, sizeof(tx_buf0));
+    memset(tx_buf0, 0, AUDIO_MAX_BUFFER_LENGTH * sizeof(uint32_t));
     tx_buf0_len = AUDIO_MAX_BUFFER_LENGTH;
     cur_tx_buf = false;
+    paused = false;
     multicore_reset_core1();
     multicore_launch_core1(decoder_entry);
-    wm8978_postinit();
 }
 
 
-void audio_playback()
+void audio_start_playback()
 {
     i2s_start_playback(i2s_notify_cb, 0);
     multicore_fifo_push_blocking(DECODER_CMD_SAMPLE);
     wm8978_mute(false);
+}
+
+
+void audio_stop_playback()
+{
+
+}
+
+
+void audio_pause_playback()
+{
+    paused = true;
+}
+
+
+void audio_unpause_playback()
+{
+    paused = false;
 }
 
 

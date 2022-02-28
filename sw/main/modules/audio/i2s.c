@@ -204,10 +204,13 @@ void i2s_start_playback(i2s_notify_cb_t notify, void *param)
 
 void i2s_stop_playback()
 {
-    // disable DMA irq
     irq_set_enabled(I2S_DMA_IRQ, false);
-    // let DMA finish
-    dma_channel_wait_for_finish_blocking(DMA_CHANNEL_I2S_TX);
+    dma_channel_abort(DMA_CHANNEL_I2S_TX);
+#if (I2S_DMA_IRQ == DMA_IRQ_0)
+    dma_channel_acknowledge_irq0(DMA_CHANNEL_I2S_TX);
+#else
+    dma_channel_acknowledge_irq1(DMA_CHANNEL_I2S_TX);
+#endif
     pio_i2s_flush();
     pio_sm_set_enabled(I2S_PIO, I2S_PIO_SM, false);
 }

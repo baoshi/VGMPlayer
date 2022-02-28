@@ -191,6 +191,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             create_screen(ctx);
             ctx->alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
             ctx->decoder = 0;
+            audio_postinit();
             break;
         case EVT_EXIT:
             tick_disarm_time_event(ctx->alarm_ui_update);
@@ -213,8 +214,16 @@ event_t const *player_handler(app_t *me, event_t const *evt)
                 sample_decoder_destroy((sample_decoder_t*)(ctx->decoder));
             ctx->decoder = (decoder_t*)sample_decoder_create();
             audio_setup_playback(ctx->decoder);
-            audio_playback();
+            audio_start_playback();
             break;
+        case EVT_PLAYER_MOD_CLICKED:
+            {
+                static bool pause = true;
+                if (pause) audio_pause_playback();
+                else audio_unpause_playback();
+                pause = !pause;
+                break;
+            }
         default:
             r = evt;
             break;
