@@ -11,7 +11,7 @@
 #include "path_utils.h"
 #include "ec.h"
 #include "audio.h"
-#include "sample_decoder.h"
+#include "decoder_s16.h"
 #include "app.h"
 
 
@@ -194,14 +194,24 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             audio_postinit();
             break;
         case EVT_EXIT:
+            PL_LOGD("Player: exit\n");
             tick_disarm_time_event(ctx->alarm_ui_update);
             ctx->alarm_ui_update = -1;
-            if (ctx->decoder)
+            break;
+        case EVT_START:
+        {
+            PL_LOGD("Player: start\n");
+            // check file extension and enter corresponding state
+            char ext[16];
+            if (path_get_ext(ctx->file, ext))
             {
-                sample_decoder_destroy((sample_decoder_t*)(ctx->decoder));
-                ctx->decoder = 0;
+                if (0 == strcasecmp(ext, "s16"))
+                {
+                    STATE_START(me, &me->player_s16); 
+                }
             }
             break;
+        }
         case EVT_PLAYER_UI_UPDATE:
         {
             char buf[32];
@@ -209,24 +219,53 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             lv_label_set_text(ctx->lbl_top, buf);
             break;
         }
-        case EVT_PLAYER_PLAY_CLICKED:
-            if (ctx->decoder)
-                sample_decoder_destroy((sample_decoder_t*)(ctx->decoder));
-            ctx->decoder = (decoder_t*)sample_decoder_create();
-            audio_setup_playback(ctx->decoder);
-            audio_start_playback();
-            break;
-        case EVT_PLAYER_MODE_CLICKED:
-            {
-                static bool pause = true;
-                if (pause) audio_pause_playback();
-                else audio_unpause_playback();
-                pause = !pause;
-                break;
-            }
         default:
             r = evt;
             break;
+    }
+    return r;
+}
+
+
+event_t const *player_s16_handler(app_t *me, event_t const *evt)
+{
+    event_t const *r = 0;
+    player_t *ctx = &(me->player_ctx);
+    switch (evt->code)
+    {
+    case EVT_ENTRY:
+        PL_LOGD("Player_S16: entry\n");
+        MY_ASSERT(ctx->decoder == 0);
+        ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
+        // TODO: Handle error here
+        MY_ASSERT(ctx->decoder != 0);
+        break;
+    case EVT_EXIT:
+        PL_LOGD("Player_S16: exit\n");
+        if (ctx->decoder)
+        {
+            decoder_s16_destroy((decoder_s16_t *)(ctx->decoder));
+            ctx->decoder = 0;
+        }
+        break;
+    case EVT_START:
+        PL_LOGD("Player: s16: start\n");
+        break;
+    case EVT_PLAYER_PLAY_CLICKED:
+        audio_setup_playback(ctx->decoder);
+        audio_start_playback();
+        break;
+    case EVT_PLAYER_MODE_CLICKED:
+        {
+            static bool pause = true;
+            if (pause) audio_pause_playback();
+            else audio_unpause_playback();
+            pause = !pause;
+            break;
+        }
+    default:
+        r = evt;
+        break;
     }
     return r;
 }

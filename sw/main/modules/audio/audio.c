@@ -11,11 +11,8 @@
 #include "audio.h"
 
 
-#define AUDIO_MAX_BUFFER_LENGTH 1024
-
-
 #ifndef AUDIO_DEBUG
-#  define AUDIO_DEBUG 1
+#  define AUDIO_DEBUG 0
 #endif
 
 // Debug log

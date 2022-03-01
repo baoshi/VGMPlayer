@@ -88,8 +88,7 @@ bool path_get_leaf(const char* path, char* leaf)
     if (i == 0)                         // "//"
         return false;
     char* slash = strrchr(leaf, '/');
-    if (slash)
-        strcpy(leaf, slash + 1);
+    if (slash) strcpy(leaf, slash + 1);
     return true;
 }
 
@@ -97,7 +96,7 @@ bool path_get_leaf(const char* path, char* leaf)
 // concatenate parent + '/' + leaf -> out
 // if debracket is true, remove [] from leaf before concatenate
 // return false if the result is longer than FF_LFN_BUF or other error
-bool path_concatnate(const char* parent, const char* leaf, char* out, bool debracket)
+bool path_concatenate(const char* parent, const char* leaf, char* out, bool debracket)
 {
     // check if we need to remove square bracket from leaf
     int len = strlen(leaf);
@@ -135,3 +134,17 @@ bool path_concatnate(const char* parent, const char* leaf, char* out, bool debra
     return true;
 }
 
+
+// Given a file name, return the extension
+bool path_get_ext(const char* file, char* ext)
+{
+    int len = strlen(file);
+    if (len <= 0) return false;
+    char* dot = strrchr(file, '.');
+    if ((dot == 0) || (*(dot + 1) == '\0'))
+    {
+        return false;
+    }
+    strcpy(ext, dot + 1);
+    return true;
+}

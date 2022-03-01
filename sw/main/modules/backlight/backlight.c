@@ -8,7 +8,7 @@
 
 
 #ifndef BACKLIGHT_DEBUG
-# define BACKLIGHT_DEBUG 1
+# define BACKLIGHT_DEBUG 0
 #endif
 
 

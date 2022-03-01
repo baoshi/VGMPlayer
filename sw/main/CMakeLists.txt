@@ -44,7 +44,7 @@ add_executable(${PROJ_NAME}
     path_utils.c
     browser.c
     player.c
-    sample_decoder.c
+    decoder_s16.c
     main.c
 )
 

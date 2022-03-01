@@ -43,6 +43,7 @@ void app_ctor(app_t* me)
         state_ctor(&(me->browser_nodisk), "browser_nodisk", &(me->browser), (event_handler_t)browser_nodisk_handler);
         state_ctor(&(me->browser_baddisk), "browser_baddisk", &(me->browser), (event_handler_t)browser_baddisk_handler);
     state_ctor(&(me->player), "player", &((hsm_t*)me)->top, (event_handler_t)player_handler);
+        state_ctor(&(me->player_s16), "player_s16", &(me->player), (event_handler_t)player_s16_handler);
 }
 
 

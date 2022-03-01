@@ -20,7 +20,6 @@ typedef struct browser_s
     lv_obj_t* lbl_bottom; // Bottom label
     lv_obj_t* lst_files;  // File List
     int alarm_ui_update;
-    bool earpiece;
     char cur_dir[FF_LFN_BUF + 1] ;      // current selected directory
     char cur_selection[FF_LFN_BUF + 1]; // current selected file
 } browser_t;
@@ -44,6 +43,7 @@ typedef struct player_s
 } player_t;
 
 event_t const *player_handler(app_t *me, event_t const *evt);
+event_t const *player_s16_handler(app_t *me, event_t const *evt);
 
 
 // Application level state machione
@@ -52,7 +52,7 @@ struct app_s
     hsm_t super;
     state_t browser, browser_disk, browser_nodisk, browser_baddisk;
     browser_t browser_ctx;
-    state_t player;
+    state_t player, player_s16;
     player_t player_ctx;
 };
 

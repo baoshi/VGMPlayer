@@ -145,7 +145,7 @@ static void chdir_down(browser_t* ctx, const char* leaf)
     char dir[FF_LFN_BUF + 1];
     do
     {
-        if (!path_concatnate(ctx->cur_dir, leaf, dir, true))
+        if (!path_concatenate(ctx->cur_dir, leaf, dir, true))
         {
             BR_LOGW("Browser: Path error\n");
             break;
@@ -300,7 +300,6 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
             BR_LOGD("Browser: entry\n");
             create_screen(ctx);
-            me->browser_ctx.earpiece = false;
             me->browser_ctx.alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
             path_set_root(ctx->cur_dir);
             ctx->cur_selection[0] = '\0';
@@ -315,16 +314,10 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         case EVT_BROWSER_UI_UPDATE:
         {
             char buf[32];
-            sprintf(buf, "E=%d U=%d C=%d B=%.1fv", ctx->earpiece, ec_usb, ec_charge, ec_battery);
+            sprintf(buf, "U=%d C=%d B=%.1fv", ec_usb, ec_charge, ec_battery);
             lv_label_set_text(ctx->lbl_top, buf);
             break;
         }
-        case EVT_EARPIECE_PLUGGED:
-            ctx->earpiece = true;
-            break;
-        case EVT_EARPIECE_UNPLUGGED:
-            ctx->earpiece = false;
-            break;
         default:
             r = evt;
             break;
@@ -340,7 +333,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
     switch (evt->code)
     {
         case EVT_ENTRY:
-            BR_LOGD("Browser: Disk: entry\n");            
+            BR_LOGD("Browser_Disk: entry\n");            
             switch (disk_check_dir(ctx->cur_dir))    // Could take 6 seconds before failure
             {
                 case 1:
@@ -395,7 +388,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             }
             break;
         case EVT_BROWSER_PLAY_FILE:
-            BR_LOGD("Browser: To play %s\n", ctx->cur_selection);
+            BR_LOGD("Browser: selected %s\n", ctx->cur_selection);
             strcpy(me->player_ctx.file, ctx->cur_selection);
             STATE_TRAN((hsm_t*)me, &me->player);
             break;
@@ -419,7 +412,7 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
     switch (evt->code)
     {
         case EVT_ENTRY:
-            BR_LOGD("Browser: Nodisk: entry\n");
+            BR_LOGD("Browser_Nodisk: entry\n");
             lv_label_set_text(me->browser_ctx.lbl_bottom, "No card");
             lv_obj_clean(me->browser_ctx.lst_files);
             path_set_root(me->browser_ctx.cur_dir);
@@ -442,7 +435,7 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
     switch (evt->code)
     {
         case EVT_ENTRY:
-            BR_LOGD("Browser: Baddisk: entry\n");
+            BR_LOGD("Browser_Baddisk: entry\n");
             lv_label_set_text(me->browser_ctx.lbl_bottom, "Card error");
             lv_obj_clean(me->browser_ctx.lst_files);
             path_set_root(me->browser_ctx.cur_dir);
