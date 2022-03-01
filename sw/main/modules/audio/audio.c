@@ -12,7 +12,7 @@
 
 
 #ifndef AUDIO_DEBUG
-#  define AUDIO_DEBUG 0
+#  define AUDIO_DEBUG 1
 #endif
 
 // Debug log
@@ -230,9 +230,7 @@ void i2s_notify_cb(int notify, void *param)
         }
         break;
     case I2S_NOTIFY_PLAYBACK_FINISHING:
-        multicore_fifo_push_blocking(DECODER_FINISH);
-        i2s_stop_playback();
-        wm8978_mute(true);
+        audio_stop_playback();
         break;
     }
 }
@@ -289,7 +287,10 @@ void audio_start_playback()
 
 void audio_stop_playback()
 {
-
+    multicore_fifo_push_blocking(DECODER_FINISH);
+    i2s_stop_playback();
+    wm8978_mute(true);
+    EQ_QUICK_PUSH(EVT_PLAYER_SONG_ENDED);
 }
 
 

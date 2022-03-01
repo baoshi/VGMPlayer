@@ -130,7 +130,7 @@ int ff_req_grant (	/* 1:Got a grant to access the volume, 0:Could not get a gran
 )
 {
 	/* RP2040 */
-	mutex_enter_blocking(sobj);
+	return mutex_try_enter(sobj, 0) ? 1 : 0;
 
 	/* Win32 */
 //	return (int)(WaitForSingleObject(sobj, FF_FS_TIMEOUT) == WAIT_OBJECT_0);

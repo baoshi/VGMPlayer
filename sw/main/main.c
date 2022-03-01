@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <pico/stdlib.h>
 #include <pico/stdio.h>
 #include <hardware/clocks.h>
@@ -18,6 +19,7 @@
 #include "disk.h"
 #include "audio.h"
 #include "splash.h"
+#include "path_utils.h"
 #include "app.h"
 
 
@@ -37,6 +39,9 @@ event_t const *app_top(app_t *me, event_t const *evt)
 
 void app_ctor(app_t* me)
 {
+    memset(me, 0, sizeof(app_t));
+    // Browser ctx
+    path_set_root(me->browser_ctx.cur_dir);
     hsm_ctor((hsm_t*)me, "app", (event_handler_t)app_top);
     state_ctor(&(me->browser), "browser", &((hsm_t*)me)->top, (event_handler_t)browser_handler);
         state_ctor(&(me->browser_disk), "browser_disk", &(me->browser), (event_handler_t)browser_disk_handler);
@@ -44,6 +49,9 @@ void app_ctor(app_t* me)
         state_ctor(&(me->browser_baddisk), "browser_baddisk", &(me->browser), (event_handler_t)browser_baddisk_handler);
     state_ctor(&(me->player), "player", &((hsm_t*)me)->top, (event_handler_t)player_handler);
         state_ctor(&(me->player_s16), "player_s16", &(me->player), (event_handler_t)player_s16_handler);
+            state_ctor(&(me->player_s16_playing), "player_s16_playing", &(me->player_s16), (event_handler_t)player_s16_playing_handler);
+            state_ctor(&(me->player_s16_paused), "player_s16_paused", &(me->player_s16), (event_handler_t)player_s16_paused_handler);
+    
 }
 
 

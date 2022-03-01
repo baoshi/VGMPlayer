@@ -242,6 +242,7 @@ event_t const *player_s16_handler(app_t *me, event_t const *evt)
         break;
     case EVT_EXIT:
         PL_LOGD("Player_S16: exit\n");
+        audio_stop_playback();
         if (ctx->decoder)
         {
             decoder_s16_destroy((decoder_s16_t *)(ctx->decoder));
@@ -250,19 +251,71 @@ event_t const *player_s16_handler(app_t *me, event_t const *evt)
         break;
     case EVT_START:
         PL_LOGD("Player: s16: start\n");
-        break;
-    case EVT_PLAYER_PLAY_CLICKED:
         audio_setup_playback(ctx->decoder);
         audio_start_playback();
+        STATE_START(me, &me->player_s16_playing); 
+        break;
+    default:
+        r = evt;
+        break;
+    }
+    return r;
+}
+
+
+event_t const *player_s16_playing_handler(app_t *me, event_t const *evt)
+{
+    event_t const *r = 0;
+    player_t *ctx = &(me->player_ctx);
+    switch (evt->code)
+    {
+    case EVT_ENTRY:
+        PL_LOGD("Player_S16_Playing: entry\n");
+        break;
+    case EVT_EXIT:
+        PL_LOGD("Player_S16_Playing: exit\n");
+        break;
+    case EVT_START:
+        PL_LOGD("Player_S16_Playing: start\n");
         break;
     case EVT_PLAYER_MODE_CLICKED:
-        {
-            static bool pause = true;
-            if (pause) audio_pause_playback();
-            else audio_unpause_playback();
-            pause = !pause;
-            break;
-        }
+        audio_pause_playback();
+        STATE_TRAN(me, &(me->player_s16_paused));
+        break;
+    case EVT_PLAYER_SONG_ENDED:
+        STATE_TRAN(me, &(me->browser_disk));
+        break;
+    default:
+        r = evt;
+        break;
+    }
+    return r;
+}
+
+
+event_t const *player_s16_paused_handler(app_t *me, event_t const *evt)
+{
+    event_t const *r = 0;
+    player_t *ctx = &(me->player_ctx);
+    switch (evt->code)
+    {
+    case EVT_ENTRY:
+        PL_LOGD("Player_S16_Paused: entry\n");
+        break;
+    case EVT_EXIT:
+        PL_LOGD("Player_S16_Paused: exit\n");
+        break;
+    case EVT_START:
+        PL_LOGD("Player_S16_Paused: start\n");
+        break;
+    case EVT_PLAYER_PLAY_CLICKED:
+        audio_unpause_playback();
+        STATE_TRAN(me, &(me->player_s16_playing));
+        break;
+    case EVT_PLAYER_MODE_CLICKED:
+        audio_stop_playback();
+        STATE_TRAN(me, &(me->browser_disk));
+        break;
     default:
         r = evt;
         break;

@@ -44,6 +44,8 @@ typedef struct player_s
 
 event_t const *player_handler(app_t *me, event_t const *evt);
 event_t const *player_s16_handler(app_t *me, event_t const *evt);
+event_t const *player_s16_playing_handler(app_t *me, event_t const *evt);
+event_t const *player_s16_paused_handler(app_t *me, event_t const *evt);
 
 
 // Application level state machione
@@ -52,7 +54,7 @@ struct app_s
     hsm_t super;
     state_t browser, browser_disk, browser_nodisk, browser_baddisk;
     browser_t browser_ctx;
-    state_t player, player_s16;
+    state_t player, player_s16, player_s16_playing, player_s16_paused;
     player_t player_ctx;
 };
 
