@@ -26,5 +26,6 @@
   (lib (name "BZ_RPi")(type "KiCad")(uri "${KIUSRSYM}/RPi.kicad_sym")(options "")(descr ""))
   (lib (name "BZ_NXP")(type "KiCad")(uri "${KIUSRSYM}/NXP.kicad_sym")(options "")(descr ""))
   (lib (name "BZ_CirrusLogic")(type "KiCad")(uri "${KIUSRSYM}/CirrusLogic.kicad_sym")(options "")(descr ""))
+  (lib (name "BZ_Maxim")(type "KiCad")(uri "${KIUSRSYM}/Maxim.kicad_sym")(options "")(descr ""))
   (lib (name "BZ_Jieli")(type "KiCad")(uri "$(KIUSRSYM)/JieLi.kicad_sym")(options "")(descr "")(disabled))
 )

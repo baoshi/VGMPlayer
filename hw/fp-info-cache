@@ -1,4 +1,4 @@
-348571046263626
+343831684199522
 BZ_Capacitor
 CP_4x5.3
 SMD capacitor, aluminum electrolytic, Vishay, 4.0x5.3mm
@@ -258,13 +258,6 @@ Through hole pin header THT 1x6 2.54mm single row
 0
 6
 6
-BZ_Connector
-PINHDR-THT-Vert-100mil-01x24
-Through hole straight pin header, 1x24, 2.54mm pitch, single row
-Through hole pin header THT 1x24 2.54mm single row
-0
-14
-14
 BZ_Connector
 PINSKT-THT-Vert-100mil-02x10
 Through hole straight socket strip, 2x10, 2.54mm pitch, double cols
@@ -1154,6 +1147,20 @@ OSHW-logo_silkscreen-front_20mm
 0
 0
 0
+BZ_RPi
+Pico-SMD_TH
+
+
+0
+86
+43
+BZ_RPi
+RP2040
+
+
+0
+57
+57
 BZ_Relay
 OMRON_G2RL-2
 Omron G2RL-2
@@ -1315,6 +1322,13 @@ SOT-523 SC-89
 0
 3
 3
+BZ_Standard_IC
+TDFN-8-1EP_3x3x0.65P_EP2.3x1.5
+Maxim T833+2
+TDFN NoLead
+0
+13
+9
 BZ_Standard_IC
 TSSOP-8_3.0x3.0x0.65P
 
