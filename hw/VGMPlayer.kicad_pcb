@@ -3527,7 +3527,7 @@
       (effects (font (size 0.8 0.8) (thickness 0.15)) (justify mirror))
       (tstamp a29f8df0-3fae-4edf-8d9c-bd5a875b13e3)
     )
-    (fp_text value "MCP73831-OT" (at 0 -2.6) (layer "B.Fab") hide
+    (fp_text value "MCP73832-OT" (at 0 -2.6) (layer "B.Fab") hide
       (effects (font (size 0.8 0.8) (thickness 0.15)) (justify mirror))
       (tstamp e3fc1e69-a11c-4c84-8952-fefb9372474e)
     )
