@@ -3,28 +3,25 @@
 #include "tick.h"
 
 
-// Use TMR0 as sys tick, each tick is 1ms
+// Use TMR0 as sys tick, each tick is 20ms (50Hz)
 // TMR0 config:
-// PSA not used, clock source is FOSC/4 (1MHz/4 = 250kHz)
-// Count upwards from 6 -> 255 = 250 cycles -> 1kHz
+// clock source is FOSC/4 (1MHz/4 = 250kHz)
+// Prescaler 1:32, PSA = 0, count 156
+// Count upwards from 100 -> 255 = 156 cycles -> 50Hz
 
-uint16_t systick;
+volatile uint8_t systick;
 
-volatile static uint8_t _tick_update;
-
-// See above, theoratical value 6, measured 20 is better probably due to interrupt overhead
-#define TMR0_PRELOAD 0x14
+#define TMR0_PRELOAD 100
   
 void tick_init(void)
 {
     systick = 0;
-    _tick_update = 0;
     // OPTION_REG [~WPUEN INTEDG TMR0CS TMR0SE PSA PS<2:0>]
-    //                X     X      0      1     1    000
+    //                X     X      0      1     0    100
     OPTION_REGbits.TMR0CS = 0;
     OPTION_REGbits.TMR0SE = 1;
-    OPTION_REGbits.PSA = 1;
-    OPTION_REGbits.PS = 0b000;
+    OPTION_REGbits.PSA = 0;
+    OPTION_REGbits.PS = 0b100;
     // Preload TMR0
     TMR0 = TMR0_PRELOAD;
     // Clear Interrupt flag before enabling the interrupt
@@ -34,29 +31,11 @@ void tick_init(void)
 }
 
 
-// Call this in main loop
-void tick_update(void)
-{
-    systick += _tick_update;
-    _tick_update = 0;
-}
-
-
 void tick_tmr0_isr(void)
 {
     // Reload
     TMR0 = TMR0_PRELOAD;
     // Clear the TMR0 interrupt flag
     INTCONbits.TMR0IF = 0;
-    ++_tick_update;
-}
-
-
-void tick_waste_ms(uint16_t ms)
-{
-    uint16_t start = systick;
-    while ((systick - start) < ms)
-    {
-        tick_update();
-    }
+    ++systick;
 }

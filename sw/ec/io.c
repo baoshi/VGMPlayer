@@ -12,19 +12,21 @@
 
 
 #define MAX_DEBOUNCE_READS  8u  // # of reads before a state is determined
-uint8_t io_input_state = 0x37;
-uint8_t io_prev_input_state = 0x37;
+
+uint8_t volatile io_input_state = 0x3F;
+uint8_t volatile io_prev_input_state = 0x3F;
+
 
 void io_debounce_inputs(void)
 {
-    // RA0 - IO_SW_MODE
-    // RA1 - IO_SW_UP
-    // RA2 - IO_SW_DOWN
-    // RA3 - 0
-    // RA4 - IO_SW_PLAY
+    // RA0 - IO_SW_NW
+    // RA1 - IO_SW_SW
+    // RA2 - IO_SW_PLAY
+    // RA3 - IO_SW_NE
+    // RA4 - IO_SW_SE
     // RA5 - IO_CHARGER_STATUS
-    // Idle: 0 0 1 1 0 1 1 1 (No button pressed, Not charging)
-    static uint8_t reading[MAX_DEBOUNCE_READS];// = { 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37, 0x37 };
+    // Idle: 0 0 1 1 1 1 1 1 (No button pressed, Not charging)
+    static uint8_t reading[MAX_DEBOUNCE_READS];// = { 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F };
     static uint8_t idx = 0;
     uint8_t i;
     uint8_t a;
@@ -62,10 +64,18 @@ void io_debounce_inputs(void)
 void io_init(void)
 {
     // PORTA:
-    // RA0 - IO_SW_MODE         Input, WPU
-    // RA1 - IO_SW_UP           Input, WPU
-    // RA2 - IO_SW_DOWN         Input, WPU
-    // RA4 - IO_SW_PLAY         Input, WPU
+// RA0 - IO_SW_NW
+// RA1 - IO_SW_SW
+// RA2 - IO_SW_PLAY
+// RA3 - IO_SW_NE
+// RA4 - IO_SW_SE
+// RA5 - IO_CHARGER_STATUS
+    
+    // RA0 - IO_SW_NW           Input, WPU
+    // RA1 - IO_SW_SW           Input, WPU
+    // RA2 - IO_SW_PLAY         Input, WPU
+    // RA3 - IO_SW_NE
+    // RA4 - IO_SW_SE           Input, WPU
     // RA5 - IO_CHARGER_STATUS  Input, WPU
     // PORTA registers
     LATA = 0x00;    // LATA  [u u 5 4 3 2 1 0]
@@ -84,13 +94,13 @@ void io_init(void)
     // PORTC:
     // RC0 - IO_SCL         Input
     // RC1 - IO_SDA         Input
-    // RC2 - IO_PWR_EN      Init input, when enable, output Low
+    // RC2 - IO_PWR_EN      Init input, when enable, output High
     // RC3 - IO_ADC_BATT    Input, AN7
     // RC4 - IO_LED         Output, init Low
     // RC5 - IO_BOOTSEL     Output, init Low
     // PORTC registers
-    LATC = 0x04;    // LATC  [u u 5 4 3 2 1 0]
-                    //        0 0 0 0 0 1 0 0 -> RC2 initial to high
+    LATC = 0x00;    // LATC  [u u 5 4 3 2 1 0]
+                    //        0 0 0 0 0 0 0 0 -> RC2 initial to high
     TRISC = 0x0F;   // TRISC [u u 5 4 3 2 1 0]
                     //        0 0 0 0 1 1 1 1 -> RC0, RC1, RC2, RC3 input
     ANSELC = 0x08;  // ANSELC[u u u u 3 2 1 0]
@@ -103,14 +113,14 @@ void io_init(void)
 
 void io_main_power_on(void)
 {
-    LATCbits.LATC2 = 0;
-    TRISCbits.TRISC2 = 0;   // Output Low at RC2
+    LATCbits.LATC2 = 1;
+    TRISCbits.TRISC2 = 0;   // Output High at RC2
 }
 
 
 void io_main_power_off(void)
 {
-    LATCbits.LATC2 = 1;
+    LATCbits.LATC2 = 0;
     TRISCbits.TRISC2 = 1;   // Set RC2 to input (HiZ)
 }
 
@@ -139,12 +149,6 @@ void io_led_off(void)
 }
 
 
-void io_led_toggle(void)
-{
-    LATCbits.LATC4 = ~LATCbits.LATC4;
-}
-
-
 // Preparing sleep
 // Set proper levels and enable IOC
 void io_prepare_sleep(void)
@@ -154,15 +158,14 @@ void io_prepare_sleep(void)
     IOCAF = 0x00;   // IOCAF  [u u 5 4 3 2 1 0]
                     //         0 0 0 0 0 0 0 0
     // Negative Edge IOC register
-    IOCAN = 0x37;   // IOCAN  [u u 5 4 3 2 1 0]
-                    //         0 0 1 1 0 1 1 1  (RA0,1,2,4,5)
+    IOCAN = 0x3F;   // IOCAN  [u u 5 4 3 2 1 0]
+                    //         0 0 1 1 1 1 1 1  (RA0,1,2,3,4,5) (buttons & charge)
     // Positive Edge IOC register
-    IOCAP = 0x00;   // IOCAP  [u u 5 4 3 2 1 0]
-                    //         0 0 0 0 0 0 0 0  (None)
+    IOCAP = 0x20;   // IOCAP  [u u 5 4 3 2 1 0]
+                    //         0 0 1 0 0 0 0 0  (RA5) (charge)
     // Enable IOCI interrupt 
     INTCONbits.IOCIE = 1; 
 }
-
 
 
 void io_exit_sleep(void)

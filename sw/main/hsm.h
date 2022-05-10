@@ -42,7 +42,7 @@ void state_ctor(state_t *me, char const *name, state_t *super, event_handler_t h
 
 struct hsm_s
 {
-    char const *name;             /* state macine name */
+    char const *name;             /* state machine name */
     state_t *curr;                /* current state */
     state_t *next;                /* next state */
     state_t *source;              /* source state during last transition */
@@ -61,7 +61,7 @@ void hsm_on_event(hsm_t *me, event_t const *evt);
 
 
 /* protected: */
-unsigned char hsm_to_lca_(hsm_t *me, state_t *target);
+uint8_t hsm_to_lca_(hsm_t *me, state_t *target);
 void hsm_exit_(hsm_t *me, uint8_t levels);
 
     /* get current state */

@@ -1,8 +1,8 @@
 /*
- * File:   uplink.c
+ * File:   i2c.c
  * Author: Baoshi
  *
- * Created on 2 May, 2021, 12:33 PM
+ * Created on 9 May, 2022, 12:33 PM
  */
 
 
@@ -10,25 +10,19 @@
 #include <stdbool.h>
 #include "global.h"
 #include "tick.h"
-#include "led.h"
-#include "uplink.h"
+#include "adc.h"
+#include "io.h"
+#include "i2c.h"
 
 
 #define SLAVE_ADDRESS 0x13u
 
-uint16_t uplink_recent_activity;
+volatile uint8_t i2c_recent_activity;
 
 static bool _activity;
 
-#define UPLINK_DATA_COUNT 2u
-static uint8_t data[UPLINK_DATA_COUNT];
-
-
-void uplink_start(void)
+void i2c_start(void)
 {
-    // dummy sample data
-    data[0] = 0x00;
-    data[1] = 0x00;
     // Init I2C slave
     // MSSP config
     SSP1STATbits.SMP = 1;           // Slew rate control disabled
@@ -44,11 +38,11 @@ void uplink_start(void)
     PIE2bits.BCL1IE = 1;            // Enable BCLIF
     PIE1bits.SSP1IE = 1;            // Enable SSPIF
     _activity = false;
-    uplink_recent_activity = systick;
+    i2c_recent_activity = systick;
 }
 
 
-void uplink_stop(void)
+void i2c_stop(void)
 {
     SSP1CON1bits.SSPEN = 0;         // Disable MSSP
     PIR2bits.BCL1IF = 0;            // Clear Bus Collision interrupt flag
@@ -58,20 +52,11 @@ void uplink_stop(void)
 }
 
 
-void uplink_set_byte(uint8_t idx, uint8_t val)
-{
-    if (idx < UPLINK_DATA_COUNT)
-    {
-        data[idx] = val;
-    }
-}
-
-
-void uplink_track_activity(void)
+void i2c_track_activity(void)
 {
     if (_activity)
     {
-        uplink_recent_activity = systick;
+        i2c_recent_activity = systick;
         _activity = false;
     }
 }
@@ -84,18 +69,22 @@ void i2c_slave_ssp_isr(void)
     // Global ISR guarantees PIR1bits.SSP1IF == 1
     if (SSP1STATbits.R_nW == 1) // Master wants to read
     {
-        temp = SSP1BUF;
+        temp = SSP1BUF; // read buf
         if (SSP1STATbits.D_nA == 0) // Last byte was address, sending first data byte
         {
-            SSP1BUF = data[0];
-            idx = 1;
+            // data0 is io_input_state
+            temp = (uint8_t)(~io_input_state);
+            temp &= 0x3F;
+            SSP1BUF = temp;
+            idx = 0;
         }
         else  // Already transmitted first data byte, sending next
         {
-            if (idx < UPLINK_DATA_COUNT) // Still have data?
+            ++idx;
+            if (idx == 1)
             {
-                SSP1BUF = data[idx];
-                ++idx;
+                // data1 is adc_bat
+                SSP1BUF = adc_bat;
             }
             else // All data are sent
             {

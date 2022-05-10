@@ -1,0 +1,71 @@
+{
+    "cmake.statusbar.advanced": {
+        "debug": {
+            "visibility": "hidden"
+        },
+        "launch": {
+            "visibility": "hidden"
+        },
+        "build": {
+            "visibility": "default"
+        },
+        "buildTarget": {
+            "visibility": "hidden"
+        }
+    },
+    "cmake.buildBeforeRun": true,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "cortex-debug.gdbPath.windows": "arm-none-eabi-gdb",
+    "cortex-debug.gdbPath.linux": "arm-none-eabi-gdb",
+    "cortex-debug.JLinkGDBServerPath.linux": "JLinkGDBServer",
+    "cortex-debug.JLinkGDBServerPath.windows": "c:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe",
+    "cortex-debug.openocdPath.windows": "openocd.exe",
+    "files.associations": {
+        "stdlib.h": "c",
+        "pico.h": "c",
+        "config.h": "c",
+        "debug.h": "c",
+        "assert.h": "c",
+        "generic_debug.h": "c",
+        "cassert": "c",
+        "cctype": "c",
+        "cfloat": "c",
+        "climits": "c",
+        "cmath": "c",
+        "cstdarg": "c",
+        "cstdio": "c",
+        "cstdlib": "c",
+        "exception": "c",
+        "limits": "c",
+        "new": "c",
+        "*.tcc": "c",
+        "type_traits": "c",
+        "typeinfo": "c",
+        "sdcard.h": "c",
+        "ff.h": "c",
+        "ffconf.h": "c",
+        "lv_disp.h": "c",
+        "lv_hal.h": "c",
+        "lv_demo.h": "c",
+        "lv_demo_conf.h": "c",
+        "types.h": "c",
+        "lv_demos.h": "c",
+        "lv_demo_benchmark.h": "c",
+        "gpio.h": "c",
+        "stddef.h": "c",
+        "disk.h": "c",
+        "lv_indev.h": "c",
+        "audio.h": "c",
+        "wm8978.h": "c",
+        "numeric": "c",
+        "ranges": "c",
+        "streambuf": "c",
+        "tuple": "c",
+        "utility": "c",
+        "my_mem.h": "c",
+        "random": "c",
+        "event_queue.h": "c",
+        "browser.h": "c"
+    },
+    "cmake.configureOnOpen": true
+}

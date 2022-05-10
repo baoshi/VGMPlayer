@@ -14,16 +14,17 @@ extern "C"
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 
-extern uint16_t systick;
-  
+extern volatile uint8_t systick;
+
+#define MS_PER_TICK 20
+
 void tick_init(void);
-
-void tick_update(void);
 
 void tick_tmr0_isr(void);
 
-void tick_waste_ms(uint16_t ms);
+
 
 #ifdef	__cplusplus
 }

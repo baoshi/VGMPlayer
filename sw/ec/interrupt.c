@@ -8,7 +8,7 @@
 
 #include <xc.h>
 #include "tick.h"
-#include "uplink.h"
+#include "i2c.h"
 #include "interrupt.h"
 
 void __interrupt() ISR(void)
