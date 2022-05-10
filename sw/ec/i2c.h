@@ -20,10 +20,10 @@ extern "C"
 // I2C slave mode, address: 0x13
 //
 // Master read: return 2 bytes
-// 1: Status  [ x U CHG  SE NE PLAY SW NW]
+// 1: Status  [ x x CHG  SE NE PLAY SW NW]
 //            bit 7: Unimplemented
-//            bit 6: USB, USB is connected = 1
-//            bit 5: CHARGE battery is charging = 1
+//            bit 6: Unimplemented
+//            bit 5: CHG battery is charging = 1
 //            bit 4: SE key status, debounced, pressed = 1
 //            bit 3: NE key status, debounced, pressed = 1
 //            bit 2: PLAY key status, debounced, pressed = 1
