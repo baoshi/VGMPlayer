@@ -7,12 +7,12 @@
       <itemPath>global.h</itemPath>
       <itemPath>clock.h</itemPath>
       <itemPath>adc.h</itemPath>
-      <itemPath>interrupt.h</itemPath>
       <itemPath>io.h</itemPath>
       <itemPath>led.h</itemPath>
       <itemPath>tick.h</itemPath>
       <itemPath>state.h</itemPath>
       <itemPath>i2c.h</itemPath>
+      <itemPath>isr.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -23,8 +23,6 @@
                    projectFiles="true">
       <itemPath>adc.c</itemPath>
       <itemPath>clock.c</itemPath>
-      <itemPath>configuration_bits.c</itemPath>
-      <itemPath>interrupt.c</itemPath>
       <itemPath>io.c</itemPath>
       <itemPath>led.c</itemPath>
       <itemPath>main.c</itemPath>
@@ -36,6 +34,8 @@
       <itemPath>state_dfu.c</itemPath>
       <itemPath>i2c.c</itemPath>
       <itemPath>state_off.c</itemPath>
+      <itemPath>config.c</itemPath>
+      <itemPath>isr.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -179,7 +179,6 @@
         <property key="debugoptions.debug-startup" value="Use system settings"/>
         <property key="debugoptions.reset-behaviour" value="Use system settings"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
-        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>

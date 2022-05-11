@@ -1,12 +1,12 @@
 /* 
- * File:   interrupt.h
+ * File:   isr.h
  * Author: Baoshi
  *
  * Created on May 1, 2021, 8:36 PM
  */
 
-#ifndef INTERRUPT_H
-#define	INTERRUPT_H
+#ifndef ISR_H
+#define	ISR_H
 
 #ifdef	__cplusplus
 extern "C"
@@ -24,5 +24,5 @@ extern "C"
 }
 #endif
 
-#endif	/* INTERRUPT_H */
+#endif	/* ISR_H */
 

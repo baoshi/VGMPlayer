@@ -9,7 +9,7 @@
 #include <xc.h>
 #include "tick.h"
 #include "i2c.h"
-#include "interrupt.h"
+#include "isr.h"
 
 void __interrupt() ISR(void)
 {

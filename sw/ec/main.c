@@ -3,7 +3,7 @@
 #include "global.h"
 #include "clock.h"
 #include "tick.h"
-#include "interrupt.h"
+#include "isr.h"
 #include "io.h"
 #include "state.h"
 

@@ -7,7 +7,6 @@
 
 #include <xc.h>
 #include "tick.h"
-#include "interrupt.h"
 #include "led.h"
 
 
