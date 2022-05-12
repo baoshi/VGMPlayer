@@ -65,7 +65,8 @@
         "my_mem.h": "c",
         "random": "c",
         "event_queue.h": "c",
-        "browser.h": "c"
+        "browser.h": "c",
+        "lvinput.h": "c"
     },
     "cmake.configureOnOpen": true
 }

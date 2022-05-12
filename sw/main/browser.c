@@ -100,15 +100,15 @@ static void create_screen(browser_t* ctx)
     ctx->screen = lv_obj_create(NULL);
     // Self-destruction callback
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void*)ctx);
-    // Setup Keypad, use UP/DOWN/PLAY
+    // Setup Keypad, use NE->Prev, SE->Next, PLAY->Enter
     lvi_clear_keypad_group();
     lvi_disable_keypad();
     lvi_map_keypad(LVI_BUTTON_PLAY, LV_KEY_ENTER);
-    lvi_map_keypad(LVI_BUTTON_UP, LV_KEY_PREV);
-    lvi_map_keypad(LVI_BUTTON_DOWN, LV_KEY_NEXT);
+    lvi_map_keypad(LVI_BUTTON_NE, LV_KEY_PREV);
+    lvi_map_keypad(LVI_BUTTON_SE, LV_KEY_NEXT);
     // Setup Button, use MODE at pos(0,0)
     lvi_disable_button();
-    lvi_pos_button(LVI_BUTTON_MODE, 0, 0);
+    lvi_pos_button(LVI_BUTTON_NW, 0, 0);
     // Invisible button at coordinate (0,0)
     lv_obj_t* btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
@@ -312,7 +312,7 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         case EVT_BROWSER_UI_UPDATE:
         {
             char buf[32];
-            sprintf(buf, "U=%d C=%d B=%.1fv", ec_usb, ec_charge, ec_battery);
+            sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
             lv_label_set_text(ctx->lbl_top, buf);
             break;
         }

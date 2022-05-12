@@ -11,10 +11,12 @@ extern lv_indev_t* lvi_button;
 extern lv_indev_t* lvi_keypad;
 extern lv_group_t* lvi_keypad_group;
 
-#define LVI_BUTTON_MODE 0x01
-#define LVI_BUTTON_PLAY 0x02
-#define LVI_BUTTON_UP   0x04
-#define LVI_BUTTON_DOWN 0x08
+
+#define LVI_BUTTON_NW   0
+#define LVI_BUTTON_SW   1
+#define LVI_BUTTON_PLAY 2
+#define LVI_BUTTON_NE   3
+#define LVI_BUTTON_SE   4
 
 
 void lvi_init();

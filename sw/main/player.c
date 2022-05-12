@@ -131,10 +131,10 @@ static void create_screen(player_t* ctx)
     lvi_clear_keypad_group();
     lvi_disable_keypad();
     lvi_disable_button();
-    lvi_pos_button(LVI_BUTTON_MODE, 0, 0);
+    lvi_pos_button(LVI_BUTTON_SE, 0, 0);
     lvi_pos_button(LVI_BUTTON_PLAY, 1, 0);
-    lvi_pos_button(LVI_BUTTON_UP, 2, 0);
-    lvi_pos_button(LVI_BUTTON_DOWN, 3, 0);
+    lvi_pos_button(LVI_BUTTON_NW, 2, 0);
+    lvi_pos_button(LVI_BUTTON_SW, 3, 0);
     // 4 invisible buttons
     lv_obj_t* btn;
     // Mode
@@ -215,7 +215,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         case EVT_PLAYER_UI_UPDATE:
         {
             char buf[32];
-            sprintf(buf, "U=%d C=%d B=%.1fv", ec_usb, ec_charge, ec_battery);
+            sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
             lv_label_set_text(ctx->lbl_top, buf);
             break;
         }

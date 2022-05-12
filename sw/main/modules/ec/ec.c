@@ -30,7 +30,6 @@
 #endif
 
 
-bool ec_usb;         // true if usb connected
 bool ec_charge;      // true if charging
 float ec_battery;    // battery voltage
 uint8_t ec_buttons;   
@@ -42,24 +41,25 @@ static int _failure_count;
 // I2C address: 0x13
 //
 // Master read: return 2 bytes
-// 1: Status  [ X X USB CHG M P U D], Matches io_input_state
-//            bit 7-6: Unimplemented
-//            bit 5: USB, USB is connected = 1
-//            bit 4: CHG, battery is charging = 1
-//            bit 3: MODE key status, debounced, pressed = 1
+// 1: Status  [ x x CHG SE NE PLAY SW NW]
+//            bit 7: Unimplemented
+//            bit 6: Unimplemented
+//            bit 5: CHG battery is charging = 1
+//            bit 4: SE key status, debounced, pressed = 1
+//            bit 3: NE key status, debounced, pressed = 1
 //            bit 2: PLAY key status, debounced, pressed = 1
-//            bit 1: UP key status, debounced, pressed = 1
-//            bit 0: DOWN key status, debounced, pressed = 1
+//            bit 1: SW key status, debounced, pressed = 1
+//            bit 0: NW key status, debounced, pressed = 1
 // 2: Battery [7 6 5 4 3 2 1 0]    
 //            V_Battery = Battery / 30.0f
+
 
 // Decode _data into ec_usb, ec_charge, ec_battery
 static void _decode(void)
 {
-    // Status  [ X X USB CHG M P U D]
-    ec_usb = (_data[0] & 0x20) ? true : false;
-    ec_charge = (_data[0] & 0x10) ? true : false;
-    ec_buttons = _data[0] & 0x0F;
+    // Status  [ X X CHG SE NE PLAY SW NW]
+    ec_charge = (_data[0] & 0x20) ? true : false;
+    ec_buttons = _data[0] & 0x1F;
     ec_battery = (float)(_data[1]) / 30.0f;
 }
 
@@ -103,7 +103,7 @@ int ec_update(uint32_t now)
     {
         _failure_count = 0;
         _decode();
-        EC_LOGD("USB=%d, Charge=%d, Button=0x%02x, Batt=%.1fv\n", ec_usb, ec_charge, ec_buttons, ec_battery);
+        EC_LOGD("Charger=%d, Button=0x%02x, Batt=%.1fv\n", ec_usb, ec_charge, ec_buttons, ec_battery);
         if (old == _data[0])
             ret = 0;
         else
@@ -117,25 +117,4 @@ int ec_update(uint32_t now)
             ret = -1;
     }
     return ret;
-}
-
-
-// bit 3: MODE key status, debounced, pressed = 1
-// bit 2: PLAY key status, debounced, pressed = 1
-// bit 1: UP key status, debounced, pressed = 1
-// bit 0: DOWN key status, debounced, pressed = 1
-
-// Read button, return one of the EC_BUTTON_XX or -1 if nothing pressed
-int8_t ec_read_buttons(void)
-{
-    if (ec_buttons & 0x01)
-        return EC_BUTTON_DOWN;
-    if (ec_buttons & 0x02)
-        return EC_BUTTON_UP;
-    if (ec_buttons & 0x04)
-        return EC_BUTTON_PLAY;
-    if (ec_buttons & 0x08)
-        return EC_BUTTON_MODE;
-    // No button pressed
-    return -1;
 }
