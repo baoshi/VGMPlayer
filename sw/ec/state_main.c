@@ -9,6 +9,17 @@
 #include "state.h"
 
 
+// MAIN State
+// Entry:
+//   LED off
+//   Start ADC, I2C
+// Exit:
+//   Stop ADC, I2C
+// Update:
+//   Update IO, ADC
+//   If I2C activity lost for more than TIME_I2C_LOST_TO_OFF, go to OFF state
+
+
 void state_main_entry(void)
 {
     adc_start();

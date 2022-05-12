@@ -7,6 +7,16 @@
 #include "state.h"
 
 
+// PRE_DFU State
+// Entry:
+//   LED set to PRE_DFU pattern
+// Exit:
+//   LED off
+// Update:
+//   If NW and SE are held more than TIME_HOLD_TO_ENTER_DFU, enter DFU
+//   If any of NW/SE released, enter MAIN
+
+
 static uint8_t _timestamp;
 
 void state_predfu_entry(void)
@@ -28,7 +38,7 @@ uint8_t state_predfu_update(void)
     {
         r = MAIN_STATE_MAIN;
     }
-    else if ((uint8_t)(systick - _timestamp) >= (3000 / MS_PER_TICK))
+    else if ((uint8_t)(systick - _timestamp) >= (TIME_HOLD_TO_ENTER_DFU / MS_PER_TICK))
     {
         r = MAIN_STATE_DFU;
     }

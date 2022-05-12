@@ -5,20 +5,30 @@
 #include "adc.h"
 #include "state.h"
 
+// SLEEP State
+// Entry:
+//   Prepare IO
+// Exit:
+//   None
+// Update:
+//   Set charger LED
+//   Enter Sleep
+//   Wake up, check:
+//     If SW/NE/PL down, go to PRE_MAIN state
+//     If one of NW/SE down, go to PRE_MAIN state
+//     If both NW/SE down, go to PRE_DFU state
+//     Else loop back Update
+
 
 void state_sleep_entry(void)
 {
-    // Make sure I/O is configured as known state
+    // Make sure IOs are configured as known state
     io_init();
     io_main_power_off();
     io_set_bootsel_high();
     io_led_off();
     // Perform several io reading to get stable io state
-    uint8_t t;
-    for (t = 0; t < 10u; ++t)
-    {
-        io_debounce_inputs();
-    }
+    for (uint8_t i = 0; i < 10; ++i)  io_debounce_inputs();
 }
 
 
@@ -26,7 +36,7 @@ uint8_t state_sleep_update(void)
 {
     uint8_t r = MAIN_STATE_SLEEP;
     // Set LED based on charger status
-    if ((io_input_state & IO_STATUS_MASK_CHARGER) == 0u) // is charging?
+    if ((io_input_state & IO_STATUS_MASK_CHARGER) == 0) // is charging?
     {
         io_led_on();
     }
@@ -44,27 +54,27 @@ uint8_t state_sleep_update(void)
     // Wakeup
     io_exit_sleep();
     // Read & debounce inputs ~10ms
-    for (uint8_t i = 0; i < 10u; ++i)
+    for (uint8_t i = 0; i < 10; ++i)
     {
         io_debounce_inputs();
     }
     // If any of the "SW", "Play", "NE" buttons are down, go to PRE_MAIN state
-    if ((~io_input_state & (IO_STATUS_MASK_SW | IO_STATUS_MASK_PLAY | IO_STATUS_MASK_NE)) != 0u)
+    if ((~io_input_state & (IO_STATUS_MASK_SW | IO_STATUS_MASK_PLAY | IO_STATUS_MASK_NE)) != 0)
     {
         r = MAIN_STATE_PRE_MAIN;
     }
-    // One or both "NW" and "SE" buttons are down, take some more time to check if both are down
-    else if ((~io_input_state & (IO_STATUS_MASK_NW | IO_STATUS_MASK_SE)) != 0u)
+    // One or both "NW" and "SE" buttons are down, wait some more time to check if both are down
+    else if ((~io_input_state & (IO_STATUS_MASK_NW | IO_STATUS_MASK_SE)) != 0)
     {
         // Read & debounce inputs ~100ms
-        for (uint8_t i = 0; i < 100u; ++i)
+        for (uint8_t i = 0; i < 100; ++i)
         {
             io_debounce_inputs();
         }
         // If both "NW" and "SE" are down, go into PRE_DFU, else go to PRE_MAIN
-        if ( ((~io_input_state & IO_STATUS_MASK_NW) != 0u)
+        if ( ((~io_input_state & IO_STATUS_MASK_NW) != 0)
              &&
-             ((~io_input_state & IO_STATUS_MASK_SE) != 0u)
+             ((~io_input_state & IO_STATUS_MASK_SE) != 0)
            )
         {
             r = MAIN_STATE_PRE_DFU;

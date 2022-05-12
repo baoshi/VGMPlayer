@@ -8,16 +8,24 @@
 #include "i2c.h"
 #include "state.h"
 
+// DFU State
+// Entry:
+//   LED set to DFU pattern
+//   Prepare DFU sub-state machine
+// Exit:
+//   LED off
+// Update:
+//   DFU sub-state machine process
+//   
 
-#define TIME_BOOTSEL_HOLD       100
 
 enum 
 {
     DFU_STATE_ENTER = 0,        // Just enter, wait all button released
-    DFU_STATE_WAIT_USB,         // Wait for USB. When connected, hold BOOTSEL down
-    DFU_STATE_BOOTSEL,          // Wait TIME_BOOTSEL_HOLD then release
+    DFU_STATE_WAIT_USB,         // Wait for USB. When connected, hold BOOTSEL down, power up main processor
+    DFU_STATE_BOOTSEL,          // Wait TIME_BOOTSEL_HOLD then release BOOTSEL
     DFU_STATE_FLASH,            // If I2C query received, to MAIN_STATE_MAIN; If any button down, go EXIT
-    DFU_STATE_EXIT              // Wait button release and RESET
+    DFU_STATE_EXIT              // Wait button release then RESET
 };
 
 
@@ -69,7 +77,7 @@ uint8_t state_dfu_update(void)
         }
         // if any button down, abort DFU
         io_debounce_inputs();
-        if ((uint8_t)(~io_input_state) & IO_STATUS_MASK_BUTTONS)
+        if ((~io_input_state) & IO_STATUS_MASK_BUTTONS)
         {
             _state = DFU_STATE_EXIT;
             break;
@@ -98,7 +106,7 @@ uint8_t state_dfu_update(void)
         }
         // If any button down, go EXIT
         io_debounce_inputs();
-        if ((uint8_t)(~io_input_state) & IO_STATUS_MASK_BUTTONS)
+        if ((~io_input_state) & IO_STATUS_MASK_BUTTONS)
         {
             _state = DFU_STATE_EXIT;
         }

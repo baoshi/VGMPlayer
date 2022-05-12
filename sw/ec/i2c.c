@@ -73,9 +73,7 @@ void i2c_slave_ssp_isr(void)
         if (SSP1STATbits.D_nA == 0) // Last byte was address, sending first data byte
         {
             // data0 is io_input_state
-            temp = (uint8_t)(~io_input_state);
-            temp &= 0x3F;
-            SSP1BUF = temp;
+            SSP1BUF = (uint8_t)(~io_input_state) & 0x3F;
             idx = 0;
         }
         else  // Already transmitted first data byte, sending next

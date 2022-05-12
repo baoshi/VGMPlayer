@@ -5,6 +5,14 @@
 #include "led.h"
 #include "state.h"
 
+// PRE_MAIN State
+// Entry:
+//   LED on
+// Exit:
+//   LED off
+// Update:
+//   When all buttons release, go to MAIN state
+
 
 void state_premain_entry(void)
 {

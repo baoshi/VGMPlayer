@@ -7,6 +7,15 @@
 #include "led.h"
 #include "state.h"
 
+// OFF State
+// Entry:
+//   LED set to PRE_OFF pattern
+// Exit:
+//   None
+// Update:
+//   After TIME_NOTICE_OFF elapses, wait button release and reset MCU
+//   
+
 static uint8_t _timestamp;
 
 void state_off_entry(void)
