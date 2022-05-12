@@ -155,24 +155,24 @@ void lvi_pos_button(uint8_t button, lv_coord_t x, lv_coord_t y)
         _button_coord[0].y = y;
         _button_mask |= 0x01;
         break;
-    case LVI_BUTTON_SW:     // 2
+    case LVI_BUTTON_SW:     // 1
         _button_coord[1].x = x;
         _button_coord[1].y = y;
         _button_mask |= 0x02;
         break;
-    case LVI_BUTTON_PLAY:   // 3
+    case LVI_BUTTON_PLAY:   // 2
         _button_coord[2].x = x;
         _button_coord[2].y = y;
         _button_mask |= 0x04;
         break;
-    case LVI_BUTTON_NE:     // 4
+    case LVI_BUTTON_NE:     // 3
         _button_coord[3].x = x;
         _button_coord[3].y = y;
         _button_mask |= 0x08;
         break;
-    case LVI_BUTTON_SE:     // 5
-        _button_coord[3].x = x;
-        _button_coord[3].y = y;
+    case LVI_BUTTON_SE:     // 4
+        _button_coord[4].x = x;
+        _button_coord[4].y = y;
         _button_mask |= 0x10;
         break;
     default:

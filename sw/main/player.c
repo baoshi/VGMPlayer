@@ -65,6 +65,7 @@ static void button_mode_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
+        PL_LOGD("Mode button pressed\n");
         EQ_QUICK_PUSH(EVT_PLAYER_MODE_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
@@ -81,6 +82,7 @@ static void button_play_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
+        PL_LOGD("Play button pressed\n");
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
@@ -97,6 +99,7 @@ static void button_up_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
+        PL_LOGD("Up button pressed\n");
         EQ_QUICK_PUSH(EVT_PLAYER_UP_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
@@ -113,6 +116,7 @@ static void button_down_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
+        PL_LOGD("Down button pressed\n");
         EQ_QUICK_PUSH(EVT_PLAYER_DOWN_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
@@ -131,44 +135,45 @@ static void create_screen(player_t* ctx)
     lvi_clear_keypad_group();
     lvi_disable_keypad();
     lvi_disable_button();
-    lvi_pos_button(LVI_BUTTON_SE, 0, 0);
-    lvi_pos_button(LVI_BUTTON_PLAY, 1, 0);
-    lvi_pos_button(LVI_BUTTON_NW, 2, 0);
-    lvi_pos_button(LVI_BUTTON_SW, 3, 0);
+    lvi_pos_button(LVI_BUTTON_PLAY, 0, 0);
+    lvi_pos_button(LVI_BUTTON_NW, 1, 0);
+    lvi_pos_button(LVI_BUTTON_SW, 2, 0);
+    lvi_pos_button(LVI_BUTTON_SE, 3, 0);
     // 4 invisible buttons
     lv_obj_t* btn;
-    // Mode
+    // Play
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 0, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_mode_handler, LV_EVENT_ALL, (void*)ctx);
-    // Play
+    lv_obj_add_event_cb(btn, button_play_handler, LV_EVENT_ALL, (void*)ctx);
+    // NW / Vol up
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 1, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_play_handler, LV_EVENT_ALL, (void*)ctx);
-    // Up
+    lv_obj_add_event_cb(btn, button_up_handler, LV_EVENT_ALL, (void*)ctx);
+    // SW / Vol down
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 2, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_up_handler, LV_EVENT_ALL, (void*)ctx);
-    // Down
+    lv_obj_add_event_cb(btn, button_down_handler, LV_EVENT_ALL, (void*)ctx);
+    // SE / Back
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 3, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_down_handler, LV_EVENT_ALL, (void*)ctx);
+    lv_obj_add_event_cb(btn, button_mode_handler, LV_EVENT_ALL, (void*)ctx);
+
     // Create top label
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_top, 200);

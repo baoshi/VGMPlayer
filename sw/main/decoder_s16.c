@@ -6,7 +6,7 @@
 
 
 #ifndef S16_DEBUG
-#  define S16_DEBUG 1
+#  define S16_DEBUG 0
 #endif
 
 // Debug log

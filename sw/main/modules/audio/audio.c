@@ -67,6 +67,10 @@ void audio_preinit()
     gpio_init(JACK_DETECTION_PIN);
     gpio_disable_pulls(JACK_DETECTION_PIN);
     gpio_set_dir(JACK_DETECTION_PIN, GPIO_IN);
+    // Jack enable pin
+    gpio_init(JACK_EN_PIN);
+    gpio_put(JACK_EN_PIN, false);    // disable output
+    gpio_set_dir(JACK_EN_PIN, GPIO_OUT);
     _jd_state = JACK_EMPTY;
     _jd_timestamp = 0;
 }
@@ -75,6 +79,7 @@ void audio_preinit()
 void audio_postinit()
 {
     wm8978_postinit();
+    gpio_put(JACK_EN_PIN, true);
 }
 
 
