@@ -67,6 +67,9 @@ void audio_preinit()
     gpio_init(JACK_DETECTION_PIN);
     gpio_disable_pulls(JACK_DETECTION_PIN);
     gpio_set_dir(JACK_DETECTION_PIN, GPIO_IN);
+    gpio_init(JACK_DETECTION_ADC_PIN);
+    gpio_disable_pulls(JACK_DETECTION_ADC_PIN);
+    gpio_set_dir(JACK_DETECTION_ADC_PIN, GPIO_IN);
     // Jack enable pin
     gpio_init(JACK_EN_PIN);
     gpio_put(JACK_EN_PIN, false);    // disable output

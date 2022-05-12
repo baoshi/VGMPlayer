@@ -17,8 +17,10 @@
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cortex-debug.gdbPath.windows": "arm-none-eabi-gdb",
     "cortex-debug.gdbPath.linux": "arm-none-eabi-gdb",
-    "cortex-debug.JLinkGDBServerPath.linux": "JLinkGDBServer",
+    "cortex-debug.gdbPath.osx": "arm-none-eabi-gdb",
     "cortex-debug.JLinkGDBServerPath.windows": "c:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe",
+    "cortex-debug.JLinkGDBServerPath.linux": "JLinkGDBServer",
+    "cortex-debug.JLinkGDBServerPath.osx": "/Applications/SEGGER/JLink/JLinkGDBServerCLExe",
     "cortex-debug.openocdPath.windows": "openocd.exe",
     "files.associations": {
         "stdlib.h": "c",
