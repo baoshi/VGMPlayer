@@ -68,7 +68,8 @@
         "random": "c",
         "event_queue.h": "c",
         "browser.h": "c",
-        "lvinput.h": "c"
+        "lvinput.h": "c",
+        "umm_malloc_cfg.h": "c"
     },
     "cmake.configureOnOpen": true
 }

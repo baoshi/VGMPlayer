@@ -259,7 +259,7 @@ static void populate_file_list(browser_t* ctx)
         {
             focus = btn;
         }
-        if ((BROWSER_MAX_LIST_FILES != -1) && (total >= BROWSER_MAX_LIST_FILES))
+        if (total >= BROWSER_MAX_LIST_FILES)    // Limit list size
         {
             break;
         }
