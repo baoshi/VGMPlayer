@@ -158,6 +158,7 @@ static void run_ls()
 {
     FRESULT fr;
     char *arg1 = strtok(NULL, " ");
+    absolute_time_t xStart = get_absolute_time();
     if (arg1) 
     {
         printf("Directory Listing: %s\n", arg1);
@@ -178,6 +179,8 @@ static void run_ls()
             return;
         }
     }
+    int64_t elapsed_us = absolute_time_diff_us(xStart, get_absolute_time());
+    printf("Elapsed %0.1fms\n", elapsed_us / 1000.0f);
 }
 
 
@@ -227,8 +230,9 @@ static void run_lister()
     char path[FF_LFN_BUF + 1];
     char *arg1 = strtok(NULL, " ");
     const char *patterns[] = {
-        "c", "h", "json", 0
+        "nsf", 0
     };
+    absolute_time_t xStart = get_absolute_time();
     if (arg1) 
     {
         if (arg1[0] != '/')
@@ -244,13 +248,10 @@ static void run_lister()
     {
         path_copy(cur_dir, path, FF_LFN_BUF + 1);
     }
-    absolute_time_t xStart = get_absolute_time();
     lister_t* lister = 0;
     r = lister_open_dir(path, 0, 20, true, &lister);
     if (LS_OK == r)
     {
-        int64_t elapsed_us = absolute_time_diff_us(xStart, get_absolute_time());
-        printf("Elapsed %0.1fms\n", elapsed_us / 1000.0f);
         printf("Directory: %s, count=%d\n", lister->dir, lister->count);
         for (int page = 0; page < lister->pages; ++page)
         {
@@ -272,6 +273,8 @@ static void run_lister()
             }
         }
         lister_close(lister);
+        int64_t elapsed_us = absolute_time_diff_us(xStart, get_absolute_time());
+        printf("Elapsed %0.1fms\n", elapsed_us / 1000.0f);
     }
     else
     {
