@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type":"cortex-debug",
+            "request": "launch",
+            "name": "Debug J-Link",
+            "cwd": "${workspaceRoot}",
+            "executable": "${command:cmake.launchTargetPath}",
+            "servertype": "jlink",
+            "device": "RP2040_M0_0",
+            "interface": "swd",
+            "jlinkscript": "",
+            "svdFile": "${env:PICO_SDK_PATH}/src/rp2040/hardware_regs/rp2040.svd"
+        },
+        {
+            "type":"cortex-debug",
+            "request": "launch",
+            "name": "Debug PicoProbe",
+            "cwd": "${workspaceRoot}",
+            "executable": "${command:cmake.launchTargetPath}",
+            "servertype": "openocd",
+            "device": "Pico2040",
+            "configFiles": [
+                "interface/jlink.cfg",
+                "target/rp2040.cfg"
+            ],
+            "searchDir": ["${env:PICO_SDK_PATH}/../tools/openocd_picoprobe/tcl"],
+            "svdFile": "${env:PICO_SDK_PATH}/src/rp2040/hardware_regs/rp2040.svd",
+            "runToEntryPoint": "main",
+            // Work around for stopping at main on restart
+            "postRestartCommands": [
+                "break main",
+                "continue"
+            ]
+        }
+    ]
+}

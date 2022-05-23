@@ -19,7 +19,7 @@ void __interrupt() ISR(void)
     }
     else if ((INTCONbits.IOCIE == 1) && (INTCONbits.IOCIF == 1))    // IOC
     {
-        // Clear interrupt flag
+        // IOC is for wakeup, just clear interrupt flag
         IOCAF = 0x00;
     }
     else if(INTCONbits.PEIE == 1)

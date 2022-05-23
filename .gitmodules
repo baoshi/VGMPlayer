@@ -8,3 +8,6 @@
 [submodule "sw/main/uilts/font/bdf2lvgl"]
 	path = sw/main/uilts/font/bdf2lvgl
 	url = http://baoshi@192.168.1.3:680/baoshi/bdf2lvgl.git
+[submodule "sw/tests/fsdev/lib/umm_malloc/umm_malloc"]
+	path = sw/tests/fsdev/lib/umm_malloc/umm_malloc
+	url = https://github.com/rhempel/umm_malloc.git
