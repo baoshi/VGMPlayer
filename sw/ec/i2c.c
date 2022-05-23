@@ -15,11 +15,14 @@
 #include "i2c.h"
 
 
-#define SLAVE_ADDRESS 0x13u
-
 volatile uint8_t i2c_recent_activity;
 
+
 static bool _activity;
+
+
+static bool _watchdog = false;  // For DEV
+
 
 void i2c_start(void)
 {
@@ -30,7 +33,7 @@ void i2c_start(void)
     SSP1CON1bits.SSPM = 0b0110;     // I2C slave mode, 7-bit
     SSP1CON2bits.SEN = 1;           // Clock stretching enabled
     SSP1CON3bits.SBCDE = 1;         // Enable slave bus collision interrupts
-    SSP1ADD = (uint8_t)(SLAVE_ADDRESS << 1); // Load slave address
+    SSP1ADD = (uint8_t)(EC_SLAVE_ADDRESS << 1); // Load slave address
     SSP1CON1bits.SSPEN = 1;         // Enable MSSP
     // PIR2 config
     PIR2bits.BCL1IF = 0;            // Clear Bus Collision interrupt flag
@@ -54,10 +57,18 @@ void i2c_stop(void)
 
 void i2c_track_activity(void)
 {
-    if (_activity)
+    if (_watchdog)
     {
+        if (_activity)
+        {
+            i2c_recent_activity = systick;
+            _activity = false;
+        }
+    }
+    else
+    {
+        // watchdog is off, always assume i2c activity just happened
         i2c_recent_activity = systick;
-        _activity = false;
     }
 }
 
@@ -69,36 +80,53 @@ void i2c_slave_ssp_isr(void)
     // Global ISR guarantees PIR1bits.SSP1IF == 1
     if (SSP1STATbits.R_nW == 1) // Master wants to read
     {
-        temp = SSP1BUF; // read buf
-        if (SSP1STATbits.D_nA == 0) // Last byte was address, sending first data byte
+        if (SSP1STATbits.D_nA == 0) // Last received byte was address, sending first data byte
         {
-            // data0 is io_input_state
-            SSP1BUF = (uint8_t)(~io_input_state) & 0x3F;
+            temp = SSP1BUF; // clear buffer
             idx = 0;
+            SSP1BUF = (uint8_t)(~io_input_state) & 0x3F;    // data0 is io_input_state
         }
-        else  // Already transmitted first data byte, sending next
+        else  // Already transmitted first data byte, sending next byte
         {
             ++idx;
             if (idx == 1)
             {
-                // data1 is adc_bat
-                SSP1BUF = adc_bat;
+                SSP1BUF = adc_bat;  // data1 is adc_bat
             }
             else // All data are sent
             {
-                if (SSP1CON2bits.ACKSTAT == 0)  // Master ACKed the last byte, expect more
+                if (SSP1CON2bits.ACKSTAT == 0)
                 {
+                    // Master ACKed the last byte, expecting more
+                    // Just send dummy data
                     SSP1BUF = 0xFF;
                 }
-                // Master NACKed last byte, nothing needed.
+                // (else) Master NACKed data, not expecting more data
                 _activity = true;
             }
         }
     }
     else // Master wants to write
     {
-        // Nothing to do here
-        temp = SSP1BUF;
+        if (SSP1STATbits.D_nA == 0)
+        {
+            temp = SSP1BUF; // clear buffer
+        }
+        else
+        {
+            temp = SSP1BUF; // temp is now the written data
+            switch (temp)
+            {
+            case EC_CMD_WATCHDOG_ON:
+                _watchdog = true;
+                break;
+            case EC_CMD_WATCHDOG_OFF:
+                _watchdog = false;
+                break;
+            default:
+                break;
+            }
+        }
     }
     PIR1bits.SSP1IF = 0;    // Clear SSP1IF   
     SSP1CON1bits.CKP = 1;   // Release clock stretch

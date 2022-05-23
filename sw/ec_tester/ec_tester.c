@@ -22,6 +22,8 @@ int main()
     gpio_pull_up(I2C_SDA);
     gpio_pull_up(I2C_SCL);
 
+    i2c_write_timeout_us(I2C_PORT, 0x13, "\x0d", 1, false, 1000);   // turn on EC watchdog
+
     while (1) 
     {
         if (i2c_read_timeout_us(I2C_PORT, 0x13, data, 2, false, 1000) == 2)

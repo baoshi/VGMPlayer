@@ -36,14 +36,13 @@ uint8_t state_main_update(void)
     adc_update();
     io_debounce_inputs();
     i2c_track_activity();
-    // Temporary disabled for dev
-    if (0) // ((uint8_t)(systick - i2c_recent_activity) >= (TIME_I2C_LOST_TO_OFF / MS_PER_TICK))
+    if ((uint8_t)(systick - i2c_recent_activity) >= (TIME_I2C_LOST_TO_OFF / MS_PER_TICK))
     {
         r = MAIN_STATE_OFF;
     }
     return r;
 }
-    
+   
 
 void state_main_exit(void)
 {

@@ -104,7 +104,7 @@ void led_update(void)
         
     case LED_BLINK_OFF_ON1:
         io_led_on();
-        if ((uint8_t)(systick - _timestamp) >= (500 / MS_PER_TICK))
+        if ((uint8_t)(systick - _timestamp) >= (100 / MS_PER_TICK))
         {
             _state = LED_BLINK_OFF_OFF1;
             _timestamp = systick;
@@ -113,7 +113,7 @@ void led_update(void)
         
     case LED_BLINK_OFF_OFF1:
         io_led_off();
-        if ((uint8_t)(systick - _timestamp) >= (500 / MS_PER_TICK))
+        if ((uint8_t)(systick - _timestamp) >= (100 / MS_PER_TICK))
         {
             _state = LED_BLINK_OFF_ON1;
             _timestamp = systick;

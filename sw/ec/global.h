@@ -11,6 +11,11 @@
 
 //#define _XTAL_FREQ                    1000000L
 
+#define EC_SLAVE_ADDRESS                0x13u       // I2C slave address
+
+#define EC_CMD_WATCHDOG_OFF             0x0C        // Turn off auto-off in MAIN state
+
+#define EC_CMD_WATCHDOG_ON              0x0D        // Turn on auto-off in MAIN state when TIME_I2C_LOST_TO_OFF elapsed 
 
 #define USB_VDD_THRESHOLD               135u        // When USB connected, VDD > USB_VDD_THRESHOLD (4.5V)
 
