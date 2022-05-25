@@ -18,8 +18,10 @@ extern bool ec_charge;      // true if charging
 extern float ec_battery;    // battery voltage
 extern uint8_t ec_buttons;  // button states
 
-void   ec_init(void);
-int    ec_update(uint32_t now);
+void ec_init(void);
+int  ec_update(uint32_t now);
+void ec_pause_watchdog(void);
+void ec_resume_watchdog(void);
 
 #ifdef __cplusplus
 }

@@ -4,6 +4,7 @@
 #include <ff.h>
 #include "decoder.h"
 #include "hsm.h"
+#include "lister.h"
 
 
 typedef struct app_s app_t;
@@ -15,13 +16,16 @@ typedef struct app_s app_t;
 //
 typedef struct browser_s
 {
-    lv_obj_t* screen;
-    lv_obj_t* lbl_top;    // Top indicators
-    lv_obj_t* lbl_bottom; // Bottom label
-    lv_obj_t* lst_files;  // File List
+    lv_obj_t *screen;
+    lv_obj_t *lbl_top;    // Top indicators
+    lv_obj_t *lbl_bottom; // Bottom label
+    lv_obj_t *lst_files;  // File List
     int alarm_ui_update;
     char cur_dir[FF_LFN_BUF + 1] ;      // current selected directory
     char cur_selection[FF_LFN_BUF + 1]; // current selected file
+    lister_t *lister;
+    int lister_page;
+    int lister_index;
 } browser_t;
 
 event_t const *browser_handler(app_t *me, event_t const *evt);
@@ -48,7 +52,7 @@ event_t const *player_s16_playing_handler(app_t *me, event_t const *evt);
 event_t const *player_s16_paused_handler(app_t *me, event_t const *evt);
 
 
-// Application level state machione
+// Application level state machine
 struct app_s
 {
     hsm_t super;

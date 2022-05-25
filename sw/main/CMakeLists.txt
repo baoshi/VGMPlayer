@@ -42,6 +42,7 @@ add_executable(${PROJ_NAME}
     hsm.c
     splash.c
     path_utils.c
+    lister.c
     browser.c
     player.c
     decoder_s16.c

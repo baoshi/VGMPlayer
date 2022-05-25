@@ -10,10 +10,10 @@
 #include "disk.h"
 #include "path_utils.h"
 #include "ec.h"
+#include "lister.h"
 #include "app.h"
 
 #define UI_UPDATE_INTERVAL_MS   200
-
 
 #ifndef BROWSER_DEBUG
 # define BROWSER_DEBUG 1
@@ -145,7 +145,7 @@ static void chdir_down(browser_t* ctx, const char* leaf)
     char dir[FF_LFN_BUF + 1];
     do
     {
-        if (!path_concatenate(ctx->cur_dir, leaf, dir, true))
+        if (!path_concatenate(ctx->cur_dir, leaf, dir, FF_LFN_BUF + 1, true))
         {
             BR_LOGW("Browser: Path error\n");
             break;
@@ -198,6 +198,37 @@ static void chdir_up(browser_t* ctx)
 
 
 static void populate_file_list(browser_t* ctx)
+{
+    lv_obj_clean(ctx->lst_files);
+    if (LS_OK == lister_open_dir(ctx->cur_dir, 0, 10, true, &ctx->lister))
+    {
+        lister_select_page(ctx->lister, ctx->lister_page);
+        uint8_t type;
+        for (int i = 0; i < ctx->lister->page_size; ++i)
+        {
+            char name[FF_LFN_BUF + 3];
+            lv_obj_t* btn;
+            if (LS_OK == lister_get_entry(ctx->lister, i, name + 1, FF_LFN_BUF + 1, &type))
+            {
+                if (type == LS_TYPE_DIRECTORY)
+                {
+                    name[0] = '[';
+                    strcat(name, "]");
+                    btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_DIRECTORY" ", name);
+                    lv_obj_set_user_data(btn, (void *)1);   // User data 1 means directory
+                }
+                else
+                {
+                    btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_FILE_O" ", name + 1);
+                    lv_obj_set_user_data(btn, (void *)0);   // User data 0 means file
+                }
+            }
+        }
+    }
+}
+
+
+static void populate_file_list1(browser_t* ctx)
 {
     FRESULT fr;
     const char *p_dir;
@@ -267,7 +298,7 @@ static void populate_file_list(browser_t* ctx)
     }
     f_closedir(&dj);
     // If current directory is a subdirectory, add '..' the list
-    if (!path_is_root(ctx->cur_dir))
+    if (!path_is_root_dir(ctx->cur_dir))
     {
         lv_obj_t* btn = lv_list_add_btn(ctx->lst_files, 0, "[..]");
         lv_obj_set_user_data(btn, (void *)1);   // User data 1 means directory
@@ -331,16 +362,24 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
     switch (evt->code)
     {
         case EVT_ENTRY:
-            BR_LOGD("Browser_Disk: entry\n");            
-            switch (disk_check_dir(ctx->cur_dir))    // Could take 6 seconds before failure
+            BR_LOGD("Browser_Disk: entry\n");
+            if (path_is_null(ctx->cur_dir))
+            {
+                // if cur_dir is never set, we are entering browser state for the first time
+                path_set_root_dir(ctx->cur_dir);
+            }
+            ec_pause_watchdog();
+            int t = disk_check_dir(ctx->cur_dir);   // Could take several seconds before failure
+            ec_resume_watchdog();
+            switch (t)
             {
                 case 1:
                     // cur_dir is valid and accessible
                     populate_file_list(ctx);
                     break;
                 case 2:
-                    // cur_dir is not accessible but disk is readable
-                    path_set_root(ctx->cur_dir);
+                    // cur_dir is not accessible but disk is readable, browse root instead
+                    path_set_root_dir(ctx->cur_dir);
                     ctx->cur_selection[0] = '\0';
                     populate_file_list(ctx);
                     break;
@@ -348,6 +387,13 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     // disk not accessible
                     EQ_QUICK_PUSH(EVT_DISK_ERROR);
                     break;
+            }
+            break;
+        case EVT_EXIT:
+            if (ctx->lister)
+            {
+                lister_close(ctx->lister);
+                ctx->lister = 0;
             }
             break;
         case EVT_BROWSER_PLAY_CLICKED:
@@ -380,7 +426,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             break;
         }
         case EVT_BROWSER_MODE_CLICKED:
-            if (!path_is_root(ctx->cur_dir))
+            if (!path_is_root_dir(ctx->cur_dir))
             {
                 chdir_up(ctx);
             }
@@ -413,8 +459,8 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             BR_LOGD("Browser_Nodisk: entry\n");
             lv_label_set_text(me->browser_ctx.lbl_bottom, "No card");
             lv_obj_clean(me->browser_ctx.lst_files);
-            path_set_root(me->browser_ctx.cur_dir);
-            me->browser_ctx.cur_selection[0] = '\0';
+            path_set_null(me->browser_ctx.cur_dir);
+            path_set_null(me->browser_ctx.cur_selection);
             break;
         case EVT_DISK_INSERTED:
             STATE_TRAN((hsm_t*)me, &me->browser_disk);
@@ -436,7 +482,7 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
             BR_LOGD("Browser_Baddisk: entry\n");
             lv_label_set_text(me->browser_ctx.lbl_bottom, "Card error");
             lv_obj_clean(me->browser_ctx.lst_files);
-            path_set_root(me->browser_ctx.cur_dir);
+            path_set_root_dir(me->browser_ctx.cur_dir);
             me->browser_ctx.cur_selection[0] = '\0';
             break;
         case EVT_DISK_EJECTED:

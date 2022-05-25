@@ -7,7 +7,7 @@
 
 
 #ifndef DBG_MEM
-#  define DBG_MEM 1
+#  define DBG_MEM 0
 #endif
 
 

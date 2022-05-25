@@ -1,20 +1,33 @@
+#include <stdbool.h>
 #include <string.h>
-#include <ff.h>
+#include <ctype.h>
 #include "my_debug.h"
 #include "path_utils.h"
 
 
-void path_set_root(char* path)
+void path_set_root_dir(char* path)
 {
     path[0] = '/';
     path[1] = '\0';
 }
 
 
-bool path_is_root(const char* path)
+bool path_is_root_dir(const char* path)
 {
     MY_ASSERT(path != 0);
     return ((path[0] == '/') && (path[1] == '\0'));
+}
+
+
+void path_set_null(char* path)
+{
+    path[0] = '\0';
+}
+
+
+bool path_is_null(const char* path)
+{
+    return ((0 == path) || '\0' == path[0]);
 }
 
 
@@ -36,7 +49,7 @@ bool path_get_parent(const char* path, char* parent)
     }
     if (len == 1 && '/' == path[0])     // "/"
     {
-        path_set_root(parent);
+        path_set_root_dir(parent);
         return false; 
     }
     int i = len - 1;
@@ -49,12 +62,12 @@ bool path_get_parent(const char* path, char* parent)
     }
     if (i < 0)                          // "abc"
     {
-        path_set_root(parent);
+        path_set_root_dir(parent);
         return false;
     }
     if (i == 0)                         // '/abc'
     {
-        path_set_root(parent);
+        path_set_root_dir(parent);
         return true;
     }
     strncpy(parent, path, i);
@@ -94,31 +107,36 @@ bool path_get_leaf(const char* path, char* leaf)
 
 
 // concatenate parent + '/' + leaf -> out
-// if debracket is true, remove [] from leaf before concatenate
-// return false if the result is longer than FF_LFN_BUF or other error
-bool path_concatenate(const char* parent, const char* leaf, char* out, bool debracket)
+// if debracket is true, remove [] from leaf before concatenating
+// return false if the result is longer than len or other error
+bool path_concatenate(const char* parent, const char* leaf, char* out, int len, bool debracket)
 {
     // check if we need to remove square bracket from leaf
-    int len = strlen(leaf);
-    if (len <= 0)
+    int l = strlen(leaf);
+    int p = strlen(parent);
+    if (l == 0 || p == 0)
         return false;
     if (debracket)
     {
-        if (!((len >= 3) && (leaf[0] == '[') && (leaf[len - 1] == ']')))
+        if (!((l >= 3) && (leaf[0] == '[') && (leaf[l - 1] == ']')))
             debracket = false;
     }
-    // check length
-    if (strlen(parent) + 1 + len - (debracket ? 2 : 0) > FF_LFN_BUF)
-        return false;
-    if (!path_is_root(parent))
+    if (path_is_root_dir(parent))
     {
-        strcpy(out, parent);
-        int c = strlen(out);
-        if (out[c - 1] != '/') strcat(out, "/");
+        if (1 + l - (debracket ? 2 : 0) > len - 1)  // length of '/' + leaf
+            return false;
+        strcpy(out, "/");
     }
     else
     {
+        if (p + (parent[p - 1] == '/' ? 0 : 1) + l - (debracket ? 2 : 0) > len - 1)  // length of parent + '/' + leaf
+            return false;
         strcpy(out, parent);
+        if (out[p - 1] != '/')
+        {
+            out[p] = '/';
+            out[p + 1] = '\0';
+        }
     }
     if (!debracket)
     {
@@ -127,24 +145,49 @@ bool path_concatenate(const char* parent, const char* leaf, char* out, bool debr
     else
     {
         int c = strlen(out) - 1;
-        for (int i = 1; i < len - 1; ++i)
+        for (int i = 1; i < l - 1; ++i)
             out[c + i] = leaf[i];
-        out[c + len - 1] = '\0';
+        out[c + l - 1] = '\0';
     }
     return true;
 }
 
 
-// Given a file name, return the extension
-bool path_get_ext(const char* file, char* ext)
+// Given a file name, extract extention. Return false if no extension found
+bool path_get_ext(const char* file, char* ext, int len)
 {
-    int len = strlen(file);
-    if (len <= 0) return false;
+    int l = strlen(file);
+    if (l <= 0) return false;
     char* dot = strrchr(file, '.');
     if ((dot == 0) || (*(dot + 1) == '\0'))
     {
         return false;
     }
-    strcpy(ext, dot + 1);
+    strncpy(ext, dot + 1, len - 1);
+    ext[len  - 1] = '\0';
     return true;
+}
+
+
+// copy path
+void path_copy(const char* src, char* dest, int len)
+{
+    strncpy(dest, src, len - 1);
+    dest[len - 1] = '\0';
+}
+
+
+// trim non-printable character at the back of path
+bool path_trim_back(char* path)
+{
+    bool r = false;
+    int len = strlen(path);
+    for (; len > 0; --len)
+    {
+        if (isprint(path[len - 1]))
+            break;
+        path[len - 1] = '\0';
+        r = true;
+    }
+    return r;
 }

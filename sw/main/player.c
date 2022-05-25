@@ -208,7 +208,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             PL_LOGD("Player: start\n");
             // check file extension and enter corresponding state
             char ext[16];
-            if (path_get_ext(ctx->file, ext))
+            if (path_get_ext(ctx->file, ext, 16))
             {
                 if (0 == strcasecmp(ext, "s16"))
                 {
