@@ -25,7 +25,6 @@ typedef struct browser_s
     char cur_selection[FF_LFN_BUF + 1]; // current selected file
     lister_t *lister;
     int lister_page;
-    int lister_index;
 } browser_t;
 
 event_t const *browser_handler(app_t *me, event_t const *evt);
@@ -41,8 +40,10 @@ typedef struct player_s
 {
     lv_obj_t* screen;
     lv_obj_t* lbl_top;    // Top indicators
+    lv_obj_t* lbl_bottom; // Bottom indicators
     int alarm_ui_update;
     char file[FF_LFN_BUF + 1]; // file to play
+    bool play_long_pressed;
     decoder_t* decoder;
 } player_t;
 

@@ -58,23 +58,6 @@ static void screen_event_handler(lv_event_t* e)
 }
 
 
-static void button_mode_handler(lv_event_t* e)
-{
-    player_t* ctx = (player_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t* btn = lv_event_get_target(e);
-    if (code == LV_EVENT_CLICKED) 
-    {
-        PL_LOGD("Mode button pressed\n");
-        EQ_QUICK_PUSH(EVT_PLAYER_MODE_CLICKED);
-    }
-    else if (code == LV_EVENT_LONG_PRESSED) 
-    {
-        PL_LOGD("Mode button long pressed\n");
-    }
-}
-
-
 static void button_play_handler(lv_event_t* e)
 {
     player_t* ctx = (player_t*)lv_event_get_user_data(e);
@@ -83,11 +66,22 @@ static void button_play_handler(lv_event_t* e)
     if (code == LV_EVENT_CLICKED) 
     {
         PL_LOGD("Play button pressed\n");
-        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_CLICKED);
+        ctx->play_long_pressed = false;
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
         PL_LOGD("Play button long pressed\n");
+        ctx->play_long_pressed = true;
+    }
+    else if (code == LV_EVENT_RELEASED)
+    {
+        PL_LOGD("Play button released\n");
+        if (ctx->play_long_pressed)
+        {
+            ctx->play_long_pressed = false;
+            PL_LOGD("Play button released after long pressed\n");
+            EQ_QUICK_PUSH(EVT_PLAYER_SONG_ENDED);
+        }
     }
 }
 
@@ -99,12 +93,11 @@ static void button_up_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("Up button pressed\n");
-        EQ_QUICK_PUSH(EVT_PLAYER_UP_CLICKED);
+        PL_LOGD("UP button pressed\n");
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        PL_LOGD("Up button long pressed\n");
+        PL_LOGD("UP button long pressed\n");
     }
 }
 
@@ -116,14 +109,46 @@ static void button_down_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("Down button pressed\n");
-        EQ_QUICK_PUSH(EVT_PLAYER_DOWN_CLICKED);
+        PL_LOGD("DOWN button pressed\n");
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        PL_LOGD("Down button long pressed\n");
+        PL_LOGD("DOWN button long pressed\n");
     }
 }
+
+
+static void button_next_handler(lv_event_t* e)
+{
+    player_t* ctx = (player_t*)lv_event_get_user_data(e);
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t* btn = lv_event_get_target(e);
+    if (code == LV_EVENT_CLICKED) 
+    {
+        PL_LOGD("NEXT button pressed\n");
+    }
+    else if (code == LV_EVENT_LONG_PRESSED) 
+    {
+        PL_LOGD("NEXT button long pressed\n");
+    }
+}
+
+
+static void button_prev_handler(lv_event_t* e)
+{
+    player_t* ctx = (player_t*)lv_event_get_user_data(e);
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t* btn = lv_event_get_target(e);
+    if (code == LV_EVENT_CLICKED) 
+    {
+        PL_LOGD("PREV button pressed\n");
+    }
+    else if (code == LV_EVENT_LONG_PRESSED) 
+    {
+        PL_LOGD("PREV button long pressed\n");
+    }
+}
+
 
 static void create_screen(player_t* ctx)
 {
@@ -138,8 +163,9 @@ static void create_screen(player_t* ctx)
     lvi_pos_button(LVI_BUTTON_PLAY, 0, 0);
     lvi_pos_button(LVI_BUTTON_NW, 1, 0);
     lvi_pos_button(LVI_BUTTON_SW, 2, 0);
-    lvi_pos_button(LVI_BUTTON_SE, 3, 0);
-    // 4 invisible buttons
+    lvi_pos_button(LVI_BUTTON_NE, 3, 0);
+    lvi_pos_button(LVI_BUTTON_SE, 4, 0);
+    // 5 invisible buttons
     lv_obj_t* btn;
     // Play
     btn = lv_btn_create(ctx->screen);
@@ -165,14 +191,22 @@ static void create_screen(player_t* ctx)
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_down_handler, LV_EVENT_ALL, (void*)ctx);
-    // SE / Back
+    // NE / Next
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 3, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_mode_handler, LV_EVENT_ALL, (void*)ctx);
+    lv_obj_add_event_cb(btn, button_next_handler, LV_EVENT_ALL, (void*)ctx);
+    // SE / Prev
+    btn = lv_btn_create(ctx->screen);
+    lv_obj_add_style(btn, &lvs_invisible_button, 0);
+    lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
+    lv_obj_set_pos(btn, 4, 0);
+    lv_obj_set_size(btn, 1, 1);
+    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+    lv_obj_add_event_cb(btn, button_prev_handler, LV_EVENT_ALL, (void*)ctx);
 
     // Create top label
     ctx->lbl_top = lv_label_create(ctx->screen);
@@ -180,6 +214,14 @@ static void create_screen(player_t* ctx)
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_label_set_text(ctx->lbl_top, "");
+
+    // Create bottom label
+    ctx->lbl_bottom = lv_label_create(ctx->screen);
+    lv_obj_set_width(ctx->lbl_bottom, 240);
+    lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+    lv_label_set_text(ctx->lbl_bottom, "");
+    lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
+
     // Load screen
     lv_scr_load(ctx->screen);
 }
@@ -196,7 +238,6 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             create_screen(ctx);
             ctx->alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
             ctx->decoder = 0;
-            audio_postinit();
             break;
         case EVT_EXIT:
             PL_LOGD("Player: exit\n");
@@ -206,15 +247,8 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         case EVT_START:
         {
             PL_LOGD("Player: start\n");
-            // check file extension and enter corresponding state
-            char ext[16];
-            if (path_get_ext(ctx->file, ext, 16))
-            {
-                if (0 == strcasecmp(ext, "s16"))
-                {
-                    STATE_START(me, &me->player_s16); 
-                }
-            }
+            lv_label_set_text(ctx->lbl_bottom, ctx->file);
+            // check file extension and determine go into which sub state           
             break;
         }
         case EVT_PLAYER_UI_UPDATE:
@@ -222,6 +256,11 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             char buf[32];
             sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
             lv_label_set_text(ctx->lbl_top, buf);
+            break;
+        }
+        case EVT_PLAYER_SONG_ENDED:
+        {
+            STATE_TRAN(me, &(me->browser_disk));
             break;
         }
         default:

@@ -10,7 +10,7 @@ enum
     EVT_DISK_ERROR,
     EVT_BROWSER_UI_UPDATE,
     EVT_BROWSER_PLAY_CLICKED,   // used in browser_disk state, param is the lv_list button pointer
-    EVT_BROWSER_MODE_CLICKED,   // used in browser_disk state, to navigate back
+    EVT_BROWSER_BACK_CLICKED,   // used in browser_disk state, to navigate back
     EVT_BROWSER_PLAY_FILE,
     EVT_EARPIECE_PLUGGED,
     EVT_EARPIECE_UNPLUGGED,

@@ -40,19 +40,19 @@ bool path_is_null(const char* path)
 //  /abc/def    /abc            true
 //  /abc/def/   /abc            true
 //  abc         /               false
-bool path_get_parent(const char* path, char* parent)
+bool path_get_parent(const char* path, char* parent, int len)
 {
-    int len = strlen(path);
-    if (len <= 0)                       // empty
+    int l = strlen(path);
+    if (l <= 0)                       // empty
     {
         return false;
     }
-    if (len == 1 && '/' == path[0])     // "/"
+    if (l == 1 && '/' == path[0])     // "/"
     {
         path_set_root_dir(parent);
         return false; 
     }
-    int i = len - 1;
+    int i = l - 1;
     if (path[i] == '/')                 // "/abc/"
         --i;
     for (; i >= 0; --i)
@@ -70,6 +70,8 @@ bool path_get_parent(const char* path, char* parent)
         path_set_root_dir(parent);
         return true;
     }
+    if (len <= i)   // enough buffer?
+        return false;
     strncpy(parent, path, i);
     parent[i] = '\0';
     return true;
