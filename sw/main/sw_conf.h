@@ -6,11 +6,13 @@
 #define SUPERLOOP_UPDATE_INTERVAL_MS    5
 #define BACKLIGHT_IDLE_DIM_MS           10000
 
-#define TICK_GRANULARITY_MS         1
+#define TICK_GRANULARITY_MS             1
 
 
-// Maximun files list per screen. Set this to conserve memory
-#define BROWSER_MAX_LIST_FILES      64
+// Maximun files listed per page.
+#define BROWSER_LISTER_PAGE_SIZE        10
+// Remember # levels history in file lister
+#define BROWSER_LISTER_HISTORY_DEPTH    10
 
 #define AUDIO_SAMPLE_RATE           48000
 #define AUDIO_POWER_SAVER_MS        5000

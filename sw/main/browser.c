@@ -46,9 +46,7 @@ enum
 };
 
 
-static void chdir_down(browser_t* ctx, const char* leaf);
-static void chdir_up(browser_t* ctx);
-static void populate_file_list(browser_t* ctx);
+static void populate_file_list(browser_t* ctx, int mode);
 
 
 static void screen_event_handler(lv_event_t* e)
@@ -93,14 +91,34 @@ static void play_button_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_SHORT_CLICKED)
     {
-        event_t evt;
-        evt.code = EVT_BROWSER_PLAY_CLICKED;
-        evt.param = (void *)btn;
-        event_queue_push_back(&evt, true);
+        if (ctx->skip_first_click)
+        {
+            // User can long press play button to exit to browser state. 
+            // In this case skip_first_click was set to true and we shall skip first
+            // SHORT_CLICKED event
+            ctx->skip_first_click = false;
+        }
+        else
+        {
+            event_t evt;
+            evt.code = EVT_BROWSER_PLAY_CLICKED;
+            evt.param = (void *)btn;
+            event_queue_push_back(&evt, true);
+        }
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        BR_LOGD("Browser: Play long Pressed\n");
+        if (ctx->skip_first_click)
+        {
+            // User can long press play button to exit to browser state. 
+            // In this case skip_first_click was set to true and we shall skip first
+            // SHORT_CLICKED event
+            ctx->skip_first_click = false;
+        }
+        else
+        {
+            BR_LOGD("Browser: Play long Pressed\n");
+        }
     }
 }
 
@@ -159,98 +177,103 @@ static void create_screen(browser_t* ctx)
 }
 
 
-static void chdir_down(browser_t* ctx, const char* leaf)
+//  mode
+//  0: Populate a new directory. Restore page and selection if available
+//  1: Populate an already opened directory. Go to next first entry of next page. (Page Down)
+//  2: Populate an already opened directory. Go to the last entry of previous page. (Page Up)
+static void populate_file_list(browser_t* ctx, int mode)
 {
-    FRESULT fr;
-    bool success = false;
-    char dir[FF_LFN_BUF + 1];
-    do
+    lv_obj_t *btn, *focus = 0;
+    int btn_index = 0;
+    int selection;
+    bool dir_opened = false;
+
+    switch (mode)
     {
-        if (!path_concatenate(ctx->cur_dir, leaf, dir, FF_LFN_BUF + 1, true))
+        case 0:
         {
-            BR_LOGW("Browser: Path error\n");
+            int t;
+            ec_pause_watchdog();
+            t = lister_open_dir(ctx->cur_dir, 0, BROWSER_LISTER_PAGE_SIZE, true, &ctx->lister);
+            ec_resume_watchdog();
+            if (LS_OK == t)
+            {
+                dir_opened = true;
+                // If history is available, will read page/selection from history, otherwise  use default
+                if (ctx->lister_history_index < BROWSER_LISTER_HISTORY_DEPTH)
+                {
+                    ctx->lister_cur_page = ctx->lister_history_page[ctx->lister_history_index];
+                    selection = ctx->lister_history_selection[ctx->lister_history_index];
+                }
+                else
+                {
+                    ctx->lister_cur_page = 0;
+                    selection = 0;
+                }
+            }
+            else
+            {
+                BR_LOGE("Browser_Disk: open dir %s failed with %d\n", ctx->cur_dir, t);
+                if (LS_ERR_FATFS == t)
+                {
+                    FRESULT fr = lister_get_fatfs_error();
+                    BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
+                }
+            }
             break;
         }
-        fr = f_chdir(dir);
-        if (FR_OK != fr)
-        {
-            BR_LOGW("Browser: f_chdir error %s (%d)\n", disk_result_str(fr), fr);
+        case 1: // Page Down
+            if (ctx->lister)
+            {
+                dir_opened = true;
+                if (ctx->lister_cur_page + 1 < ctx->lister->pages)
+                {
+                    ++(ctx->lister_cur_page);
+                    selection = 0;
+                }
+            }
             break;
-        }
-        strncpy(ctx->cur_dir, dir, sizeof(ctx->cur_dir));   // save new dir
-        success = true; // populate_file_list will send EVT_DISK_ERROR internally
-        populate_file_list(ctx);
-    } while (0);
-    if (!success)
-    {
-        EQ_QUICK_PUSH(EVT_DISK_ERROR);
+        case 2: // Page Up
+            if (ctx->lister)
+            {
+                dir_opened = true;
+                if (ctx->lister_cur_page > 0)
+                {
+                    --(ctx->lister_cur_page);
+                    selection = -1;
+                }
+            }
+            break;
+        default:
+            break;
     }
-}
 
-
-static void chdir_up(browser_t* ctx)
-{
-    FRESULT fr;
-    bool success = false;
-    char dir[FF_LFN_BUF + 1];
-    do
-    {
-        if (!path_get_parent(ctx->cur_dir, dir, FF_LFN_BUF + 1))
-        {
-            BR_LOGW("Browser: Path error\n");
-            break;
-        }
-        fr = f_chdir(dir);
-        if (FR_OK != fr)
-        {
-            BR_LOGW("Browser: f_chdir error %s (%d)\n", disk_result_str(fr), fr);
-            break;
-        }
-        path_get_leaf(ctx->cur_dir, ctx->cur_selection); // save where we were on
-        strncpy(ctx->cur_dir, dir, sizeof(ctx->cur_dir));
-        success = true; // populate_file_list will send EVT_DISK_ERROR internally
-        populate_file_list(ctx);
-    } while (0);
-    if (!success)
-    {
-        EQ_QUICK_PUSH(EVT_DISK_ERROR);
-    }
-}
-
-
-static void populate_file_list(browser_t* ctx)
-{
-    lv_obj_t* btn;
     lv_obj_clean(ctx->lst_files);
-    // If we are on the fist page of directory lister, add ".." if current directory
-    // is a sub directory
-    if ((ctx->lister_page == 0) && (!path_is_root_dir(ctx->cur_dir)))
+    
+    // If we are on the fist page of a sub directory, add ".."
+    if ((0 == ctx->lister_cur_page) && (!path_is_root_dir(ctx->cur_dir)))
     {
         btn = lv_list_add_btn(ctx->lst_files, 0, "[..]");
+        ++btn_index;
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PARENT);
         lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
     }
-    int t = LS_OK;
-    if (0 == ctx->lister)
+
+    if (dir_opened)
     {
-        ec_pause_watchdog();
-        t = lister_open_dir(ctx->cur_dir, 0, 10, true, &ctx->lister);
-        ec_resume_watchdog();
-    }
-    if (LS_OK == t)
-    {
-        lister_select_page(ctx->lister, ctx->lister_page);
-        if (ctx->lister_page > 0)
+        lister_select_page(ctx->lister, ctx->lister_cur_page);
+        // 2nd page onwards, add "PgUp" button
+        if (ctx->lister_cur_page > 0)
         {
             btn = lv_list_add_btn(ctx->lst_files, 0, "[PgUp..]");
+            ++btn_index;
             lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEUP);
             lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
         }
-        uint8_t type;
         for (int i = 0; i < ctx->lister->page_size; ++i)
         {
+            uint8_t type;
             char name[FF_LFN_BUF + 3];
-            lv_obj_t* btn;
             if (LS_OK == lister_get_entry(ctx->lister, i, name + 1, FF_LFN_BUF + 1, &type))
             {
                 if (type == LS_TYPE_DIRECTORY)
@@ -260,109 +283,28 @@ static void populate_file_list(browser_t* ctx)
                     btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_DIRECTORY" ", name);
                     lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_DIR);
                 }
-                else
+                else if (type == LS_TYPE_FILE)
                 {
                     btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_FILE_O" ", name + 1);
                     lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_FILE);
                 }
+                if (btn_index == selection)
+                    focus = btn;
+                ++btn_index;
+                lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
             }
-            lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
         }
-        if (ctx->lister_page < ctx->lister->pages - 1)
+        if (ctx->lister_cur_page < ctx->lister->pages - 1)
         {
             btn = lv_list_add_btn(ctx->lst_files, 0, "[PgDn..]");
+            ++btn_index;
             lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEDOWN);
             lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
         }
-    }
-    // Add all buttons to input group
-    uint32_t cnt = lv_obj_get_child_cnt(ctx->lst_files);
-    for (uint32_t i = 0; i < cnt; ++i)
-    {
-        lv_obj_t* obj = lv_obj_get_child(ctx->lst_files, i);
-        lv_group_add_obj(lvi_keypad_group, obj);
-    }
-    // Update status bar
-    lv_label_set_text(ctx->lbl_bottom, ctx->cur_dir);
-}
-
-
-static void populate_file_list1(browser_t* ctx)
-{
-    FRESULT fr;
-    const char *p_dir;
-    p_dir = ctx->cur_dir;
-    lv_obj_clean(ctx->lst_files);
-    // Enumerate directory contents and add into list box
-    DIR dj;  // Directory object
-    FILINFO fno; // File information
-    memset(&dj, 0, sizeof(dj));
-    memset(&fno, 0, sizeof(fno));
-    fr = f_findfirst(&dj, &fno, p_dir, "*");
-    if (FR_OK != fr)
-    {
-        BR_LOGW("Browser: f_findfirst error %s (%d)\n", disk_result_str(fr), fr);
-        event_t e;
-        EQ_QUICK_PUSH(EVT_DISK_ERROR);
-    }
-    char dir_name[FF_LFN_BUF + 3];
-    int idx_files = 0;                  // index of first file button
-    int total = 0;
-    lv_obj_t* focus = NULL;
-    while (fr == FR_OK && fno.fname[0])  // Repeat while an item is found
-    {
-        ++total;
-        lv_obj_t* btn;
-        if (fno.fattrib & AM_DIR)
+        if (-1 == selection)    // select last
         {
-            sprintf(dir_name, "[%s]", fno.fname);
-            btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_DIRECTORY" ", dir_name);
-            lv_obj_set_user_data(btn, (void *)1);   // User data 1 means directory
-            ++idx_files;
-            int i = 0;
-            for (; i < idx_files - 1; ++i)
-            {
-                lv_obj_t* btn = lv_obj_get_child(ctx->lst_files, i);
-                const char* dir = lv_list_get_btn_text(ctx->lst_files, btn);
-                if (strcasecmp(dir, dir_name) > 0)
-                    break;
-            }
-            lv_obj_move_to_index(btn, i);
+            focus = btn;    // btn points to the last button added
         }
-        else
-        {
-            btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_FILE_O" ", fno.fname);
-            lv_obj_set_user_data(btn, (void *)0);   // User data 0 means file
-            // Simple sort
-            int i = idx_files;
-            for (; i < total - 1; ++i)
-            {
-                lv_obj_t* btn = lv_obj_get_child(ctx->lst_files, i);
-                const char* name = lv_list_get_btn_text(ctx->lst_files, btn);
-                if (strcasecmp(name, fno.fname) > 0)
-                    break;
-            }
-            lv_obj_move_to_index(btn, i);
-        }
-        lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
-        if (ctx->cur_selection[0] != '\0' && (strcasecmp(ctx->cur_selection, fno.fname) == 0))
-        {
-            focus = btn;
-        }
-        if (total >= BROWSER_MAX_LIST_FILES)    // Limit list size
-        {
-            break;
-        }
-        fr = f_findnext(&dj, &fno); // Search for next item
-    }
-    f_closedir(&dj);
-    // If current directory is a subdirectory, add '..' the list
-    if (!path_is_root_dir(ctx->cur_dir))
-    {
-        lv_obj_t* btn = lv_list_add_btn(ctx->lst_files, 0, "[..]");
-        lv_obj_set_user_data(btn, (void *)1);   // User data 1 means directory
-        lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
-        lv_obj_move_to_index(btn, 0);
     }
     // Add all buttons to input group
     uint32_t cnt = lv_obj_get_child_cnt(ctx->lst_files);
@@ -424,8 +366,13 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             BR_LOGD("Browser_Disk: entry\n");
             if (path_is_null(ctx->cur_dir))
             {
-                // if cur_dir is never set, we are entering browser state for the first time
+                // if cur_dir is empty, we are entering browser state for the first time
+                // browser to root directory
                 path_set_root_dir(ctx->cur_dir);
+                ctx->lister_cur_page = 0;
+                ctx->lister_history_page[0] = 0;
+                ctx->lister_history_selection[0] = 0;
+                ctx->lister_history_index = 0;
             }
             ec_pause_watchdog();
             int t = disk_check_dir(ctx->cur_dir);   // Could take several seconds before failure
@@ -434,13 +381,16 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             {
                 case 1:
                     // cur_dir is valid and accessible
-                    populate_file_list(ctx);
+                    populate_file_list(ctx, 0);
                     break;
                 case 2:
                     // cur_dir is not accessible but disk is readable, browse root instead
                     path_set_root_dir(ctx->cur_dir);
-                    ctx->cur_selection[0] = '\0';
-                    populate_file_list(ctx);
+                    ctx->lister_cur_page = 0;
+                    ctx->lister_history_page[0] = 0;
+                    ctx->lister_history_selection[0] = 0;
+                    ctx->lister_history_index = 0;
+                    populate_file_list(ctx, 0);
                     break;
                 default:
                     // disk not accessible
@@ -466,9 +416,16 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                 switch (type)
                 {
                     case FILE_LIST_ENTRY_TYPE_FILE:
-                        strcpy(ctx->cur_selection, btn_text);   // save selection
-                        EQ_QUICK_PUSH(EVT_BROWSER_PLAY_FILE);   // fire play selection event
+                    {
+                        // save state
+                        ctx->lister_history_page[ctx->lister_history_index] = ctx->lister_cur_page;
+                        ctx->lister_history_selection[ctx->lister_history_index] = lv_obj_get_index(btn);
+                        event_t evt;
+                        evt.code = EVT_BROWSER_PLAY_FILE;
+                        evt.param = (void *)btn;
+                        event_queue_push_back(&evt, true);
                         break;
+                    }
                     case FILE_LIST_ENTRY_TYPE_DIR:
                         if (path_concatenate(ctx->cur_dir, btn_text, path, FF_LFN_BUF + 1, true))
                         {
@@ -476,10 +433,18 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                             {
                                 lister_close(ctx->lister);
                                 ctx->lister = 0;
-                                ctx->lister_page = 0;
                             }
+                            // push history
+                            ctx->lister_history_selection[ctx->lister_history_index] = lv_obj_get_index(btn);
+                            ++(ctx->lister_history_index);
+                            // set new directory and select to first page first entry
                             path_copy(path, ctx->cur_dir, FF_LFN_BUF + 1);
-                            populate_file_list(ctx);
+                            if (ctx->lister_history_index < BROWSER_LISTER_HISTORY_DEPTH)
+                            {
+                                ctx->lister_history_page[ctx->lister_history_index] = 0;
+                                ctx->lister_history_selection[ctx->lister_history_index] = 0;
+                            }
+                            populate_file_list(ctx, 0);
                         }
                         break;
                     case FILE_LIST_ENTRY_TYPE_PARENT:
@@ -489,19 +454,18 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                             {
                                 lister_close(ctx->lister);
                                 ctx->lister = 0;
-                                ctx->lister_page = 0;
                             }
+                            // pop history
+                            --(ctx->lister_history_index);
                             path_copy(path, ctx->cur_dir, FF_LFN_BUF + 1);
-                            populate_file_list(ctx);
+                            populate_file_list(ctx, 0);
                         }
                         break;
                     case FILE_LIST_ENTRY_TYPE_PAGEUP:
-                        --(ctx->lister_page);
-                        populate_file_list(ctx);
+                        populate_file_list(ctx, 2);
                         break;
                     case FILE_LIST_ENTRY_TYPE_PAGEDOWN:
-                        ++(ctx->lister_page);
-                        populate_file_list(ctx);
+                        populate_file_list(ctx, 1);
                         break;
                 }
             }
@@ -517,18 +481,29 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     {
                         lister_close(ctx->lister);
                         ctx->lister = 0;
-                        ctx->lister_page = 0;
                     }
+                    // pop history
+                    --(ctx->lister_history_index);
                     path_copy(path, ctx->cur_dir, FF_LFN_BUF + 1);
-                    populate_file_list(ctx);
+                    populate_file_list(ctx, 0);
                 }
             }
             break;
         case EVT_BROWSER_PLAY_FILE:
-            BR_LOGD("Browser_Disk: selected %s\n", ctx->cur_selection);
-            strcpy(me->player_ctx.file, ctx->cur_selection);
-            STATE_TRAN((hsm_t*)me, &me->player);
+        {
+            lv_obj_t* btn = (lv_obj_t*)(evt->param);
+            const char* file = lv_list_get_btn_text(ctx->lst_files, btn);
+            if (path_concatenate(ctx->cur_dir, file, me->player_ctx.file, FF_LFN_BUF + 1, false))
+            {
+                BR_LOGD("Browser_Disk: selected %s\n", file);
+                STATE_TRAN((hsm_t*)me, &me->player);
+            }
+            else
+            {
+                BR_LOGE("Browser_Disk: file path too deep to play: %s\n", file);
+            }
             break;
+        }
         case EVT_DISK_ERROR:
             STATE_TRAN((hsm_t*)me, &me->browser_baddisk);
             break;
@@ -553,11 +528,14 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             lv_label_set_text(me->browser_ctx.lbl_bottom, "No card");
             lv_obj_clean(me->browser_ctx.lst_files);
             path_set_null(me->browser_ctx.cur_dir);
-            path_set_null(me->browser_ctx.cur_selection);
             break;
         case EVT_DISK_INSERTED:
+        {
+            // when cur_dir is null browser_disk will start browser from root
+            path_set_null(me->browser_ctx.cur_dir);
             STATE_TRAN((hsm_t*)me, &me->browser_disk);
             break;
+        }
         default:
             r = evt;
             break;
@@ -576,7 +554,6 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
             lv_label_set_text(me->browser_ctx.lbl_bottom, "Card error");
             lv_obj_clean(me->browser_ctx.lst_files);
             path_set_root_dir(me->browser_ctx.cur_dir);
-            me->browser_ctx.cur_selection[0] = '\0';
             break;
         case EVT_DISK_EJECTED:
             STATE_TRAN((hsm_t*)me, &me->browser_nodisk);

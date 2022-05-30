@@ -66,22 +66,11 @@ static void button_play_handler(lv_event_t* e)
     if (code == LV_EVENT_CLICKED) 
     {
         PL_LOGD("Play button pressed\n");
-        ctx->play_long_pressed = false;
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        PL_LOGD("Play button long pressed\n");
-        ctx->play_long_pressed = true;
-    }
-    else if (code == LV_EVENT_RELEASED)
-    {
-        PL_LOGD("Play button released\n");
-        if (ctx->play_long_pressed)
-        {
-            ctx->play_long_pressed = false;
-            PL_LOGD("Play button released after long pressed\n");
-            EQ_QUICK_PUSH(EVT_PLAYER_SONG_ENDED);
-        }
+        PL_LOGD("Play button released after long pressed\n");
+        EQ_QUICK_PUSH(EVT_PLAYER_EXIT_TO_BROWSER);
     }
 }
 
@@ -260,6 +249,12 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         }
         case EVT_PLAYER_SONG_ENDED:
         {
+            STATE_TRAN(me, &(me->browser_disk));
+            break;
+        }
+        case EVT_PLAYER_EXIT_TO_BROWSER:
+        {
+            me->browser_ctx.skip_first_click = true;
             STATE_TRAN(me, &(me->browser_disk));
             break;
         }

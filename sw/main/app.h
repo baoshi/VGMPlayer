@@ -2,6 +2,7 @@
 
 #include <lvgl.h>
 #include <ff.h>
+#include "sw_conf.h"
 #include "decoder.h"
 #include "hsm.h"
 #include "lister.h"
@@ -21,10 +22,13 @@ typedef struct browser_s
     lv_obj_t *lbl_bottom; // Bottom label
     lv_obj_t *lst_files;  // File List
     int alarm_ui_update;
-    char cur_dir[FF_LFN_BUF + 1] ;      // current selected directory
-    char cur_selection[FF_LFN_BUF + 1]; // current selected file
+    char cur_dir[FF_LFN_BUF + 1] ;      // current browsing directory
+    bool skip_first_click;
     lister_t *lister;
-    int lister_page;
+    int lister_cur_page;
+    int lister_history_page[BROWSER_LISTER_HISTORY_DEPTH];
+    int lister_history_selection[BROWSER_LISTER_HISTORY_DEPTH];
+    int lister_history_index;
 } browser_t;
 
 event_t const *browser_handler(app_t *me, event_t const *evt);
@@ -43,7 +47,6 @@ typedef struct player_s
     lv_obj_t* lbl_bottom; // Bottom indicators
     int alarm_ui_update;
     char file[FF_LFN_BUF + 1]; // file to play
-    bool play_long_pressed;
     decoder_t* decoder;
 } player_t;
 
