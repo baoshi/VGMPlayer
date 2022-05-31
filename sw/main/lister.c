@@ -529,7 +529,7 @@ static int _open_catalog(lister_t *lister, bool safe_mode)
         lister->pages = page;
         lister->count = index;
         lister->cur_page = 0;
-        lister->cur_file = 0;
+        lister->next_index = 0;
         f_lseek(&(lister->fd), (FSIZE_t)(lister->page_offset[0]));  // won't fail?
         // other structure members
         success = true;
@@ -623,7 +623,7 @@ int lister_select_page(lister_t *lister, int page)
         else
         {
             lister->cur_page = page;
-            lister->cur_file = 0;
+            lister->next_index = 0;
         }
     }
     return r;
@@ -641,12 +641,12 @@ int lister_get_entry(lister_t *lister, int index, char *out, int len, uint8_t *t
             r = LS_ERR_EOF;
             break;
         }
-        if (index < lister->cur_file)   // need rewind?
+        if (index < lister->next_index)   // need rewind?
         {
             r = lister_select_page(lister, lister->cur_page);
             if (LS_OK != r) break;
         }
-        for (int i = lister->cur_file; i < index; ++i)
+        for (int i = lister->next_index; i < index; ++i)
         {
             p = f_gets(temp, FF_LFN_BUF + 1, &(lister->fd));
             if (0 == p)
@@ -654,7 +654,7 @@ int lister_get_entry(lister_t *lister, int index, char *out, int len, uint8_t *t
                 r = LS_ERR_EOF;
                 break;
             }
-            ++lister->cur_file;
+            ++lister->next_index;
         }
         p = f_gets(temp, FF_LFN_BUF + 1, &(lister->fd));
         if (0 == p)
@@ -662,7 +662,68 @@ int lister_get_entry(lister_t *lister, int index, char *out, int len, uint8_t *t
             r = LS_ERR_EOF;
             break;
         }
-        ++lister->cur_file;
+        ++lister->next_index;
+        path_trim_back(temp);
+        // Check entry is file or directory
+        if ('!' == temp[0])
+        {
+            path_copy(&(temp[1]), out, len);
+            *type = LS_TYPE_DIRECTORY;
+        }
+        else
+        {
+            path_copy(temp, out, len);
+            *type = LS_TYPE_FILE;
+        }
+    } while (0);
+    return r;
+}
+
+
+// get next entry
+// in_page: true: next entry within page; false: if necessary, advance to next page to get next entry
+// wrap: true: if we are at last entry, wrap to the beginning. false: return EOF if we are at last entry
+int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type)
+{
+    int r = LS_OK;
+    char temp[FF_LFN_BUF + 1], *p;
+    do
+    {
+        if (in_page && (lister->next_index + 1 > lister->page_size))
+        {
+            // in_page and we are at last entry
+            r = LS_ERR_EOF;
+            break;
+        }
+        if (lister->next_index + 1 > lister->page_size)
+        {
+            // we are at last entry (but !in_page)
+            if (!wrap && (lister->cur_page + 1 >= lister->pages))
+            {
+                // !wrap and we already at last page
+                r = LS_ERR_EOF;
+                break;
+            }
+            if (lister->cur_page + 1 >= lister->pages)
+            {
+                // wrap and we are at last page
+                r = lister_select_page(lister, 0);
+                if (LS_OK != r) break;
+            }
+            else
+            {
+                // we can advance page
+                r = lister_select_page(lister, lister->pages + 1);
+                if (LS_OK != r) break;
+            }
+        }
+        p = f_gets(temp, FF_LFN_BUF + 1, &(lister->fd));
+        if (0 == p)
+        {
+            r = LS_ERR_EOF;
+            break;
+        }
+        ++lister->next_index;
         path_trim_back(temp);
         // Check entry is file or directory
         if ('!' == temp[0])

@@ -50,7 +50,7 @@ typedef struct _lister_s
     int         pages;                  // total pages
     uint32_t    page_offset[MAX_PAGES]; // offset of first file of each page
     int         cur_page;               // current page index
-    int         cur_file;               // current file index
+    int         next_index;             // next file index (when read, already read from next_index then increase)
 } lister_t;
 
 
@@ -61,5 +61,7 @@ int lister_close(lister_t *lister);
 int lister_select_page(lister_t *lister, int page);
 
 int lister_get_entry(lister_t *lister, int index, char *out, int len, uint8_t *type);
+
+int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type);
 
 FRESULT lister_get_fatfs_error();

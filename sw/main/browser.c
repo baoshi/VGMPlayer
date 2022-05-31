@@ -36,6 +36,11 @@
 #endif
 
 
+static void screen_event_handler(lv_event_t* e);
+static void back_button_handler(lv_event_t* e);
+static void list_button_handler(lv_event_t* e);
+
+
 enum 
 {
     FILE_LIST_ENTRY_TYPE_FILE   = 0,
@@ -46,134 +51,18 @@ enum
 };
 
 
-static void populate_file_list(browser_t* ctx, int mode);
-
-
-static void screen_event_handler(lv_event_t* e)
+static void lv_list_btn_set_label_long_mode(lv_obj_t * btn, lv_label_long_mode_t mode)
 {
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    if (ctx)
+    uint32_t i;
+    for (i = 0; i < lv_obj_get_child_cnt(btn); i++) 
     {
-        switch (code)
+        lv_obj_t * child = lv_obj_get_child(btn, i);
+        if(lv_obj_check_type(child, &lv_label_class)) 
         {
-            case LV_EVENT_SCREEN_UNLOADED:
-                BR_LOGD("Browser: screen unloaded\n");
-                lv_obj_del(ctx->screen);
-                break;
-            default:
-                break;
+            lv_label_set_long_mode(child, mode);
+            break;            
         }
     }
-}
-
-
-static void back_button_handler(lv_event_t* e)
-{
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t* btn = lv_event_get_target(e);
-    if (code == LV_EVENT_SHORT_CLICKED) 
-    {
-        EQ_QUICK_PUSH(EVT_BROWSER_BACK_CLICKED);
-    }
-    else if (code == LV_EVENT_LONG_PRESSED) 
-    {
-        BR_LOGD("Browser: mode button long pressed\n");
-    }
-}
-
-
-static void play_button_handler(lv_event_t* e)
-{
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t* btn = lv_event_get_target(e);
-    if (code == LV_EVENT_SHORT_CLICKED)
-    {
-        if (ctx->skip_first_click)
-        {
-            // User can long press play button to exit to browser state. 
-            // In this case skip_first_click was set to true and we shall skip first
-            // SHORT_CLICKED event
-            ctx->skip_first_click = false;
-        }
-        else
-        {
-            event_t evt;
-            evt.code = EVT_BROWSER_PLAY_CLICKED;
-            evt.param = (void *)btn;
-            event_queue_push_back(&evt, true);
-        }
-    }
-    else if (code == LV_EVENT_LONG_PRESSED) 
-    {
-        if (ctx->skip_first_click)
-        {
-            // User can long press play button to exit to browser state. 
-            // In this case skip_first_click was set to true and we shall skip first
-            // SHORT_CLICKED event
-            ctx->skip_first_click = false;
-        }
-        else
-        {
-            BR_LOGD("Browser: Play long Pressed\n");
-        }
-    }
-}
-
-
-static void create_screen(browser_t* ctx)
-{
-    // Create screen
-    ctx->screen = lv_obj_create(NULL);
-    // Self-destruction callback
-    lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void*)ctx);
-    // Setup Keypad, use NE->Prev, SE->Next, PLAY->Enter
-    lvi_clear_keypad_group();
-    lvi_disable_keypad();
-    lvi_map_keypad(LVI_BUTTON_PLAY, LV_KEY_ENTER);  // LV_KEY_ENTER triggers list button's callback action
-    lvi_map_keypad(LVI_BUTTON_NE, LV_KEY_PREV);     // Navigation in the list box
-    lvi_map_keypad(LVI_BUTTON_SE, LV_KEY_NEXT);     // Navigation in the list box
-    // Setup Buttons, use NW at pos(0,0), SW at pos(1,0), both for "back" function
-    lvi_disable_button();
-    lv_obj_t* btn;
-    // Invisible button at coordinate (0,0)
-    lvi_pos_button(LVI_BUTTON_NW, 0, 0);
-    btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_button, 0);
-    lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
-    lv_obj_set_pos(btn, 0, 0);
-    lv_obj_set_size(btn, 1, 1);
-    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, back_button_handler, LV_EVENT_ALL, (void*)ctx);
-    // Invisible button at coordinate (1,0)
-    lvi_pos_button(LVI_BUTTON_SW, 1, 0);
-    btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_button, 0);
-    lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
-    lv_obj_set_pos(btn, 1, 0);
-    lv_obj_set_size(btn, 1, 1);
-    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, back_button_handler, LV_EVENT_ALL, (void*)ctx);
-    // Create top label
-    ctx->lbl_top = lv_label_create(ctx->screen);
-    lv_obj_set_width(ctx->lbl_top, 200);
-    lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
-    lv_label_set_text(ctx->lbl_top, "");
-    // Create status label
-    ctx->lbl_bottom = lv_label_create(ctx->screen);
-    lv_obj_set_width(ctx->lbl_bottom, 240);
-    lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
-    lv_label_set_text(ctx->lbl_bottom, "");
-    lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    // Create file list
-    ctx->lst_files = lv_list_create(ctx->screen);
-    lv_obj_set_size(ctx->lst_files, 240, 192);
-    lv_obj_set_pos(ctx->lst_files, 0, 24);
-    // Load screen
-    lv_scr_load(ctx->screen);
 }
 
 
@@ -256,7 +145,7 @@ static void populate_file_list(browser_t* ctx, int mode)
         btn = lv_list_add_btn(ctx->lst_files, 0, "[..]");
         ++btn_index;
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PARENT);
-        lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
+        lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
     }
 
     if (dir_opened)
@@ -268,38 +157,37 @@ static void populate_file_list(browser_t* ctx, int mode)
             btn = lv_list_add_btn(ctx->lst_files, 0, "[PgUp..]");
             ++btn_index;
             lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEUP);
-            lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
+            lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
         }
-        for (int i = 0; i < ctx->lister->page_size; ++i)
+        uint8_t type;
+        char name[FF_LFN_BUF + 3];
+        while (LS_OK == lister_get_next_entry(ctx->lister, true, false, name + 1, FF_LFN_BUF + 1, &type))
         {
-            uint8_t type;
-            char name[FF_LFN_BUF + 3];
-            if (LS_OK == lister_get_entry(ctx->lister, i, name + 1, FF_LFN_BUF + 1, &type))
+            if (type == LS_TYPE_DIRECTORY)
             {
-                if (type == LS_TYPE_DIRECTORY)
-                {
-                    name[0] = '[';
-                    strcat(name, "]");
-                    btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_DIRECTORY" ", name);
-                    lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_DIR);
-                }
-                else if (type == LS_TYPE_FILE)
-                {
-                    btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_FILE_O" ", name + 1);
-                    lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_FILE);
-                }
-                if (btn_index == selection)
-                    focus = btn;
-                ++btn_index;
-                lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
+                name[0] = '[';
+                strcat(name, "]");
+                btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_DIRECTORY" ", name);
+                lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_DIR);
+                lv_list_btn_set_label_long_mode(btn, LV_LABEL_LONG_DOT);
             }
+            else if (type == LS_TYPE_FILE)
+            {
+                btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_FILE_O" ", name + 1);
+                lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_FILE);
+                lv_list_btn_set_label_long_mode(btn, LV_LABEL_LONG_DOT);
+            }
+            if (btn_index == selection)
+                focus = btn;
+            ++btn_index;
+            lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
         }
         if (ctx->lister_cur_page < ctx->lister->pages - 1)
         {
             btn = lv_list_add_btn(ctx->lst_files, 0, "[PgDn..]");
             ++btn_index;
             lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEDOWN);
-            lv_obj_add_event_cb(btn, play_button_handler, LV_EVENT_ALL, (void*)ctx);
+            lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
         }
         if (-1 == selection)    // select last
         {
@@ -320,6 +208,150 @@ static void populate_file_list(browser_t* ctx, int mode)
     }
     // Update status bar
     lv_label_set_text(ctx->lbl_bottom, ctx->cur_dir);
+}
+
+
+static void screen_event_handler(lv_event_t* e)
+{
+    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
+    lv_event_code_t code = lv_event_get_code(e);
+    if (ctx)
+    {
+        switch (code)
+        {
+            case LV_EVENT_SCREEN_UNLOADED:
+                BR_LOGD("Browser: screen unloaded\n");
+                lv_obj_del(ctx->screen);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+
+static void back_button_handler(lv_event_t* e)
+{
+    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_SHORT_CLICKED) 
+    {
+        EQ_QUICK_PUSH(EVT_BROWSER_BACK_CLICKED);
+    }
+    else if (code == LV_EVENT_LONG_PRESSED) 
+    {
+        BR_LOGD("Browser: mode button long pressed\n");
+    }
+}
+
+
+static void list_button_handler(lv_event_t* e)
+{
+    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t* btn = lv_event_get_target(e);
+    switch (code)
+    {
+        case LV_EVENT_SHORT_CLICKED:
+        {
+            if (ctx->skip_first_click)
+            {
+                // User can long press play button to exit to browser state. 
+                // In this case skip_first_click was set to true and we shall skip first
+                // SHORT_CLICKED event
+                ctx->skip_first_click = false;
+            }
+            else
+            {
+                event_t evt;
+                evt.code = EVT_BROWSER_PLAY_CLICKED;
+                evt.param = (void *)btn;
+                event_queue_push_back(&evt, true);
+            }
+            break;
+        }
+        case LV_EVENT_LONG_PRESSED:
+        {
+            if (ctx->skip_first_click)
+            {
+                // User can long press play button to exit to browser state. 
+                // In this case skip_first_click was set to true and we shall skip first
+                // SHORT_CLICKED event
+                ctx->skip_first_click = false;
+            }
+            else
+            {
+                BR_LOGD("Browser_File: Play long Pressed\n");
+            }
+            break;
+        }
+        case LV_EVENT_FOCUSED:
+        {
+            lv_list_btn_set_label_long_mode(btn, LV_LABEL_LONG_SCROLL_CIRCULAR);
+            break;
+        }
+        case LV_EVENT_DEFOCUSED:
+        {
+            lv_list_btn_set_label_long_mode(btn, LV_LABEL_LONG_DOT);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+
+static void create_screen(browser_t* ctx)
+{
+    // Create screen
+    ctx->screen = lv_obj_create(NULL);
+    // Self-destruction callback
+    lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void*)ctx);
+    // Setup Keypad, use NE->Prev, SE->Next, PLAY->Enter
+    lvi_clear_keypad_group();
+    lvi_disable_keypad();
+    lvi_map_keypad(LVI_BUTTON_PLAY, LV_KEY_ENTER);  // LV_KEY_ENTER triggers list button's callback action
+    lvi_map_keypad(LVI_BUTTON_NE, LV_KEY_PREV);     // Navigation in the list box
+    lvi_map_keypad(LVI_BUTTON_SE, LV_KEY_NEXT);     // Navigation in the list box
+    // Setup Buttons, use NW at pos(0,0), SW at pos(1,0), both for "back" function
+    lvi_disable_button();
+    lv_obj_t* btn;
+    // Invisible button at coordinate (0,0)
+    lvi_pos_button(LVI_BUTTON_NW, 0, 0);
+    btn = lv_btn_create(ctx->screen);
+    lv_obj_add_style(btn, &lvs_invisible_button, 0);
+    lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
+    lv_obj_set_pos(btn, 0, 0);
+    lv_obj_set_size(btn, 1, 1);
+    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+    lv_obj_add_event_cb(btn, back_button_handler, LV_EVENT_ALL, (void*)ctx);
+    // Invisible button at coordinate (1,0)
+    lvi_pos_button(LVI_BUTTON_SW, 1, 0);
+    btn = lv_btn_create(ctx->screen);
+    lv_obj_add_style(btn, &lvs_invisible_button, 0);
+    lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
+    lv_obj_set_pos(btn, 1, 0);
+    lv_obj_set_size(btn, 1, 1);
+    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+    lv_obj_add_event_cb(btn, back_button_handler, LV_EVENT_ALL, (void*)ctx);
+    // Create top label
+    ctx->lbl_top = lv_label_create(ctx->screen);
+    lv_obj_set_width(ctx->lbl_top, 200);
+    lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
+    lv_label_set_text(ctx->lbl_top, "");
+    // Create status label
+    ctx->lbl_bottom = lv_label_create(ctx->screen);
+    lv_obj_set_width(ctx->lbl_bottom, 240);
+    lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+    lv_label_set_text(ctx->lbl_bottom, "");
+    lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    // Create file list
+    ctx->lst_files = lv_list_create(ctx->screen);
+    lv_obj_set_size(ctx->lst_files, 240, 192);
+    lv_obj_set_pos(ctx->lst_files, 0, 24);
+    // Load screen
+    lv_scr_load(ctx->screen);
 }
 
 
