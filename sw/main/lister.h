@@ -62,6 +62,8 @@ int lister_select_page(lister_t *lister, int page);
 
 int lister_get_entry(lister_t *lister, int index, char *out, int len, uint8_t *type);
 
+int lister_move_to(lister_t *lister, int page, int index);
+
 int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type);
 
 FRESULT lister_get_fatfs_error();

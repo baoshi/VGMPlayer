@@ -680,6 +680,35 @@ int lister_get_entry(lister_t *lister, int index, char *out, int len, uint8_t *t
 }
 
 
+// move lister pointer to the specific page and just *before* the specified index.
+// the following lister_get_next_entry will retrieve the entry at index.
+int lister_move_to(lister_t *lister, int page, int index)
+{
+    int r = LS_OK;
+    char temp[FF_LFN_BUF + 1], *p;
+    do
+    {
+        if ((page != lister->cur_page) || (index < lister->next_index))   // need go different page or rewind
+        {
+            r = lister_select_page(lister, page);
+            if (LS_OK != r) break;
+        }
+        for (int i = lister->next_index; i < index; ++i)
+        {
+            p = f_gets(temp, FF_LFN_BUF + 1, &(lister->fd));
+            if (0 == p)
+            {
+                r = LS_ERR_EOF;
+                break;
+            }
+            ++lister->next_index;
+        }
+    } while (0);
+    return r;    
+}
+
+
+
 // get next entry
 // in_page: true: next entry within page; false: if necessary, advance to next page to get next entry
 // wrap: true: if we are at last entry, wrap to the beginning. false: return EOF if we are at last entry

@@ -68,69 +68,48 @@ static void lv_list_btn_set_label_long_mode(lv_obj_t * btn, lv_label_long_mode_t
 
 //  mode
 //  0: Populate a new directory. Restore page and selection if available
-//  1: Populate an already opened directory. Go to next first entry of next page. (Page Down)
+//  1: Populate an already opened directory. Go to the first entry of next page. (Page Down)
 //  2: Populate an already opened directory. Go to the last entry of previous page. (Page Up)
 static void populate_file_list(browser_t* ctx, int mode)
 {
     lv_obj_t *btn, *focus = 0;
     int btn_index = 0;
+    int lister_page = 0;
     int selection;
-    bool dir_opened = false;
+    
+    MY_ASSERT(ctx->lister != 0);
 
     switch (mode)
     {
         case 0:
         {
-            int t;
-            ec_pause_watchdog();
-            t = lister_open_dir(ctx->cur_dir, 0, BROWSER_LISTER_PAGE_SIZE, true, &ctx->lister);
-            ec_resume_watchdog();
-            if (LS_OK == t)
+            // If history is available, will read page/selection from history, otherwise  use default
+            if (ctx->lister_history_index < BROWSER_LISTER_HISTORY_DEPTH)
             {
-                dir_opened = true;
-                // If history is available, will read page/selection from history, otherwise  use default
-                if (ctx->lister_history_index < BROWSER_LISTER_HISTORY_DEPTH)
-                {
-                    ctx->lister_cur_page = ctx->lister_history_page[ctx->lister_history_index];
-                    selection = ctx->lister_history_selection[ctx->lister_history_index];
-                }
-                else
-                {
-                    ctx->lister_cur_page = 0;
-                    selection = 0;
-                }
+                lister_page = ctx->lister_history_page[ctx->lister_history_index];
+                selection = ctx->lister_history_selection[ctx->lister_history_index];
             }
             else
             {
-                BR_LOGE("Browser_Disk: open dir %s failed with %d\n", ctx->cur_dir, t);
-                if (LS_ERR_FATFS == t)
-                {
-                    FRESULT fr = lister_get_fatfs_error();
-                    BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
-                }
+                lister_page = 0;
+                selection = 0;
             }
             break;
         }
         case 1: // Page Down
-            if (ctx->lister)
+            lister_page = ctx->lister->cur_page;
+            if (lister_page + 1 < ctx->lister->pages)
             {
-                dir_opened = true;
-                if (ctx->lister_cur_page + 1 < ctx->lister->pages)
-                {
-                    ++(ctx->lister_cur_page);
-                    selection = 0;
-                }
+                ++lister_page;
+                selection = 0;
             }
             break;
         case 2: // Page Up
-            if (ctx->lister)
+            lister_page = ctx->lister->cur_page;
+            if (lister_page > 0)
             {
-                dir_opened = true;
-                if (ctx->lister_cur_page > 0)
-                {
-                    --(ctx->lister_cur_page);
-                    selection = -1;
-                }
+                --lister_page;
+                selection = -1;
             }
             break;
         default:
@@ -140,7 +119,7 @@ static void populate_file_list(browser_t* ctx, int mode)
     lv_obj_clean(ctx->lst_files);
     
     // If we are on the fist page of a sub directory, add ".."
-    if ((0 == ctx->lister_cur_page) && (!path_is_root_dir(ctx->cur_dir)))
+    if ((0 == lister_page) && (!path_is_root_dir(ctx->lister->dir)))
     {
         btn = lv_list_add_btn(ctx->lst_files, 0, "[..]");
         ++btn_index;
@@ -148,52 +127,50 @@ static void populate_file_list(browser_t* ctx, int mode)
         lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
     }
 
-    if (dir_opened)
+    lister_select_page(ctx->lister, lister_page);
+    // 2nd page onwards, add "PgUp" button
+    if (lister_page > 0)
     {
-        lister_select_page(ctx->lister, ctx->lister_cur_page);
-        // 2nd page onwards, add "PgUp" button
-        if (ctx->lister_cur_page > 0)
-        {
-            btn = lv_list_add_btn(ctx->lst_files, 0, "[PgUp..]");
-            ++btn_index;
-            lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEUP);
-            lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
-        }
-        uint8_t type;
-        char name[FF_LFN_BUF + 3];
-        while (LS_OK == lister_get_next_entry(ctx->lister, true, false, name + 1, FF_LFN_BUF + 1, &type))
-        {
-            if (type == LS_TYPE_DIRECTORY)
-            {
-                name[0] = '[';
-                strcat(name, "]");
-                btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_DIRECTORY" ", name);
-                lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_DIR);
-                lv_list_btn_set_label_long_mode(btn, LV_LABEL_LONG_DOT);
-            }
-            else if (type == LS_TYPE_FILE)
-            {
-                btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_FILE_O" ", name + 1);
-                lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_FILE);
-                lv_list_btn_set_label_long_mode(btn, LV_LABEL_LONG_DOT);
-            }
-            if (btn_index == selection)
-                focus = btn;
-            ++btn_index;
-            lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
-        }
-        if (ctx->lister_cur_page < ctx->lister->pages - 1)
-        {
-            btn = lv_list_add_btn(ctx->lst_files, 0, "[PgDn..]");
-            ++btn_index;
-            lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEDOWN);
-            lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
-        }
-        if (-1 == selection)    // select last
-        {
-            focus = btn;    // btn points to the last button added
-        }
+        btn = lv_list_add_btn(ctx->lst_files, 0, "[PgUp..]");
+        ++btn_index;
+        lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEUP);
+        lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
     }
+    uint8_t type;
+    char name[FF_LFN_BUF + 3];
+    while (LS_OK == lister_get_next_entry(ctx->lister, true, false, name + 1, FF_LFN_BUF + 1, &type))
+    {
+        if (type == LS_TYPE_DIRECTORY)
+        {
+            name[0] = '[';
+            strcat(name, "]");
+            btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_DIRECTORY" ", name);
+            lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_DIR);
+            lv_list_btn_set_label_long_mode(btn, LV_LABEL_LONG_DOT);
+        }
+        else if (type == LS_TYPE_FILE)
+        {
+            btn = lv_list_add_btn(ctx->lst_files, LV_SYMBOL_FILE_O" ", name + 1);
+            lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_FILE);
+            lv_list_btn_set_label_long_mode(btn, LV_LABEL_LONG_DOT);
+        }
+        if (btn_index == selection)
+            focus = btn;
+        ++btn_index;
+        lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
+    }
+    if (lister_page < ctx->lister->pages - 1)
+    {
+        btn = lv_list_add_btn(ctx->lst_files, 0, "[PgDn..]");
+        ++btn_index;
+        lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEDOWN);
+        lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
+    }
+    if (-1 == selection)    // select last
+    {
+        focus = btn;    // btn points to the last button added
+    }
+    
     // Add all buttons to input group
     uint32_t cnt = lv_obj_get_child_cnt(ctx->lst_files);
     for (uint32_t i = 0; i < cnt; ++i)
@@ -207,7 +184,7 @@ static void populate_file_list(browser_t* ctx, int mode)
         lv_group_focus_obj(focus);
     }
     // Update status bar
-    lv_label_set_text(ctx->lbl_bottom, ctx->cur_dir);
+    lv_label_set_text(ctx->lbl_bottom, ctx->lister->dir);
 }
 
 
@@ -396,46 +373,92 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
     {
         case EVT_ENTRY:
             BR_LOGD("Browser_Disk: entry\n");
-            if (path_is_null(ctx->cur_dir))
+            int t;
+            if (0 == ctx->lister)
             {
-                // if cur_dir is empty, we are entering browser state for the first time
-                // browser to root directory
-                path_set_root_dir(ctx->cur_dir);
-                ctx->lister_cur_page = 0;
-                ctx->lister_history_page[0] = 0;
-                ctx->lister_history_selection[0] = 0;
-                ctx->lister_history_index = 0;
-            }
-            ec_pause_watchdog();
-            int t = disk_check_dir(ctx->cur_dir);   // Could take several seconds before failure
-            ec_resume_watchdog();
-            switch (t)
-            {
-                case 1:
-                    // cur_dir is valid and accessible
-                    populate_file_list(ctx, 0);
-                    break;
-                case 2:
-                    // cur_dir is not accessible but disk is readable, browse root instead
-                    path_set_root_dir(ctx->cur_dir);
-                    ctx->lister_cur_page = 0;
+                // no directory lister available, we must be entering from nodisk state
+                ec_pause_watchdog();
+                t = disk_check_dir("/");
+                ec_resume_watchdog();
+                if ((1 == t) || (2 == t)) // root dir is accessible
+                {
                     ctx->lister_history_page[0] = 0;
                     ctx->lister_history_selection[0] = 0;
                     ctx->lister_history_index = 0;
+                    ec_pause_watchdog();
+                    t = lister_open_dir("/", 0, BROWSER_LISTER_PAGE_SIZE, true, &ctx->lister);
+                    ec_resume_watchdog();
+                    if (LS_OK == t)
+                    {
+                        populate_file_list(ctx, 0);
+                    }
+                    else
+                    {
+                        BR_LOGE("Browser_Disk: open lister at \"/\" failed with %d\n", t);
+                        if (LS_ERR_FATFS == t)
+                        {
+                            FRESULT fr = lister_get_fatfs_error();
+                            BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
+                        }
+                        EQ_QUICK_PUSH(EVT_DISK_ERROR);
+                    }
+                }
+                else    // disk_check_dir error
+                {
+                    BR_LOGE("Browser_Disk: open root directory failed\n");
+                    EQ_QUICK_PUSH(EVT_DISK_ERROR);
+                }
+            }
+            else
+            {
+                // we already have directory lister object (transit from player state)
+                // make sure our directory is still valid
+                ec_pause_watchdog();
+                t = disk_check_dir(ctx->lister->dir);
+                ec_resume_watchdog();
+                switch (t)
+                {
+                case 1:     // current dir is valid and accessible
                     populate_file_list(ctx, 0);
                     break;
-                default:
-                    // disk not accessible
+                case 2:     // current dir is not accessible but disk is ok (TODO: Possible?)
+                    BR_LOGW("Browser_Disk: current dir not accessible, go to root");
+                    lister_close(ctx->lister);
+                    ctx->lister = 0;
+                    ctx->lister_history_page[0] = 0;
+                    ctx->lister_history_selection[0] = 0;
+                    ctx->lister_history_index = 0;
+                    ec_pause_watchdog();
+                    t = lister_open_dir("/", 0, BROWSER_LISTER_PAGE_SIZE, true, &ctx->lister);
+                    ec_resume_watchdog();
+                    if (LS_OK == t)
+                    {
+                        populate_file_list(ctx, 0);
+                    }
+                    else
+                    {
+                        BR_LOGE("Browser_Disk: open lister at \"/\" failed with %d\n", t);
+                        if (LS_ERR_FATFS == t)
+                        {
+                            FRESULT fr = lister_get_fatfs_error();
+                            BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
+                        }
+                        EQ_QUICK_PUSH(EVT_DISK_ERROR);
+                    }
+                    break;
+                default:    // disk not accessible
+                    BR_LOGE("Browser_Disk: disk error\n");
                     EQ_QUICK_PUSH(EVT_DISK_ERROR);
                     break;
+                }
             }
             break;
         case EVT_EXIT:
-            if (ctx->lister)
-            {
-                lister_close(ctx->lister);
-                ctx->lister = 0;
-            }
+            lister_close(ctx->lister);
+            ctx->lister = 0;
+            ctx->lister_history_page[0] = 0;
+            ctx->lister_history_selection[0] = 0;
+            ctx->lister_history_index = 0;
             break;
         case EVT_BROWSER_PLAY_CLICKED:
         {
@@ -450,48 +473,61 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     case FILE_LIST_ENTRY_TYPE_FILE:
                     {
                         // save state
-                        ctx->lister_history_page[ctx->lister_history_index] = ctx->lister_cur_page;
+                        ctx->lister_history_page[ctx->lister_history_index] = ctx->lister->cur_page;
                         ctx->lister_history_selection[ctx->lister_history_index] = lv_obj_get_index(btn);
-                        event_t evt;
-                        evt.code = EVT_BROWSER_PLAY_FILE;
-                        evt.param = (void *)btn;
-                        event_queue_push_back(&evt, true);
+                        const char* file = lv_list_get_btn_text(ctx->lst_files, btn);
+                        if (path_concatenate(ctx->lister->dir, file, me->player_ctx.file, FF_LFN_BUF + 1, false))
+                        {
+                            BR_LOGD("Browser_Disk: selected %s\n", file);
+                            STATE_TRAN((hsm_t*)me, &me->player);
+                        }
+                        else
+                        {
+                            BR_LOGE("Browser_Disk: file path too deep to play: %s\n", file);
+                        }
                         break;
                     }
                     case FILE_LIST_ENTRY_TYPE_DIR:
-                        if (path_concatenate(ctx->cur_dir, btn_text, path, FF_LFN_BUF + 1, true))
+                    {
+                        if (path_concatenate(ctx->lister->dir, btn_text, path, FF_LFN_BUF + 1, true))
                         {
-                            if (ctx->lister)
+                            int save_page = ctx->lister->cur_page;
+                            lister_close(ctx->lister);
+                            ctx->lister = 0;
+                            int t;
+                            ec_pause_watchdog();
+                            t = lister_open_dir(path, 0, BROWSER_LISTER_PAGE_SIZE, true, &ctx->lister);
+                            ec_resume_watchdog();
+                            if (LS_OK == t)
                             {
-                                lister_close(ctx->lister);
-                                ctx->lister = 0;
+                                // push history
+                                ctx->lister_history_page[ctx->lister_history_index] = save_page;
+                                ctx->lister_history_selection[ctx->lister_history_index] = lv_obj_get_index(btn);
+                                ++(ctx->lister_history_index);
+                                // select first page and first entry for new directory
+                                if (ctx->lister_history_index < BROWSER_LISTER_HISTORY_DEPTH)
+                                {
+                                    ctx->lister_history_page[ctx->lister_history_index] = 0;
+                                    ctx->lister_history_selection[ctx->lister_history_index] = 0;
+                                }
+                                populate_file_list(ctx, 0);
                             }
-                            // push history
-                            ctx->lister_history_selection[ctx->lister_history_index] = lv_obj_get_index(btn);
-                            ++(ctx->lister_history_index);
-                            // set new directory and select to first page first entry
-                            path_copy(path, ctx->cur_dir, FF_LFN_BUF + 1);
-                            if (ctx->lister_history_index < BROWSER_LISTER_HISTORY_DEPTH)
+                            else
                             {
-                                ctx->lister_history_page[ctx->lister_history_index] = 0;
-                                ctx->lister_history_selection[ctx->lister_history_index] = 0;
+                                BR_LOGE("Browser_Disk: open lister at \"/\" failed with %d\n", t);
+                                if (LS_ERR_FATFS == t)
+                                {
+                                    FRESULT fr = lister_get_fatfs_error();
+                                    BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
+                                }
+                                EQ_QUICK_PUSH(EVT_DISK_ERROR);
                             }
-                            populate_file_list(ctx, 0);
                         }
                         break;
+                    }
                     case FILE_LIST_ENTRY_TYPE_PARENT:
-                        if (path_get_parent(ctx->cur_dir, path, FF_LFN_BUF + 1))
-                        {
-                            if (ctx->lister)
-                            {
-                                lister_close(ctx->lister);
-                                ctx->lister = 0;
-                            }
-                            // pop history
-                            --(ctx->lister_history_index);
-                            path_copy(path, ctx->cur_dir, FF_LFN_BUF + 1);
-                            populate_file_list(ctx, 0);
-                        }
+                        // same as back button
+                        EQ_QUICK_PUSH(EVT_BROWSER_BACK_CLICKED);
                         break;
                     case FILE_LIST_ENTRY_TYPE_PAGEUP:
                         populate_file_list(ctx, 2);
@@ -504,35 +540,39 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             break;
         }
         case EVT_BROWSER_BACK_CLICKED:
-            if (!path_is_root_dir(ctx->cur_dir))
+        {
+            if (!path_is_root_dir(ctx->lister->dir))
             {
                 char path[FF_LFN_BUF + 1];
-                if (path_get_parent(ctx->cur_dir, path, FF_LFN_BUF + 1))
+                if (path_get_parent(ctx->lister->dir, path, FF_LFN_BUF + 1))
                 {
                     if (ctx->lister)
                     {
                         lister_close(ctx->lister);
                         ctx->lister = 0;
                     }
-                    // pop history
-                    --(ctx->lister_history_index);
-                    path_copy(path, ctx->cur_dir, FF_LFN_BUF + 1);
+                    int t;
+                    ec_pause_watchdog();
+                    t = lister_open_dir(path, 0, BROWSER_LISTER_PAGE_SIZE, true, &ctx->lister);
+                    ec_resume_watchdog();
+                    if (LS_OK == t)
+                    {
+                        // pop history
+                        --(ctx->lister_history_index);
+                        populate_file_list(ctx, 0);
+                    }
+                    else
+                    {
+                        BR_LOGE("Browser_Disk: open lister at \"/\" failed with %d\n", t);
+                        if (LS_ERR_FATFS == t)
+                        {
+                            FRESULT fr = lister_get_fatfs_error();
+                            BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
+                        }
+                        EQ_QUICK_PUSH(EVT_DISK_ERROR);
+                    }
                     populate_file_list(ctx, 0);
                 }
-            }
-            break;
-        case EVT_BROWSER_PLAY_FILE:
-        {
-            lv_obj_t* btn = (lv_obj_t*)(evt->param);
-            const char* file = lv_list_get_btn_text(ctx->lst_files, btn);
-            if (path_concatenate(ctx->cur_dir, file, me->player_ctx.file, FF_LFN_BUF + 1, false))
-            {
-                BR_LOGD("Browser_Disk: selected %s\n", file);
-                STATE_TRAN((hsm_t*)me, &me->player);
-            }
-            else
-            {
-                BR_LOGE("Browser_Disk: file path too deep to play: %s\n", file);
             }
             break;
         }
@@ -559,12 +599,10 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             BR_LOGD("Browser_Nodisk: entry\n");
             lv_label_set_text(me->browser_ctx.lbl_bottom, "No card");
             lv_obj_clean(me->browser_ctx.lst_files);
-            path_set_null(me->browser_ctx.cur_dir);
             break;
         case EVT_DISK_INSERTED:
         {
             // when cur_dir is null browser_disk will start browser from root
-            path_set_null(me->browser_ctx.cur_dir);
             STATE_TRAN((hsm_t*)me, &me->browser_disk);
             break;
         }
@@ -585,7 +623,6 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
             BR_LOGD("Browser_Baddisk: entry\n");
             lv_label_set_text(me->browser_ctx.lbl_bottom, "Card error");
             lv_obj_clean(me->browser_ctx.lst_files);
-            path_set_root_dir(me->browser_ctx.cur_dir);
             break;
         case EVT_DISK_EJECTED:
             STATE_TRAN((hsm_t*)me, &me->browser_nodisk);
