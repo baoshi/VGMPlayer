@@ -1,4 +1,4 @@
-/* Generated using ./bdf2lvgl/build/bdf2lvgl -n helvr14 -o lvfont_helvr14.c -r 32-126 -r0xa0-0xff -s 0xf016 helvR14.bdf */
+/* Generated using ./bdf2lvgl/build/bdf2lvgl -n helvr14 -o lvfont_helvr14.c -r 32-126 -r0xa0-0xff -s 0xf016 -s 0xf07b helvR14.bdf */
 
 #include <lvgl.h>
 
