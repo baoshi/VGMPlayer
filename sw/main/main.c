@@ -78,12 +78,6 @@ int main()
     display_init();     // 323ms
     // draw splash screen without backlight
     splash();
-    // Some more time to finish render splash screen
-    lv_timer_handler();
-    sleep_ms(5);
-    lv_timer_handler();
-    sleep_ms(5);
-    lv_timer_handler(); // 63ms
     // Other H/W initialiation interleave with lvgl update to finish the drawing
     hw_shared_resource_init();
     ec_init();

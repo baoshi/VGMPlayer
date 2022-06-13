@@ -366,6 +366,8 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             {
                 // no directory lister available, we must be entering from nodisk state
                 ec_pause_watchdog();
+                lv_label_set_text(ctx->lbl_bottom, "Loading...");
+                lv_refr_now(NULL);
                 t = disk_check_dir("/");
                 ec_resume_watchdog();
                 if ((1 == t) || (2 == t)) // root dir is accessible
@@ -374,6 +376,8 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     me->lister_history_selection[0] = 0;
                     me->lister_history_index = 0;
                     ec_pause_watchdog();
+                    lv_label_set_text(ctx->lbl_bottom, "Loading...");
+                    lv_refr_now(NULL);
                     t = lister_open_dir("/", 0, LISTER_PAGE_SIZE, true, &(me->lister));
                     ec_resume_watchdog();
                     if (LS_OK == t)
@@ -402,6 +406,8 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                 // we already have directory lister object (transit from player state)
                 // make sure our directory is still valid
                 ec_pause_watchdog();
+                lv_label_set_text(ctx->lbl_bottom, "Loading...");
+                lv_refr_now(NULL);
                 t = disk_check_dir(me->lister->dir);
                 ec_resume_watchdog();
                 switch (t)
@@ -417,6 +423,8 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     me->lister_history_selection[0] = 0;
                     me->lister_history_index = 0;
                     ec_pause_watchdog();
+                    lv_label_set_text(ctx->lbl_bottom, "Loading...");
+                    lv_refr_now(NULL);
                     t = lister_open_dir("/", 0, LISTER_PAGE_SIZE, true, &(me->lister));
                     ec_resume_watchdog();
                     if (LS_OK == t)
@@ -481,6 +489,8 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                             me->lister = 0;
                             int t;
                             ec_pause_watchdog();
+                            lv_label_set_text(ctx->lbl_bottom, "Loading...");
+                            lv_refr_now(NULL);
                             t = lister_open_dir(path, 0, LISTER_PAGE_SIZE, true, &(me->lister));
                             ec_resume_watchdog();
                             if (LS_OK == t)
@@ -534,6 +544,8 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                 me->lister = 0;
                 int t;
                 ec_pause_watchdog();
+                lv_label_set_text(ctx->lbl_bottom, "Loading...");
+                lv_refr_now(NULL);
                 t = lister_open_dir(path, 0, LISTER_PAGE_SIZE, true, &(me->lister));
                 ec_resume_watchdog();
                 if (LS_OK == t)

@@ -31,4 +31,6 @@ void splash()
     lv_label_set_text(label1, "#0000ff V##ff00ff G##ff0000 M##ffffff Player#");
     lv_obj_set_style_text_align(label1, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(label1, LV_ALIGN_CENTER, 0, 0);
+    // Draw screen
+    lv_refr_now(NULL);
 }
