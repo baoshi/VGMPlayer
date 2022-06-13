@@ -10,12 +10,12 @@
 
 
 // Maximun files listed per page.
-#define BROWSER_LISTER_PAGE_SIZE        10
+#define LISTER_PAGE_SIZE                10
 // Remember # levels history in file lister
-#define BROWSER_LISTER_HISTORY_DEPTH    10
+#define LISTER_HISTORY_DEPTH            10
 
-#define AUDIO_SAMPLE_RATE           48000
-#define AUDIO_POWER_SAVER_MS        5000
+#define AUDIO_SAMPLE_RATE               48000
+#define AUDIO_POWER_SAVER_MS            5000
 
 extern int8_t backlight_brigntness_normal;
 extern int8_t backlight_brignthess_dimmed;

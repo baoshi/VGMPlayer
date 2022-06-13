@@ -23,10 +23,6 @@ typedef struct browser_s
     lv_obj_t *lst_files;  // File List
     int alarm_ui_update;
     bool skip_first_click;
-    lister_t *lister;
-    int lister_history_page[BROWSER_LISTER_HISTORY_DEPTH];
-    int lister_history_selection[BROWSER_LISTER_HISTORY_DEPTH];
-    int lister_history_index;
 } browser_t;
 
 event_t const *browser_handler(app_t *me, event_t const *evt);
@@ -62,5 +58,11 @@ struct app_s
     browser_t browser_ctx;
     state_t player, player_s16, player_s16_playing, player_s16_paused;
     player_t player_ctx;
+    // data shared by all states
+    lister_t *lister;
+    int lister_history_page[LISTER_HISTORY_DEPTH];
+    int lister_history_selection[LISTER_HISTORY_DEPTH];
+    int lister_history_index;
+
 };
 

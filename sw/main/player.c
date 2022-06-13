@@ -211,6 +211,9 @@ static void create_screen(player_t* ctx)
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
+    // Calculates all coordinates
+    lv_obj_update_layout(ctx->screen);
+
     // Load screen
     lv_scr_load(ctx->screen);
 }

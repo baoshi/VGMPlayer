@@ -5,6 +5,7 @@ target_sources(display INTERFACE
     lvtheme.c
     lvstyle.c
     lvinput.c
+    lvsupp.c
     lvfont_helvr14.c
     display.c
 )
