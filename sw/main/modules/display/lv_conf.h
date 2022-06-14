@@ -340,7 +340,7 @@
 /*Always set a default font*/
 #define LV_FONT_DEFAULT &lv_font_helvr14
 
-/*Additional font awesome symbol definition*/
+/*More symbol font definition in addition to lv_symbol_def.h*/
 /*Use https://www.branah.com/unicode-converter for Unicode to UTF-8 conversion*/
 #define LV_SYMBOL_FILE_O        "\xEF\x80\x96" /*61462, 0xF016*/
 
