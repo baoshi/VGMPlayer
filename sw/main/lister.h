@@ -48,9 +48,9 @@ typedef struct _lister_s
     int         count;                  // total count under this directory
     int         page_size;              // directory list pager size
     int         pages;                  // total pages
-    uint32_t    page_offset[MAX_PAGES]; // offset of first file of each page
+    uint32_t    page_offset[MAX_PAGES]; // offset to the first file of each page in catalog file
     int         cur_page;               // current page index
-    int         next_index;             // next file index (when read, already read from next_index then increase)
+    int         next_index;             // index of next file to read using lister_get_next_entry()
 } lister_t;
 
 
