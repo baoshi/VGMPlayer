@@ -465,8 +465,8 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     me->lister_history_page[me->lister_history_index] = me->lister->cur_page;
                     me->lister_history_selection[me->lister_history_index] = entry_index;
                     // Move lister to current selection and hand over to player
+                    BR_LOGD("Browser_Disk: play entry %d in page %d\n", entry_index, me->lister->cur_page);
                     lister_move_to(me->lister, me->lister->cur_page, entry_index);
-                    BR_LOGD("Browser_Disk: play entry %d in page %d\n", me->lister->cur_page, entry_index);
                     STATE_TRAN((hsm_t*)me, &me->player);
                     break;
                 }

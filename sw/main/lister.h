@@ -49,8 +49,8 @@ typedef struct _lister_s
     int         page_size;              // directory list pager size
     int         pages;                  // total pages
     uint32_t    page_offset[MAX_PAGES]; // offset to the first file of each page in catalog file
-    int         cur_page;               // current page index
-    int         next_index;             // index of next file to read using lister_get_next_entry()
+    int         cur_page;               // current page
+    int         cur_index;              // current entry index in the page
 } lister_t;
 
 
@@ -60,10 +60,10 @@ int lister_close(lister_t *lister);
 
 int lister_select_page(lister_t *lister, int page);
 
-int lister_get_entry(lister_t *lister, int index, char *out, int len, uint8_t *type);
-
 int lister_move_to(lister_t *lister, int page, int index);
 
 int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type);
+
+int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type);
 
 FRESULT lister_get_fatfs_error();

@@ -12,6 +12,7 @@
 #include "ec.h"
 #include "audio.h"
 #include "decoder_s16.h"
+#include "lister.h"
 #include "app.h"
 
 
@@ -69,7 +70,7 @@ static void button_play_handler(lv_event_t* e)
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        PL_LOGD("Play button released after long pressed\n");
+        PL_LOGD("Play button long pressed\n");
         EQ_QUICK_PUSH(EVT_PLAYER_EXIT_TO_BROWSER);
     }
 }
@@ -82,11 +83,11 @@ static void button_up_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("UP button pressed\n");
+        PL_LOGD("Up button pressed\n");
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        PL_LOGD("UP button long pressed\n");
+        PL_LOGD("Up button long pressed\n");
     }
 }
 
@@ -98,11 +99,11 @@ static void button_down_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("DOWN button pressed\n");
+        PL_LOGD("Down button pressed\n");
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        PL_LOGD("DOWN button long pressed\n");
+        PL_LOGD("Down button long pressed\n");
     }
 }
 
@@ -114,11 +115,12 @@ static void button_next_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("NEXT button pressed\n");
+        PL_LOGD("Next button pressed\n");
+        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        PL_LOGD("NEXT button long pressed\n");
+        PL_LOGD("Next button long pressed\n");
     }
 }
 
@@ -130,11 +132,12 @@ static void button_prev_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("PREV button pressed\n");
+        PL_LOGD("Prev button pressed\n");
+        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_PREV);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        PL_LOGD("PREV button long pressed\n");
+        PL_LOGD("Prev button long pressed\n");
     }
 }
 
@@ -180,40 +183,36 @@ static void create_screen(player_t* ctx)
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_down_handler, LV_EVENT_ALL, (void*)ctx);
-    // NE / Next
+    // NE / Prev
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 3, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_next_handler, LV_EVENT_ALL, (void*)ctx);
-    // SE / Prev
+    lv_obj_add_event_cb(btn, button_prev_handler, LV_EVENT_ALL, (void*)ctx);
+    // SE / Next
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 4, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_prev_handler, LV_EVENT_ALL, (void*)ctx);
-
+    lv_obj_add_event_cb(btn, button_next_handler, LV_EVENT_ALL, (void*)ctx);
     // Create top label
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_top, 200);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_label_set_text(ctx->lbl_top, "");
-
     // Create bottom label
     ctx->lbl_bottom = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_bottom, 240);
     lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
-
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
-
     // Load screen
     lv_scr_load(ctx->screen);
 }
@@ -226,21 +225,24 @@ event_t const *player_handler(app_t *me, event_t const *evt)
     switch (evt->code)
     {
         case EVT_ENTRY:
+        {
             PL_LOGD("Player: entry\n");
             create_screen(ctx);
             ctx->alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
             ctx->decoder = 0;
             break;
+        }
         case EVT_EXIT:
+        {
             PL_LOGD("Player: exit\n");
             tick_disarm_time_event(ctx->alarm_ui_update);
             ctx->alarm_ui_update = -1;
             break;
+        }
         case EVT_START:
         {
             PL_LOGD("Player: start\n");
-            lv_label_set_text(ctx->lbl_bottom, ctx->file);
-            // check file extension and determine go into which sub state           
+            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
             break;
         }
         case EVT_PLAYER_UI_UPDATE:
@@ -250,6 +252,58 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             lv_label_set_text(ctx->lbl_top, buf);
             break;
         }
+        case EVT_PLAYER_PLAY_NEXT:
+        {
+            uint8_t type;
+            int r;
+            do
+            {
+                // Get the next file to play
+                r = lister_get_next_entry(me->lister, false, false, ctx->file, FF_LFN_BUF + 1, &type);
+                if ((LS_OK == r) && (LS_TYPE_FILE == type))
+                    break;
+                if (LS_ERR_EOF == r)
+                    break;
+            } while (1);
+            switch (r)
+            {
+                case LS_OK:
+                    lv_label_set_text(ctx->lbl_bottom, ctx->file);
+                    break;
+                case LS_ERR_EOF:
+                    PL_LOGD("Player: No more file\n");
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case EVT_PLAYER_PLAY_PREV:
+        {
+            uint8_t type;
+            int r;
+            do
+            {
+                // Get the previous file to play
+                r = lister_get_prev_entry(me->lister, false, false, ctx->file, FF_LFN_BUF + 1, &type);
+                if ((LS_OK == r) && (LS_TYPE_FILE == type))
+                    break;
+                if (LS_ERR_EOF == r)
+                    break;
+            } while (1);
+            switch (r)
+            {
+                case LS_OK:
+                    lv_label_set_text(ctx->lbl_bottom, ctx->file);
+                    break;
+                case LS_ERR_EOF:
+                    PL_LOGD("Player: No more file\n");
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
         case EVT_PLAYER_SONG_ENDED:
         {
             STATE_TRAN(me, &(me->browser_disk));
@@ -257,6 +311,8 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         }
         case EVT_PLAYER_EXIT_TO_BROWSER:
         {
+            me->lister_history_page[me->lister_history_index] = me->lister->cur_page;
+            me->lister_history_selection[me->lister_history_index] = me->lister->cur_index;
             me->browser_ctx.skip_first_click = true;
             STATE_TRAN(me, &(me->browser_disk));
             break;
@@ -320,10 +376,6 @@ event_t const *player_s16_playing_handler(app_t *me, event_t const *evt)
     case EVT_START:
         PL_LOGD("Player_S16_Playing: start\n");
         break;
-    case EVT_PLAYER_MODE_CLICKED:
-        audio_pause_playback();
-        STATE_TRAN(me, &(me->player_s16_paused));
-        break;
     case EVT_PLAYER_SONG_ENDED:
         STATE_TRAN(me, &(me->browser_disk));
         break;
@@ -353,10 +405,6 @@ event_t const *player_s16_paused_handler(app_t *me, event_t const *evt)
     case EVT_PLAYER_PLAY_CLICKED:
         audio_unpause_playback();
         STATE_TRAN(me, &(me->player_s16_playing));
-        break;
-    case EVT_PLAYER_MODE_CLICKED:
-        audio_stop_playback();
-        STATE_TRAN(me, &(me->browser_disk));
         break;
     default:
         r = evt;
