@@ -252,6 +252,32 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             lv_label_set_text(ctx->lbl_top, buf);
             break;
         }
+        case EVT_PLAYER_PLAY_SONG:
+        {
+            uint8_t type;
+            int r;
+            do
+            {
+                // Get the current file to play
+                r = lister_get_entry(me->lister, ctx->file, FF_LFN_BUF + 1, &type);
+                if ((LS_OK == r) && (LS_TYPE_FILE == type))
+                    break;
+                if (LS_ERR_EOF == r)
+                    break;
+            } while (1);
+            switch (r)
+            {
+                case LS_OK:
+                    lv_label_set_text(ctx->lbl_bottom, ctx->file);
+                    break;
+                case LS_ERR_EOF:
+                    PL_LOGD("Player: No more file\n");
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
         case EVT_PLAYER_PLAY_NEXT:
         {
             uint8_t type;

@@ -381,7 +381,7 @@ static int _merge_catalog_chunks(lister_t* lister, int chunk_count)
         // reopen catalog file
         f_close(&(lister->fd));
         f_open(&(lister->fd), cat_name, FA_OPEN_EXISTING | FA_READ);
-        lister_select_page(lister, 0);
+        r = lister_select_page(lister, 0);
     } while (0);
 
     if (r != LS_OK)
@@ -451,7 +451,6 @@ static int _create_catalog(const char * const patterns[], lister_t *lister)
 static int _open_catalog(lister_t *lister, bool safe_mode)
 {
     int r = LS_OK;
-    bool success = false;
     char cat[FF_LFN_BUF + 1];
     char temp[16];
     int val;
@@ -529,10 +528,7 @@ static int _open_catalog(lister_t *lister, bool safe_mode)
         // other structure members
         lister->pages = page;
         lister->count = index;
-        lister->cur_page = 0;
-        lister->cur_index = -1;
-        f_lseek(&(lister->fd), (FSIZE_t)(lister->page_offset[0]));  // won't fail?
-        success = true;
+        r = lister_select_page(lister, 0);
     } while (0);
     
     return r;
@@ -623,40 +619,72 @@ int lister_select_page(lister_t *lister, int page)
         else
         {
             lister->cur_page = page;
-            lister->cur_index = -1;
+            lister->cur_index = 0;
+            lister->entry[0] = '\0';
         }
     }
     return r;
 }
 
 
-// move lister pointer to the specific page and just *before* the specified index.
-// the following lister_get_next_entry will retrieve the entry at index.
+// move lister pointer to the specific page and index.
+// the following lister_get_entry will retrieve the entry.
 int lister_move_to(lister_t *lister, int page, int index)
 {
     int r = LS_OK;
-    char temp[FF_LFN_BUF + 1], *p;
+    char *p;
     do
     {
-        if ((page != lister->cur_page) || (index < lister->cur_index))   // if we need go to a different page or rewind
+        // We need to rewind/move to another page in case:
+        if ((page != lister->cur_page)      // a different page is requested
+            ||
+            (index < lister->cur_index)     // a previous entry is requested
+        )
         {
             r = lister_select_page(lister, page);
             if (LS_OK != r) break;
         }
-        // for first entry, lister->cur_index can be 0 or -1
-        int i = (lister->cur_index > 0) ? lister->cur_index : 0;
-        for (; i < index; ++i)
+        for (int i = lister->cur_index; i < index; ++i)
         {
-            p = f_gets(temp, FF_LFN_BUF + 1, &(lister->fd));
-            if (0 == p)
+            if (0 == f_gets(lister->entry, FF_LFN_BUF + 1, &(lister->fd)))
             {
                 r = LS_ERR_EOF;
                 break;
             }
+            lister->entry[0] = '\0';    // not needed
             ++lister->cur_index;
         }
     } while (0);
     return r;    
+}
+
+
+int lister_get_entry(lister_t *lister, char *out, int len, uint8_t *type)
+{
+    int r = LS_OK;
+    do
+    {
+        if ('\0' == lister->entry[0])
+        {
+            if (0 == f_gets(lister->entry, FF_LFN_BUF + 3, &(lister->fd)))
+            {
+                r = LS_ERR_EOF;
+                break;
+            }
+            path_trim_back(lister->entry);
+        }
+        if ('!' == lister->entry[0])
+        {
+            if (out != 0) path_copy(&(lister->entry[1]), out, len);
+            *type = LS_TYPE_DIRECTORY;
+        }
+        else
+        {
+            if (out != 0) path_copy(lister->entry, out, len);
+            *type = LS_TYPE_FILE;
+        }
+    } while (0);
+    return r;
 }
 
 
@@ -666,28 +694,33 @@ int lister_move_to(lister_t *lister, int page, int index)
 int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type)
 {
     int r = LS_OK;
-    char temp[FF_LFN_BUF + 1];
-    int i = lister->cur_index;
-    int p = lister->cur_page;
     do
     {
+        if ('\0' == lister->entry[0])   // if the current entry is not read yet, get_next_entry is same as get_entry
+        {
+            r = lister_get_entry(lister, out, len, type);  // dummy read to skip current entry
+            break;
+        }
+
+        int i = lister->cur_index;
+        int p = lister->cur_page;
         if ((p + 1 == lister->pages) && (i == (lister->count % lister->page_size) - 1)) // if we are at the last entry of last page
         {
             if (!wrap)
             {
-                // !wrap operation, return eof
+                // not wrap operation, return eof
                 r = LS_ERR_EOF;
                 break;
             }
             else
             {
+                // wrap to beginning
                 r = lister_select_page(lister, 0);
                 if (r != LS_OK) break;
             }
         }
         else if (i + 1 >= lister->page_size)    // if we are at the last entry of a page
         {
-            // we have read the last entry of this page
             if (in_page)
             {
                 // in_page operation, return eof
@@ -696,31 +729,19 @@ int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
             }
             else
             {
-                // advance page
+                // advance to next page
                 r = lister_select_page(lister, p + 1);
                 if (r != LS_OK) break;
             }
         }
-        // read entry
-        if (0 == f_gets(temp, FF_LFN_BUF + 1, &(lister->fd)))
-        {
-            r = LS_ERR_EOF;
-            break;
-        }
-        // success
-        ++lister->cur_index;
-        path_trim_back(temp);
-        // Check entry is file or directory
-        if ('!' == temp[0])
-        {
-            path_copy(&(temp[1]), out, len);
-            *type = LS_TYPE_DIRECTORY;
-        }
         else
         {
-            path_copy(temp, out, len);
-            *type = LS_TYPE_FILE;
+            // no page adjustment, advance index
+            lister->cur_index = i + 1;
+            lister->entry[0] = '\0';
         }
+        // read entry
+        r = lister_get_entry(lister, out, len, type);
     } while (0);
     return r;
 }
@@ -732,7 +753,6 @@ int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
 int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type)
 {
     int r = LS_OK;
-    char temp[FF_LFN_BUF + 1];
     int i = lister->cur_index;
     int p = lister->cur_page;
     do
@@ -783,25 +803,7 @@ int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
             if (r != LS_OK) break;
         }
         // read entry
-        if (0 == f_gets(temp, FF_LFN_BUF + 1, &(lister->fd)))
-        {
-            r = LS_ERR_EOF;
-            break;
-        }
-        // success
-        ++lister->cur_index;
-        path_trim_back(temp);
-        // Check entry is file or directory
-        if ('!' == temp[0])
-        {
-            path_copy(&(temp[1]), out, len);
-            *type = LS_TYPE_DIRECTORY;
-        }
-        else
-        {
-            path_copy(temp, out, len);
-            *type = LS_TYPE_FILE;
-        }
+        r = lister_get_entry(lister, out, len, type);
     } while (0);
     return r;
 }

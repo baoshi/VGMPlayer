@@ -49,6 +49,7 @@ typedef struct _lister_s
     int         page_size;              // directory list pager size
     int         pages;                  // total pages
     uint32_t    page_offset[MAX_PAGES]; // offset to the first file of each page in catalog file
+    char        entry[FF_LFN_BUF + 3];  // current entry
     int         cur_page;               // current page
     int         cur_index;              // current entry index in the page
 } lister_t;
@@ -61,6 +62,8 @@ int lister_close(lister_t *lister);
 int lister_select_page(lister_t *lister, int page);
 
 int lister_move_to(lister_t *lister, int page, int index);
+
+int lister_get_entry(lister_t *lister, char *out, int len, uint8_t *type);
 
 int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type);
 
