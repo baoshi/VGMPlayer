@@ -256,25 +256,15 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         {
             uint8_t type;
             int r;
-            do
+            // Get the current file to play
+            r = lister_get_entry(me->lister, ctx->file, FF_LFN_BUF + 1, &type);
+            if ((LS_OK == r) && (LS_TYPE_FILE == type))
             {
-                // Get the current file to play
-                r = lister_get_entry(me->lister, ctx->file, FF_LFN_BUF + 1, &type);
-                if ((LS_OK == r) && (LS_TYPE_FILE == type))
-                    break;
-                if (LS_ERR_EOF == r)
-                    break;
-            } while (1);
-            switch (r)
+                lv_label_set_text(ctx->lbl_bottom, ctx->file);
+            }
+            else
             {
-                case LS_OK:
-                    lv_label_set_text(ctx->lbl_bottom, ctx->file);
-                    break;
-                case LS_ERR_EOF:
-                    PL_LOGD("Player: No more file\n");
-                    break;
-                default:
-                    break;
+                PL_LOGE("Player: cannot open file to play\n");
             }
             break;
         }

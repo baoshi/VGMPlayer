@@ -59,8 +59,6 @@ int lister_open_dir(const char *path, const char * const pats[], int page_size, 
 
 int lister_close(lister_t *lister);
 
-int lister_select_page(lister_t *lister, int page);
-
 int lister_move_to(lister_t *lister, int page, int index);
 
 int lister_move_next(lister_t *lister, bool in_page, bool wrap);

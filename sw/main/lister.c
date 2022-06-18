@@ -381,7 +381,10 @@ static int _merge_catalog_chunks(lister_t* lister, int chunk_count)
         // reopen catalog file
         f_close(&(lister->fd));
         f_open(&(lister->fd), cat_name, FA_OPEN_EXISTING | FA_READ);
-        r = lister_select_page(lister, 0);
+        // set cur_page and cur_index to invalid values so lister_move_to will move to new page
+        lister->cur_page = -1;
+        lister->cur_index = -1;
+        r = lister_move_to(lister, 0, 0);
     } while (0);
 
     if (r != LS_OK)
@@ -528,7 +531,10 @@ static int _open_catalog(lister_t *lister, bool safe_mode)
         // other structure members
         lister->pages = page;
         lister->count = index;
-        r = lister_select_page(lister, 0);
+        // set cur_page and cur_index to invalid values so lister_move_to will move to new page
+        lister->cur_page = -1;
+        lister->cur_index = -1;
+        r = lister_move_to(lister, 0, 0);
     } while (0);
     
     return r;
@@ -602,31 +608,6 @@ int lister_close(lister_t *lister)
 }
 
 
-int lister_select_page(lister_t *lister, int page)
-{
-    int r = LS_OK;
-    if (page >= lister->pages)
-    {
-        r = LS_ERR_EOF;
-    }
-    else
-    {
-        _fr = f_lseek(&(lister->fd), (FSIZE_t)(lister->page_offset[page]));
-        if (FR_OK != _fr)
-        {
-            r = LS_ERR_FATFS;
-        }
-        else
-        {
-            lister->cur_page = page;
-            lister->cur_index = 0;
-            lister->cache[0] = '\0';
-        }
-    }
-    return r;
-}
-
-
 // move lister pointer to the specific page and index.
 // the following lister_get_entry will retrieve the entry.
 int lister_move_to(lister_t *lister, int page, int index)
@@ -636,36 +617,50 @@ int lister_move_to(lister_t *lister, int page, int index)
     do
     {
         // We need to rewind/move to another page in case:
-        if ((page != lister->cur_page)      // a different page is requested
+        if ((page != lister->cur_page)                                  // a different page is requested
             ||
-            (index < lister->cur_index)     // a previous entry is requested
+            (index < lister->cur_index)                                 // a previous entry is requested
+            ||
+            (index == lister->cur_index && lister->cache[0] != '\0')    // requesting entry at the cursor but this entry is already read
         )
         {
-            r = lister_select_page(lister, page);
-            if (LS_OK != r) break;
+            _fr = f_lseek(&(lister->fd), (FSIZE_t)(lister->page_offset[page]));
+            if (_fr != FR_OK)
+            {
+                r = LS_ERR_FATFS;
+                break;
+            }
+            lister->cur_page = page;
+            lister->cur_index = 0;
+            lister->cache[0] = '\0';
         }
-        for (int i = lister->cur_index; i < index; ++i)
+        // read all entries before the requested entry then discard.
+        // note if cache is not empty, we will start reading from cur_index + 1.
+        int start = ('\0' == lister->cache[0]) ? lister->cur_index : lister->cur_index + 1;
+        for (; start < index; ++start)
         {
             if (0 == f_gets(lister->cache, FF_LFN_BUF + 3, &(lister->fd)))
             {
                 r = LS_ERR_EOF;
                 break;
             }
-            ++lister->cur_index;
+            lister->cache[0] = '\0';
         }
-        // fetch cache
-        if (0 == f_gets(lister->cache, FF_LFN_BUF + 3, &(lister->fd)))
+        // set index
+        if (lister->cur_index != index)
         {
-            r = LS_ERR_EOF;
-            break;
+            lister->cur_index = index;
+            lister->cache[0] = '\0';
         }
-        path_trim_back(lister->cache);
-        lister->cur_index = index;
     } while (0);
     return r;    
 }
 
-
+// move curor to the next entry
+// when at the end of a page:
+//   in_page = true: return EOF; in_page = false: advance to the next page
+// when at the end of the catalog:
+//   wrap = true: wrap to the very beginning of the catalog; wrap = false: return EOF
 int lister_move_next(lister_t *lister, bool in_page, bool wrap)
 {
     int r = LS_OK;
@@ -673,13 +668,8 @@ int lister_move_next(lister_t *lister, bool in_page, bool wrap)
     {
         if ('\0' == lister->cache[0])
         {
-            // cache is empty if we just opened catalog or called lister_select_page, just fetch cache
-            if (0 == f_gets(lister->cache, FF_LFN_BUF + 3, &(lister->fd)))
-            {
-                r = LS_ERR_EOF;
-                break;
-            }
-            path_trim_back(lister->cache);
+            // cache is empty if we just opened catalog or called lister_select_page, do nothing
+            // following fetch_entry will do actual reading
             break;
         }
         else
@@ -728,61 +718,16 @@ int lister_move_next(lister_t *lister, bool in_page, bool wrap)
 }
 
 
+// move cursor to the previous entry
+// when at the beginning of a page:
+//   in_page = true: return EOF; in_page = false: move up to the last entry of previous page
+// when at the very beginning of the catalog:
+//   wrap = true: wrap to the last entry; wrap = false: return EOF
 int lister_move_prev(lister_t *lister, bool in_page, bool wrap)
 {
-
-}
-
-
-int lister_get_entry(lister_t *lister, char *out, int len, uint8_t *type)
-{
-    int r = LS_OK;
-    do
-    {
-        if ('\0' == lister->cache[0])
-        {
-            if (0 == f_gets(lister->cache, FF_LFN_BUF + 3, &(lister->fd)))
-            {
-                r = LS_ERR_EOF;
-                break;
-            }
-            path_trim_back(lister->cache);
-        }
-        else if ('!' == lister->cache[0])
-        {
-            if (out != 0) path_copy(&(lister->cache[1]), out, len);
-            *type = LS_TYPE_DIRECTORY;
-        }
-        else
-        {
-            if (out != 0) path_copy(lister->cache, out, len);
-            *type = LS_TYPE_FILE;
-        }
-    } while (0);
-    return r;
-}
-
-
-// get next entry
-// in_page: true: next entry within page; false: advance to the next page if necessary
-// wrap: true: if we are at last entry, wrap to the beginning. false: return EOF if no more entries
-int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type)
-{
-    int r;
-    r = lister_move_next(lister, in_page, wrap);
-    if (LS_OK == r)
-    {
-        r = lister_get_entry(lister, out, len, type);
-    }
-    return r;
-}
-
-
-// get previous entry
-// in_page: true: previous entry within page; false: back to the previous page if necessary
-// wrap: true: if we are at first entry, wrap to the last. false: return EOF if no more entries
-int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type)
-{
+    // vs. move_next: 
+    // in move_next, if cache is empty, we will fetch cache instead of move forward
+    // in move_prev, even if cache is empty. we will move backward
     int r = LS_OK;
     int i = lister->cur_index;
     int p = lister->cur_page;
@@ -792,7 +737,7 @@ int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
         {
             if (in_page)
             {
-                // in_page operation, return eof
+                // in_page operation, return EOF
                 r = LS_ERR_EOF;
                 break;
             }
@@ -809,11 +754,11 @@ int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
                     }
                     else
                     {
-                        // go to last page, last entry
+                        // go to last page, last entry, fetch cache
                         p = lister->pages - 1;
                         i = (lister->count % lister->page_size) - 1;
                         r = lister_move_to(lister, p, i);
-                        if (r != LS_OK) break;
+                        break;
                     }
                 }
                 else
@@ -822,20 +767,77 @@ int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
                     --p;
                     i = lister->page_size - 1;  // previous page will always be a full page, no need to check i
                     r = lister_move_to(lister, p, i);
-                    if (r != LS_OK) break;
+                    break;
                 }
             }
         }
         else
         {
-            // we are at the middle of a page
-            --i;
-            r = lister_move_to(lister, p, i);
-            if (r != LS_OK) break;
+            // no page adjustment, just move index
+            r = lister_move_to(lister, p, i - 1);
+            break;
         }
-        // read entry
-        r = lister_get_entry(lister, out, len, type);
     } while (0);
+    return r;
+}
+
+
+// get content of an entry
+// read from cache if alraedy read
+int lister_get_entry(lister_t *lister, char *out, int len, uint8_t *type)
+{
+    int r = LS_OK;
+    do
+    {
+        // fetch cache if not already fetched
+        if ('\0' == lister->cache[0])
+        {
+            if (0 == f_gets(lister->cache, FF_LFN_BUF + 3, &(lister->fd)))
+            {
+                r = LS_ERR_EOF;
+                break;
+            }
+            path_trim_back(lister->cache);
+        }
+        if ('!' == lister->cache[0])
+        {
+            if (out != 0) path_copy(&(lister->cache[1]), out, len);
+            *type = LS_TYPE_DIRECTORY;
+        }
+        else
+        {
+            if (out != 0) path_copy(lister->cache, out, len);
+            *type = LS_TYPE_FILE;
+        }
+    } while (0);
+    return r;
+}
+
+
+// get next entry
+// convinient call to move_next and get_entry
+int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type)
+{
+    int r;
+    r = lister_move_next(lister, in_page, wrap);
+    if (LS_OK == r)
+    {
+        r = lister_get_entry(lister, out, len, type);
+    }
+    return r;
+}
+
+
+// get previous entry
+// convinient call to move_prev and get_entry
+int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type)
+{
+    int r;
+    r = lister_move_prev(lister, in_page, wrap);
+    if (LS_OK == r)
+    {
+        r = lister_get_entry(lister, out, len, type);
+    }
     return r;
 }
 

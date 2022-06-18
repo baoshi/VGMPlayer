@@ -113,7 +113,6 @@ static void populate_file_list(app_t *me, int mode)
         lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
     }
 
-    lister_select_page(me->lister, page);
     // 2nd page onwards, add "PgUp" button
     if (page > 0)
     {
@@ -121,6 +120,8 @@ static void populate_file_list(app_t *me, int mode)
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEUP);
         lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
     }
+
+    lister_move_to(me->lister, page, 0);
     uint8_t type;
     char name[FF_LFN_BUF + 3];
     while (LS_OK == lister_get_next_entry(me->lister, true, false, name + 1, FF_LFN_BUF + 1, &type))
