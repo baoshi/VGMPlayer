@@ -242,7 +242,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         case EVT_START:
         {
             PL_LOGD("Player: start\n");
-            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_SONG);
             break;
         }
         case EVT_PLAYER_UI_UPDATE:
