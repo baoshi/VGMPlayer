@@ -676,7 +676,9 @@ int lister_move_next(lister_t *lister, bool in_page, bool wrap)
         {
             int i = lister->cur_index;
             int p = lister->cur_page;
-            if ((p + 1 == lister->pages) && (i == (lister->count % lister->page_size) - 1)) // if we are at the last entry of last page
+            int last = lister->count % lister->page_size - 1;   // calculate index of last entry
+            if (-1 == last) last = lister->page_size - 1;
+            if ((p + 1 == lister->pages) && (i == last)) // if we are at the last entry of last page
             {
                 if (!wrap)
                 {
@@ -691,7 +693,7 @@ int lister_move_next(lister_t *lister, bool in_page, bool wrap)
                     break;
                 }
             }
-            else if (i + 1 >= lister->page_size)    // if we are at the last entry of a page
+            else if (i + 1 >= lister->page_size)    // if we are at the last entry of a middle page
             {
                 if (in_page)
                 {
@@ -757,6 +759,7 @@ int lister_move_prev(lister_t *lister, bool in_page, bool wrap)
                         // go to last page, last entry, fetch cache
                         p = lister->pages - 1;
                         i = (lister->count % lister->page_size) - 1;
+                        if (-1 == i) i = lister->page_size - 1;
                         r = lister_move_to(lister, p, i);
                         break;
                     }

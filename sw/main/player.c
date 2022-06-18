@@ -275,7 +275,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             do
             {
                 // Get the next file to play
-                r = lister_get_next_entry(me->lister, false, false, ctx->file, FF_LFN_BUF + 1, &type);
+                r = lister_get_next_entry(me->lister, false, true, ctx->file, FF_LFN_BUF + 1, &type);
                 if ((LS_OK == r) && (LS_TYPE_FILE == type))
                     break;
                 if (LS_ERR_EOF == r)
@@ -301,7 +301,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             do
             {
                 // Get the previous file to play
-                r = lister_get_prev_entry(me->lister, false, false, ctx->file, FF_LFN_BUF + 1, &type);
+                r = lister_get_prev_entry(me->lister, false, true, ctx->file, FF_LFN_BUF + 1, &type);
                 if ((LS_OK == r) && (LS_TYPE_FILE == type))
                     break;
                 if (LS_ERR_EOF == r)
