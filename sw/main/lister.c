@@ -332,6 +332,8 @@ static int _merge_catalog_chunks(lister_t* lister, int chunk_count)
         }
         // catalog file header
         f_printf(&(lister->fd), "%d\n%d\n", lister->checksum, lister->count);
+        // set page 0 offset in case chunk_count is 0
+        lister->page_offset[0] = (uint32_t)f_tell(&(lister->fd));
         int index = 0;
         int page = 0;
         for (;;)
@@ -563,7 +565,7 @@ int lister_open_dir(const char *path, const char * const patterns[], int page_si
             break;
         }
         // calculate checksum for the directory (if safe_mode is true)
-        if (safe_mode && (_calculate_checksum(path, patterns, page_size * MAX_PAGES, &checksum, &count) != FR_OK))
+       if (safe_mode && (_calculate_checksum(path, patterns, page_size * MAX_PAGES, &checksum, &count) != FR_OK))
         {
             r = LS_ERR_FATFS;
             break;
@@ -676,8 +678,7 @@ int lister_move_next(lister_t *lister, bool in_page, bool wrap)
         {
             int i = lister->cur_index;
             int p = lister->cur_page;
-            int last = lister->count % lister->page_size - 1;   // calculate index of last entry
-            if (-1 == last) last = lister->page_size - 1;
+            int last = (lister->count - 1) % lister->page_size;   // calculate index of last entry
             if ((p + 1 == lister->pages) && (i == last)) // if we are at the last entry of last page
             {
                 if (!wrap)
@@ -758,8 +759,7 @@ int lister_move_prev(lister_t *lister, bool in_page, bool wrap)
                     {
                         // go to last page, last entry, fetch cache
                         p = lister->pages - 1;
-                        i = (lister->count % lister->page_size) - 1;
-                        if (-1 == i) i = lister->page_size - 1;
+                        i = (lister->count - 1) % lister->page_size;
                         r = lister_move_to(lister, p, i);
                         break;
                     }
