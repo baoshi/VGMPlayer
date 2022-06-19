@@ -61,10 +61,6 @@ int lister_close(lister_t *lister);
 
 int lister_move_to(lister_t *lister, int page, int index);
 
-int lister_move_next(lister_t *lister, bool in_page, bool wrap);
-
-int lister_move_prev(lister_t *lister, bool in_page, bool wrap);
-
 int lister_get_entry(lister_t *lister, char *out, int len, uint8_t *type);
 
 int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type);
