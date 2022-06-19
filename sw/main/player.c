@@ -40,6 +40,13 @@
 #endif
 
 
+enum
+{
+    PLAYER_OK = 0,
+    PLAYER_ERR_UNSUPPORTED,
+};
+
+
 static void screen_event_handler(lv_event_t* e)
 {
     player_t* ctx = (player_t*)lv_event_get_user_data(e);
@@ -211,6 +218,8 @@ static void create_screen(player_t* ctx)
     lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    // No message box yet
+    ctx->msg_alert = 0;
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Load screen
@@ -229,6 +238,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             PL_LOGD("Player: entry\n");
             create_screen(ctx);
             ctx->alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
+            ctx->exception = PLAYER_OK;
             ctx->decoder = 0;
             break;
         }
@@ -242,7 +252,40 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         case EVT_START:
         {
             PL_LOGD("Player: start\n");
-            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_SONG);
+            int r;
+            char file[FF_LFN_BUF + 1], ext[4];
+            uint8_t type;
+            bool error = false;
+            r = catalog_get_entry(me->catalog, file, FF_LFN_BUF + 1, &type);
+            if (CAT_OK == r)
+            {
+                // check file extension and go into substates
+                if (path_get_ext(file, ext, 4))
+                {
+                    if (0 == strcasecmp(ext, "s16"))
+                    {
+                        STATE_START(me, &me->player_s16);
+                    }
+                    else
+                    {
+                        PL_LOGE("Player: unsupported file %s\n", file);
+                        ctx->exception = PLAYER_ERR_UNSUPPORTED;
+                        error = true;
+                    }
+                }
+                else
+                {
+                    error = true;
+                }
+            }
+            else
+            {
+                error = true;
+            }
+            if (error)
+            {
+                STATE_START(me, &me->player_exp);
+            }
             break;
         }
         case EVT_PLAYER_UI_UPDATE:
@@ -336,6 +379,39 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         default:
             r = evt;
             break;
+    }
+    return r;
+}
+
+
+event_t const *player_exp_handler(app_t *me, event_t const *evt)
+{
+    event_t const *r = 0;
+    player_t *ctx = &(me->player_ctx);
+    switch (evt->code)
+    {
+        case EVT_ENTRY:
+        {
+            PL_LOGD("Player_Exp: entry\n");
+            break;
+        }
+        case EVT_EXIT:
+        {
+            PL_LOGD("Player_Exp: exit\n");
+            break;
+        }
+        case EVT_START:
+        {
+            PL_LOGD("Player_Exp: start\n");
+            const char *btn_txts[] = { NULL };
+            ctx->msg_alert = lv_msgbox_create(NULL, "Alert", "Message", btn_txts, false);
+            break;
+        }
+        default:
+        {
+            r = evt;
+            break;
+        }
     }
     return r;
 }

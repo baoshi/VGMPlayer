@@ -37,14 +37,17 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt);
 typedef struct player_s
 {
     lv_obj_t* screen;
-    lv_obj_t* lbl_top;    // Top indicators
-    lv_obj_t* lbl_bottom; // Bottom indicators
+    lv_obj_t* lbl_top;      // Top indicators
+    lv_obj_t* lbl_bottom;   // Bottom indicators
+    lv_obj_t* msg_alert;    // Alert message
     int alarm_ui_update;
+    int exception;
     char file[FF_LFN_BUF + 1]; // file to play
     decoder_t* decoder;
 } player_t;
 
 event_t const *player_handler(app_t *me, event_t const *evt);
+event_t const *player_exp_handler(app_t *me, event_t const *evt);
 event_t const *player_s16_handler(app_t *me, event_t const *evt);
 event_t const *player_s16_playing_handler(app_t *me, event_t const *evt);
 event_t const *player_s16_paused_handler(app_t *me, event_t const *evt);
@@ -56,7 +59,7 @@ struct app_s
     hsm_t super;
     state_t browser, browser_disk, browser_nodisk, browser_baddisk;
     browser_t browser_ctx;
-    state_t player, player_s16, player_s16_playing, player_s16_paused;
+    state_t player, player_exp, player_s16, player_s16_playing, player_s16_paused;
     player_t player_ctx;
     // data shared by all states
     catalog_t *catalog;

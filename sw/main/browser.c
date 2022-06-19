@@ -633,6 +633,7 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
         case EVT_EXIT:
         {
             BR_LOGD("Browser_Nodisk: exit\n");
+            break;
         }
         case EVT_DISK_INSERTED:
         {
