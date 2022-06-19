@@ -11,7 +11,7 @@
 #include "disk.h"
 #include "path_utils.h"
 #include "ec.h"
-#include "lister.h"
+#include "catalog.h"
 #include "app.h"
 
 #define UI_UPDATE_INTERVAL_MS   200
@@ -64,17 +64,17 @@ static void populate_file_list(app_t *me, int mode)
     int page = 0;
     int selection;
     
-    MY_ASSERT(me->lister != 0);
+    MY_ASSERT(me->catalog != 0);
 
     switch (mode)
     {
         case 0:
         {
             // If history is available, will read page/selection from history, otherwise  use default
-            if (me->lister_history_index < LISTER_HISTORY_DEPTH)
+            if (me->catalog_history_index < CATALOG_HISTORY_DEPTH)
             {
-                page = me->lister_history_page[me->lister_history_index];
-                selection = me->lister_history_selection[me->lister_history_index];
+                page = me->catalog_history_page[me->catalog_history_index];
+                selection = me->catalog_history_selection[me->catalog_history_index];
             }
             else
             {
@@ -84,15 +84,15 @@ static void populate_file_list(app_t *me, int mode)
             break;
         }
         case 1: // Page Down
-            page = me->lister->cur_page;
-            if (page + 1 < me->lister->pages)
+            page = me->catalog->cur_page;
+            if (page + 1 < me->catalog->pages)
             {
                 ++page;
                 selection = 0;
             }
             break;
         case 2: // Page Up
-            page = me->lister->cur_page;
+            page = me->catalog->cur_page;
             if (page > 0)
             {
                 --page;
@@ -106,7 +106,7 @@ static void populate_file_list(app_t *me, int mode)
     lv_obj_clean(ctx->lst_files);
     
     // If we are on the fist page of a sub directory, add ".."
-    if ((0 == page) && (!path_is_root_dir(me->lister->dir)))
+    if ((0 == page) && (!path_is_root_dir(me->catalog->dir)))
     {
         btn = lv_list_add_btn_ex(ctx->lst_files, 0, "[..]", LV_LABEL_LONG_DOT);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PARENT);
@@ -121,19 +121,19 @@ static void populate_file_list(app_t *me, int mode)
         lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
     }
 
-    lister_move_to(me->lister, page, 0);
+    catalog_set_cursor(me->catalog, page, 0);
     uint8_t type;
     char name[FF_LFN_BUF + 3];
-    while (LS_OK == lister_get_next_entry(me->lister, true, false, name + 1, FF_LFN_BUF + 1, &type))
+    while (CAT_OK == catalog_get_next_entry(me->catalog, true, false, name + 1, FF_LFN_BUF + 1, &type))
     {
-        if (type == LS_TYPE_DIRECTORY)
+        if (type == CAT_TYPE_DIRECTORY)
         {
             name[0] = '[';
             strcat(name, "]");
             btn = lv_list_add_btn_ex(ctx->lst_files, LV_SYMBOL_DIRECTORY" ", name, LV_LABEL_LONG_DOT);
             lv_obj_set_user_data(btn, (void *)(uint32_t)((btn_index << 16) | FILE_LIST_ENTRY_TYPE_DIR));
         }
-        else if (type == LS_TYPE_FILE)
+        else if (type == CAT_TYPE_FILE)
         {
             btn = lv_list_add_btn_ex(ctx->lst_files, LV_SYMBOL_FILE_O" ", name + 1, LV_LABEL_LONG_DOT);
             lv_obj_set_user_data(btn, (void *)(uint32_t)((btn_index << 16) | FILE_LIST_ENTRY_TYPE_FILE));
@@ -143,7 +143,7 @@ static void populate_file_list(app_t *me, int mode)
         ++btn_index;
         lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
     }
-    if (page < me->lister->pages - 1)
+    if (page < me->catalog->pages - 1)
     {
         btn = lv_list_add_btn_ex(ctx->lst_files, 0, "[PgDn..]", LV_LABEL_LONG_DOT);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEDOWN);
@@ -167,7 +167,7 @@ static void populate_file_list(app_t *me, int mode)
         lv_group_focus_obj(focus);
     }
     // Update status bar
-    lv_label_set_text(ctx->lbl_bottom, me->lister->dir);
+    lv_label_set_text(ctx->lbl_bottom, me->catalog->dir);
 }
 
 
@@ -271,8 +271,8 @@ static void create_screen(browser_t* ctx)
     lvi_clear_keypad_group();
     lvi_disable_keypad();
     lvi_map_keypad(LVI_BUTTON_PLAY, LV_KEY_ENTER);  // LV_KEY_ENTER triggers list button's callback action
-    lvi_map_keypad(LVI_BUTTON_NE, LV_KEY_PREV);     // Navigation in the list box
-    lvi_map_keypad(LVI_BUTTON_SE, LV_KEY_NEXT);     // Navigation in the list box
+    lvi_map_keypad(LVI_BUTTON_NE, LV_KEY_PREV);     // Navigation in the file list box
+    lvi_map_keypad(LVI_BUTTON_SE, LV_KEY_NEXT);     // Navigation in the file list box
     // Setup Buttons, use NW at pos(0,0), SW at pos(1,0), both for "back" function
     lvi_disable_button();
     lv_obj_t* btn;
@@ -353,16 +353,37 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
 
 event_t const *browser_disk_handler(app_t *me, event_t const *evt)
 {
+    /* Events
+        EVT_ENTRY:
+            Create catalog from root directory or restore catalog history
+            Populate file list
+        EVT_EXIT:
+            No action
+        EVT_BROWSER_PLAY_CLICKED:
+            If clicked on a directory, push history and navigate to that directory
+            If clicked on file, transit to player state
+            If clilck on [..], enqueue EVT_BROWSER_CLICKED event
+            If click on Page Up/Down, navigate page
+        EVT_BROWSER_BACK_CLICKED:
+            Pop history and navigate to parent directory
+        EVT_DISK_ERROR:
+            Close catalog and clear history
+            Transit to browser_baddisk state
+        EVT_DISK_EJECTED:
+            Close catalog and clear history
+            Transit to browser_error state
+    */
     event_t const *r = 0;
     browser_t *ctx = &(me->browser_ctx);
     switch (evt->code)
     {
         case EVT_ENTRY:
+        {
             BR_LOGD("Browser_Disk: entry\n");
             int t;
-            if (0 == me->lister)
+            if (0 == me->catalog)
             {
-                // no directory lister available, we must be entering from nodisk state
+                // no directory catalog available, we must be entering from nodisk state
                 ec_pause_watchdog();
                 lv_label_set_text(ctx->lbl_bottom, "Loading...");
                 lv_refr_now(NULL);
@@ -370,24 +391,24 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                 ec_resume_watchdog();
                 if ((1 == t) || (2 == t)) // root dir is accessible
                 {
-                    me->lister_history_page[0] = 0;
-                    me->lister_history_selection[0] = 0;
-                    me->lister_history_index = 0;
+                    me->catalog_history_page[0] = 0;
+                    me->catalog_history_selection[0] = 0;
+                    me->catalog_history_index = 0;
                     ec_pause_watchdog();
                     lv_label_set_text(ctx->lbl_bottom, "Loading...");
                     lv_refr_now(NULL);
-                    t = lister_open_dir("/", 0, LISTER_PAGE_SIZE, true, &(me->lister));
+                    t = catalog_open_dir("/", 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
                     ec_resume_watchdog();
-                    if (LS_OK == t)
+                    if (CAT_OK == t)
                     {
                         populate_file_list(me, 0);
                     }
                     else
                     {
-                        BR_LOGE("Browser_Disk: open lister at \"/\" failed with %d\n", t);
-                        if (LS_ERR_FATFS == t)
+                        BR_LOGE("Browser_Disk: open catalog at \"/\" failed with %d\n", t);
+                        if (CAT_ERR_FATFS == t)
                         {
-                            FRESULT fr = lister_get_fatfs_error();
+                            FRESULT fr = catalog_get_fatfs_error();
                             BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
                         }
                         EQ_QUICK_PUSH(EVT_DISK_ERROR);
@@ -401,12 +422,12 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             }
             else
             {
-                // we already have directory lister object (transit from player state)
+                // we already have directory catalog object (transit from player state)
                 // make sure our directory is still valid
                 ec_pause_watchdog();
                 lv_label_set_text(ctx->lbl_bottom, "Loading...");
                 lv_refr_now(NULL);
-                t = disk_check_dir(me->lister->dir);
+                t = disk_check_dir(me->catalog->dir);
                 ec_resume_watchdog();
                 switch (t)
                 {
@@ -415,26 +436,26 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     break;
                 case 2:     // current dir is not accessible but disk is ok (TODO: Possible?)
                     BR_LOGW("Browser_Disk: current dir not accessible, go to root");
-                    lister_close(me->lister);
-                    me->lister = 0;
-                    me->lister_history_page[0] = 0;
-                    me->lister_history_selection[0] = 0;
-                    me->lister_history_index = 0;
+                    catalog_close(me->catalog);
+                    me->catalog = 0;
+                    me->catalog_history_page[0] = 0;
+                    me->catalog_history_selection[0] = 0;
+                    me->catalog_history_index = 0;
                     ec_pause_watchdog();
                     lv_label_set_text(ctx->lbl_bottom, "Loading...");
                     lv_refr_now(NULL);
-                    t = lister_open_dir("/", 0, LISTER_PAGE_SIZE, true, &(me->lister));
+                    t = catalog_open_dir("/", 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
                     ec_resume_watchdog();
-                    if (LS_OK == t)
+                    if (CAT_OK == t)
                     {
                         populate_file_list(me, 0);
                     }
                     else
                     {
-                        BR_LOGE("Browser_Disk: open lister at \"/\" failed with %d\n", t);
-                        if (LS_ERR_FATFS == t)
+                        BR_LOGE("Browser_Disk: open catalog at \"/\" failed with %d\n", t);
+                        if (CAT_ERR_FATFS == t)
                         {
-                            FRESULT fr = lister_get_fatfs_error();
+                            FRESULT fr = catalog_get_fatfs_error();
                             BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
                         }
                         EQ_QUICK_PUSH(EVT_DISK_ERROR);
@@ -447,9 +468,12 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                 }
             }
             break;
+        }
         case EVT_EXIT:
+        {
             BR_LOGD("Browser_Disk: exit\n");
             break;
+        }
         case EVT_BROWSER_PLAY_CLICKED:
         {
             lv_obj_t* btn = (lv_obj_t*)(evt->param);
@@ -463,48 +487,48 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                 case FILE_LIST_ENTRY_TYPE_FILE:
                 {
                     // Push state
-                    me->lister_history_page[me->lister_history_index] = me->lister->cur_page;
-                    me->lister_history_selection[me->lister_history_index] = entry_index;
-                    // Move lister to current selection and hand over to player
-                    BR_LOGD("Browser_Disk: play entry %d in page %d\n", entry_index, me->lister->cur_page);
-                    lister_move_to(me->lister, me->lister->cur_page, entry_index);
+                    me->catalog_history_page[me->catalog_history_index] = me->catalog->cur_page;
+                    me->catalog_history_selection[me->catalog_history_index] = entry_index;
+                    // Move catalog cursor to current selection and hand over to player
+                    BR_LOGD("Browser_Disk: play entry %d in page %d\n", entry_index, me->catalog->cur_page);
+                    catalog_set_cursor(me->catalog, me->catalog->cur_page, entry_index);
                     STATE_TRAN((hsm_t*)me, &me->player);
                     break;
                 }
                 case FILE_LIST_ENTRY_TYPE_DIR:
                 {
-                    // Enter new directory. Save current browsing history and create new lister object
-                    if (path_concatenate(me->lister->dir, btn_text, path, FF_LFN_BUF + 1, true))
+                    // Enter new directory. Save current browsing history and create new catalog object
+                    if (path_concatenate(me->catalog->dir, btn_text, path, FF_LFN_BUF + 1, true))
                     {
-                        int save_page = me->lister->cur_page;
-                        lister_close(me->lister);
-                        me->lister = 0;
+                        int save_page = me->catalog->cur_page;
+                        catalog_close(me->catalog);
+                        me->catalog = 0;
                         int t;
                         ec_pause_watchdog();
                         lv_label_set_text(ctx->lbl_bottom, "Loading...");
                         lv_refr_now(NULL);
-                        t = lister_open_dir(path, 0, LISTER_PAGE_SIZE, true, &(me->lister));
+                        t = catalog_open_dir(path, 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
                         ec_resume_watchdog();
-                        if (LS_OK == t)
+                        if (CAT_OK == t)
                         {
                             // Push state
-                            me->lister_history_page[me->lister_history_index] = save_page;
-                            me->lister_history_selection[me->lister_history_index] = entry_index;
-                            ++(me->lister_history_index);
+                            me->catalog_history_page[me->catalog_history_index] = save_page;
+                            me->catalog_history_selection[me->catalog_history_index] = entry_index;
+                            ++(me->catalog_history_index);
                             // Select first page and first entry for the new directory
-                            if (me->lister_history_index < LISTER_HISTORY_DEPTH)
+                            if (me->catalog_history_index < CATALOG_HISTORY_DEPTH)
                             {
-                                me->lister_history_page[me->lister_history_index] = 0;
-                                me->lister_history_selection[me->lister_history_index] = 0;
+                                me->catalog_history_page[me->catalog_history_index] = 0;
+                                me->catalog_history_selection[me->catalog_history_index] = 0;
                             }
                             populate_file_list(me, 0);
                         }
                         else
                         {
-                            BR_LOGE("Browser_Disk: open lister at \"/\" failed with %d\n", t);
-                            if (LS_ERR_FATFS == t)
+                            BR_LOGE("Browser_Disk: open catalog at \"/\" failed with %d\n", t);
+                            if (CAT_ERR_FATFS == t)
                             {
-                                FRESULT fr = lister_get_fatfs_error();
+                                FRESULT fr = catalog_get_fatfs_error();
                                 BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
                             }
                             EQ_QUICK_PUSH(EVT_DISK_ERROR);
@@ -529,28 +553,28 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         {
             // Go to parent directory
             char path[FF_LFN_BUF + 1];
-            if (path_get_parent(me->lister->dir, path, FF_LFN_BUF + 1))
+            if (path_get_parent(me->catalog->dir, path, FF_LFN_BUF + 1))
             {
-                lister_close(me->lister);
-                me->lister = 0;
+                catalog_close(me->catalog);
+                me->catalog = 0;
                 int t;
                 ec_pause_watchdog();
                 lv_label_set_text(ctx->lbl_bottom, "Loading...");
                 lv_refr_now(NULL);
-                t = lister_open_dir(path, 0, LISTER_PAGE_SIZE, true, &(me->lister));
+                t = catalog_open_dir(path, 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
                 ec_resume_watchdog();
-                if (LS_OK == t)
+                if (CAT_OK == t)
                 {
                     // Pop history
-                    --(me->lister_history_index);
+                    --(me->catalog_history_index);
                     populate_file_list(me, 0);
                 }
                 else
                 {
-                    BR_LOGE("Browser_Disk: open lister at \"/\" failed with %d\n", t);
-                    if (LS_ERR_FATFS == t)
+                    BR_LOGE("Browser_Disk: open catalog at \"/\" failed with %d\n", t);
+                    if (CAT_ERR_FATFS == t)
                     {
-                        FRESULT fr = lister_get_fatfs_error();
+                        FRESULT fr = catalog_get_fatfs_error();
                         BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
                     }
                     EQ_QUICK_PUSH(EVT_DISK_ERROR);
@@ -559,21 +583,25 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             break;
         }
         case EVT_DISK_ERROR:
-            lister_close(me->lister);
-            me->lister = 0;
-            me->lister_history_page[0] = 0;
-            me->lister_history_selection[0] = 0;
-            me->lister_history_index = 0;
+        {
+            catalog_close(me->catalog);
+            me->catalog = 0;
+            me->catalog_history_page[0] = 0;
+            me->catalog_history_selection[0] = 0;
+            me->catalog_history_index = 0;
             STATE_TRAN((hsm_t*)me, &me->browser_baddisk);
             break;
+        }
         case EVT_DISK_EJECTED:
-            lister_close(me->lister);
-            me->lister = 0;
-            me->lister_history_page[0] = 0;
-            me->lister_history_selection[0] = 0;
-            me->lister_history_index = 0;
+        {
+            catalog_close(me->catalog);
+            me->catalog = 0;
+            me->catalog_history_page[0] = 0;
+            me->catalog_history_selection[0] = 0;
+            me->catalog_history_index = 0;
             STATE_TRAN((hsm_t*)me, &me->browser_nodisk);
             break;
+        }
         default:
             r = evt;
             break;
@@ -584,14 +612,28 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
 
 event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
 {
+    /* Events
+        EVT_ENTRY:
+            Clear file list
+        EVT_EXIT:
+            No action
+        EVT_DISK_INSERTED:
+            Transit to browser_disk state
+    */
     event_t const *r = 0;
     switch (evt->code)
     {
         case EVT_ENTRY:
+        {
             BR_LOGD("Browser_Nodisk: entry\n");
             lv_label_set_text(me->browser_ctx.lbl_bottom, "No card");
             lv_obj_clean(me->browser_ctx.lst_files);
             break;
+        }
+        case EVT_EXIT:
+        {
+            BR_LOGD("Browser_Nodisk: exit\n");
+        }
         case EVT_DISK_INSERTED:
         {
             // when cur_dir is null browser_disk will start browser from root
@@ -599,8 +641,10 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             break;
         }
         default:
+        {
             r = evt;
             break;
+        }
     }
     return r;
 }
@@ -608,19 +652,39 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
 
 event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
 {
+    /* Events
+        EVT_ENTRY:
+            Clear file list
+        EVT_EXIT:
+            No action
+        EVT_DISK_EJECTED:
+            Transit to browser_nodisk state
+    */
     event_t const *r = 0;
     switch (evt->code)
     {
         case EVT_ENTRY:
+        {
             BR_LOGD("Browser_Baddisk: entry\n");
             lv_label_set_text(me->browser_ctx.lbl_bottom, "Card error");
             lv_obj_clean(me->browser_ctx.lst_files);
             break;
+        }
+        case EVT_EXIT:
+        {
+            BR_LOGD("Browser_Baddisk: exit\n");
+            break;
+        }
         case EVT_DISK_EJECTED:
+        {
             STATE_TRAN((hsm_t*)me, &me->browser_nodisk);
             break;
+        }
         default:
+        {
             r = evt;
+            break;
+        }
     }
     return r;
 }

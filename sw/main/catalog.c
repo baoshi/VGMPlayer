@@ -4,7 +4,23 @@
 #include <crc.h>    // From sdcard module for CRC16
 #include "my_mem.h"
 #include "path_utils.h"
-#include "lister.h"
+#include "catalog.h"
+
+
+#define CATALOG_FILE            ".file.cat"
+#define UNSORTED_CATALOG_FILE   ".temp.cat"
+#define CATALOG_CHUNK_PATTERN   ".t%d.cat"
+
+
+// ENTRIES_PER_CHUNK affects directory sorting speed and memory consumption
+// Experiments: (455 files)
+// ENTRIES_PER_CHUNK          Memory required         Catalog creation time
+//      20                      5200                    21.05s
+//      64                     16650                     8.79s
+//     128                     33280                     5.49s
+//     256                     66560                     3.85s
+
+#define ENTRIES_PER_CHUNK     128
 
 
 static FRESULT _fr;
@@ -12,7 +28,7 @@ static FRESULT _fr;
 
 static bool _get_unsorted_catalog_name(const char* path, char* out, int len)
 {
-    return path_concatenate(path, RAW_CATALOG_FILE, out, len, false);
+    return path_concatenate(path, UNSORTED_CATALOG_FILE, out, len, false);
 }
 
 
@@ -25,7 +41,7 @@ static bool _get_catalog_name(const char* path, char* out, int len)
 static bool _get_catalog_chunk_name(const char* path, int index, char* out, int len)
 {
     char chunk[FF_LFN_BUF + 1];
-    snprintf(chunk, FF_LFN_BUF + 1, CHUNK_FILE_PATTERN, index);
+    snprintf(chunk, FF_LFN_BUF + 1, CATALOG_CHUNK_PATTERN, index);
     return path_concatenate(path, chunk, out, len, false);
 }
 
@@ -96,7 +112,7 @@ static FRESULT _calculate_checksum(const char* path, const char * const patterns
 
 static int _create_unsorted_catalog(const char *path, const char *cname, const char * const patterns[], int max_count)
 {
-    int r = LS_OK;
+    int r = CAT_OK;
     FIL fd;
     DIR dir = { 0 };
     FILINFO fno = { 0 };
@@ -107,14 +123,14 @@ static int _create_unsorted_catalog(const char *path, const char *cname, const c
         _fr = f_open(&fd, cname, FA_CREATE_ALWAYS | FA_WRITE);
         if (_fr != FR_OK) 
         {
-            r = LS_ERR_FATFS;
+            r = CAT_ERR_FATFS;
             break;
         }
         // open and interate dir
         _fr = f_opendir(&dir, path);
         if (_fr != FR_OK) 
         {
-            r = LS_ERR_FATFS;
+            r = CAT_ERR_FATFS;
             break;
         }
         for (; (FR_OK == _fr) && (c < max_count); )
@@ -145,9 +161,9 @@ static int _create_unsorted_catalog(const char *path, const char *cname, const c
     // conclusion
     if (_fr != FR_OK)
     {
-        r = LS_ERR_FATFS;
+        r = CAT_ERR_FATFS;
     }
-    if (r != LS_OK)
+    if (r != CAT_OK)
     {
         // if any error occurred, delete unsorted catalog file
         f_unlink(cname);
@@ -164,9 +180,9 @@ static int _compare_strings(const void* p, const void* q)
 }
 
 
-static int _partition_unsorted_catalog(const char *uncat, const char *work_dir, int chunk_lines, int *chunk_count)
+static int _partition_unsorted_catalog(const char *uncat, const char *work_dir, int chunk_entries, int *chunk_count)
 {
-    int r = LS_OK;
+    int r = CAT_OK;
     char chunk_name[FF_LFN_BUF + 1];
     int count = 0;
     char *pool = 0;
@@ -174,12 +190,12 @@ static int _partition_unsorted_catalog(const char *uncat, const char *work_dir, 
     UINT wt;
     do
     {
-        int d1 = chunk_lines * sizeof(char *);      // pointer to strings
-        int d2 = chunk_lines * (FF_LFN_BUF + 1);    // string storage pool
+        int d1 = chunk_entries * sizeof(char *);      // pointer to strings
+        int d2 = chunk_entries * (FF_LFN_BUF + 1);    // string storage pool
         pool = MY_MALLOC(d1 + d2);
         if (0 == pool)
         {
-            r = LS_ERR_MEMORY;
+            r = CAT_ERR_MEMORY;
             break;
         }
         char ** strings = (char **)pool;
@@ -189,13 +205,13 @@ static int _partition_unsorted_catalog(const char *uncat, const char *work_dir, 
         _fr = f_open(&in, uncat, FA_OPEN_EXISTING | FA_READ);
         if (_fr != FR_OK)
         {
-            r = LS_ERR_FATFS;
+            r = CAT_ERR_FATFS;
             break;
         }
         for (;;)
         {
             int lines = 0;
-            for (; lines < chunk_lines; ++lines)
+            for (; lines < chunk_entries; ++lines)
             {
                 if (0 == f_gets(strings[lines], FF_LFN_BUF + 1, &in)) break;
             }
@@ -216,7 +232,7 @@ static int _partition_unsorted_catalog(const char *uncat, const char *work_dir, 
             }
             else
             {
-                r = LS_ERR_FATFS;
+                r = CAT_ERR_FATFS;
                 break;
             }
         }
@@ -234,21 +250,21 @@ typedef struct chunk_info_s
 {
     FIL fd;
     bool eof;
-    char line[FF_LFN_BUF + 1];
+    char entry[FF_LFN_BUF + 1];
 } chunk_info_t;
 
 
 int _open_chunk(const char *chunk_name, chunk_info_t *ci)
 {
-    int r = LS_OK;
+    int r = CAT_OK;
     _fr = f_open(&(ci->fd), chunk_name, FA_OPEN_EXISTING | FA_READ);
     if (_fr != FR_OK)
     {
-        r = LS_ERR_FATFS;
+        r = CAT_ERR_FATFS;
     }
     else
     {
-        ci->line[0] = '\0';
+        ci->entry[0] = '\0';
         ci->eof = false;
     }
     return r;
@@ -262,13 +278,13 @@ static void _close_chunk(chunk_info_t *ci)
 }
 
 
-static const char* _fetch_chunk_line(chunk_info_t *ci)
+static const char* _fetch_chunk_entry(chunk_info_t *ci)
 {
     const char* r;
 
-    if (ci->line[0])
+    if (ci->entry[0])
     {
-        r = ci->line;
+        r = ci->entry;
     }
     else if (ci->eof)
     {
@@ -276,14 +292,14 @@ static const char* _fetch_chunk_line(chunk_info_t *ci)
     }
     else
     {
-        if (0 == f_gets(ci->line, FF_LFN_BUF + 1, &(ci->fd)))
+        if (0 == f_gets(ci->entry, FF_LFN_BUF + 1, &(ci->fd)))
         {
             ci->eof = true;
             r = 0;
         }
         else
         {
-            r = ci->line;
+            r = ci->entry;
         }
     }
     return r;
@@ -292,13 +308,13 @@ static const char* _fetch_chunk_line(chunk_info_t *ci)
 
 static void _clean_chunk_line(chunk_info_t *ci)
 {
-    ci->line[0] = '\0';
+    ci->entry[0] = '\0';
 }
 
 
-static int _merge_catalog_chunks(lister_t* lister, int chunk_count)
+static int _merge_catalog_chunks(catalog_t* cat, int chunk_count)
 {
-    int r = LS_OK;
+    int r = CAT_OK;
     char cat_name[FF_LFN_BUF + 1] = { 0 };
     char chunk_name[FF_LFN_BUF + 1];
     chunk_info_t* chunks = 0;
@@ -306,34 +322,34 @@ static int _merge_catalog_chunks(lister_t* lister, int chunk_count)
     UINT wt;
     do
     {
-        if (!_get_catalog_name(lister->dir, cat_name, FF_LFN_BUF + 1))
+        if (!_get_catalog_name(cat->dir, cat_name, FF_LFN_BUF + 1))
         {
-            r = LS_ERR_PATH_TOO_DEEP;
+            r = CAT_ERR_PATH_TOO_DEEP;
             break;
         }
-        _fr = f_open(&(lister->fd), cat_name, FA_CREATE_ALWAYS | FA_WRITE);
+        _fr = f_open(&(cat->fd), cat_name, FA_CREATE_ALWAYS | FA_WRITE);
         if (_fr != FR_OK)
         {
-            r = LS_ERR_FATFS;
+            r = CAT_ERR_FATFS;
             break;
         }
         chunks = MY_CALLOC(chunk_count, sizeof(chunk_info_t));
         if (0 == chunks)
         {
-            r = LS_ERR_MEMORY;
+            r = CAT_ERR_MEMORY;
             break;
         }
         // open all chunks
         for (int i = 0; i < chunk_count; ++i)
         {
-            _get_catalog_chunk_name(lister->dir, i, chunk_name, FF_LFN_BUF + 1);
+            _get_catalog_chunk_name(cat->dir, i, chunk_name, FF_LFN_BUF + 1);
             r = _open_chunk(chunk_name, &(chunks[i]));
-            if (r != LS_OK) break;
+            if (r != CAT_OK) break;
         }
         // catalog file header
-        f_printf(&(lister->fd), "%d\n%d\n", lister->checksum, lister->count);
+        f_printf(&(cat->fd), "%d\n%d\n", cat->checksum, cat->count);
         // set page 0 offset in case chunk_count is 0
-        lister->page_offset[0] = (uint32_t)f_tell(&(lister->fd));
+        cat->page_offset[0] = (uint32_t)f_tell(&(cat->fd));
         int index = 0;
         int page = 0;
         for (;;)
@@ -343,7 +359,7 @@ static int _merge_catalog_chunks(lister_t* lister, int chunk_count)
             int min_idx = 0;
             for (int i = 0; i < chunk_count; ++i)
             {
-                str = _fetch_chunk_line(&(chunks[i]));
+                str = _fetch_chunk_entry(&(chunks[i]));
                 if (str == 0) continue;
                 alleofed = false;
                 // assume first line is minimal, then compare with other lines
@@ -363,36 +379,36 @@ static int _merge_catalog_chunks(lister_t* lister, int chunk_count)
             }
             if (alleofed)
                 break;
-            if (0 == (index % lister->page_size))
+            if (0 == (index % cat->page_size))
             {
-                lister->page_offset[page] = (uint32_t)f_tell(&(lister->fd));
+                cat->page_offset[page] = (uint32_t)f_tell(&(cat->fd));
                 if (page + 1 >= MAX_PAGES)
                     break;
                 ++page;
             }
             ++index;
-            _fr = f_write(&(lister->fd), min, strlen(min), &wt);
+            _fr = f_write(&(cat->fd), min, strlen(min), &wt);
             if (_fr != FR_OK)
             {
-                r = LS_ERR_FATFS;
+                r = CAT_ERR_FATFS;
                 break;
             }
             _clean_chunk_line(&(chunks[min_idx]));
         }
-        lister->pages = page;
+        cat->pages = page;
         // reopen catalog file
-        f_close(&(lister->fd));
-        f_open(&(lister->fd), cat_name, FA_OPEN_EXISTING | FA_READ);
-        // set cur_page and cur_index to invalid values so lister_move_to will move to new page
-        lister->cur_page = -1;
-        lister->cur_index = -1;
-        r = lister_move_to(lister, 0, 0);
+        f_close(&(cat->fd));
+        f_open(&(cat->fd), cat_name, FA_OPEN_EXISTING | FA_READ);
+        // set cur_page and cur_index to invalid values so catalog_set_cursor will move to new page
+        cat->cur_page = -1;
+        cat->cur_index = -1;
+        r = catalog_set_cursor(cat, 0, 0);
     } while (0);
 
-    if (r != LS_OK)
+    if (r != CAT_OK)
     {
         // close catalog file object if failed
-        f_close(&(lister->fd));
+        f_close(&(cat->fd));
         if (cat_name[0])
             f_unlink(cat_name);
     }
@@ -408,30 +424,30 @@ static int _merge_catalog_chunks(lister_t* lister, int chunk_count)
 }
 
 
-static int _create_catalog(const char * const patterns[], lister_t *lister)
+static int _create_catalog(const char * const patterns[], catalog_t *cat)
 {
-    int r = LS_OK;
+    int r = CAT_OK;
     char ucat[FF_LFN_BUF + 1] = { 0 }; // unsorted catalog file
     int chunk_count = 0;
     do
     {
         // create unsorted catalog
-        if (!_get_unsorted_catalog_name(lister->dir, ucat, FF_LFN_BUF + 1))
+        if (!_get_unsorted_catalog_name(cat->dir, ucat, FF_LFN_BUF + 1))
         {
-            r = LS_ERR_PATH_TOO_DEEP;
+            r = CAT_ERR_PATH_TOO_DEEP;
             break;
         }
-        r = _create_unsorted_catalog(lister->dir, ucat, patterns, lister->page_size * MAX_PAGES);
-        if (r != LS_OK)
+        r = _create_unsorted_catalog(cat->dir, ucat, patterns, cat->page_size * MAX_PAGES);
+        if (r != CAT_OK)
             break;
         // partition unsorted catalog into chunks
-        r = _partition_unsorted_catalog(ucat, lister->dir, LINES_PER_CHUNK, &chunk_count);
-        if (r != LS_OK) 
+        r = _partition_unsorted_catalog(ucat, cat->dir, ENTRIES_PER_CHUNK, &chunk_count);
+        if (r != CAT_OK) 
         {
             break;
         }
-        r = _merge_catalog_chunks(lister, chunk_count);
-        if (r != LS_OK) 
+        r = _merge_catalog_chunks(cat, chunk_count);
+        if (r != CAT_OK) 
         {
             break;
         }
@@ -443,7 +459,7 @@ static int _create_catalog(const char * const patterns[], lister_t *lister)
     for (int i = 0; i < chunk_count; ++i)
     {
         // unsorted catalog file name is nolong being used, reuse here
-        _get_catalog_chunk_name(lister->dir, i, ucat, FF_LFN_BUF + 1);    // wont fail
+        _get_catalog_chunk_name(cat->dir, i, ucat, FF_LFN_BUF + 1);    // wont fail
         f_unlink(ucat);
     }
     return r;    
@@ -451,92 +467,92 @@ static int _create_catalog(const char * const patterns[], lister_t *lister)
 
 
 // Open existing catalog file
-// if safe_mode is true, compare checksum inside lister object with the catalog file, and retrurn LS_ERR_MISMATCH if mismatched
+// if safe_mode is true, compare checksum inside catalog object with the catalog file, and retrurn CAT_ERR_MISMATCH if mismatched
 // if safe_mode is false, read checksum/count from catalog file
-static int _open_catalog(lister_t *lister, bool safe_mode)
+static int _open_catalog(catalog_t *cat, bool safe_mode)
 {
-    int r = LS_OK;
-    char cat[FF_LFN_BUF + 1];
+    int r = CAT_OK;
+    char cat_file[FF_LFN_BUF + 1];
     char temp[16];
     int val;
 
     do
     {
-        if (!_get_catalog_name(lister->dir, cat, FF_LFN_BUF + 1))
+        if (!_get_catalog_name(cat->dir, cat_file, FF_LFN_BUF + 1))
         {
-            r = LS_ERR_PATH_TOO_DEEP;
+            r = CAT_ERR_PATH_TOO_DEEP;
             break;
         }
-        _fr = f_open(&(lister->fd), cat, FA_READ | FA_OPEN_EXISTING);
+        _fr = f_open(&(cat->fd), cat_file, FA_READ | FA_OPEN_EXISTING);
         if (FR_OK != _fr)
         {
-            r = LS_ERR_FATFS;
+            r = CAT_ERR_FATFS;
             break;
         }
         if (safe_mode)
         {
             // 1st line is checksum
-            f_gets(temp, 16, &(lister->fd));
+            f_gets(temp, 16, &(cat->fd));
             val = atoi(temp);
-            if (lister->checksum != val)
+            if (cat->checksum != val)
             {
-                r = LS_ERR_MISMATCH;
+                r = CAT_ERR_MISMATCH;
                 break;
             }
             // 2nd line is entry count
-            f_gets(temp, 16, &(lister->fd));
+            f_gets(temp, 16, &(cat->fd));
             val = atoi(temp);
-            if (lister->count != val)
+            if (cat->count != val)
             {
-                r = LS_ERR_MISMATCH;
+                r = CAT_ERR_MISMATCH;
                 break;
             }
         }
         else
         {
             // 1st line is checksum
-            f_gets(temp, 16, &(lister->fd));
+            f_gets(temp, 16, &(cat->fd));
             val = atoi(temp);
-            lister->checksum = val;
+            cat->checksum = val;
             // 2nd line is entry count
-            f_gets(temp, 16, &(lister->fd));
+            f_gets(temp, 16, &(cat->fd));
             val = atoi(temp);
-            lister->count = val;
+            cat->count = val;
         }
         // read all lines and get the offset to each page
         int index = 0;
         int page = 0;
         while (1)
         {
-            if (0 == (index % lister->page_size))
+            if (0 == (index % cat->page_size))
             {
-                lister->page_offset[page] = (uint32_t)f_tell(&(lister->fd));
+                cat->page_offset[page] = (uint32_t)f_tell(&(cat->fd));
                 if (page + 1 >= MAX_PAGES)
                     break;
                 ++page;
             }
-            if (f_gets(cat, FF_LFN_BUF + 1, &(lister->fd)))  // reuse cat as buffer
+            if (f_gets(cat_file, FF_LFN_BUF + 1, &(cat->fd)))  // reuse cat as buffer
             {
                 ++index;
             }
             else
             {
                 // if we just added a new page, remove it because it is empty
-                if (0 == (index % lister->page_size))
+                if (0 == (index % cat->page_size))
                 {
-                    lister->page_offset[page] = 0;
+                    cat->page_offset[page] = 0;
                     --page;
                 }
                 break;
             }
         }
         // other structure members
-        lister->pages = page;
-        lister->count = index;
-        // set cur_page and cur_index to invalid values so lister_move_to will move to new page
-        lister->cur_page = -1;
-        lister->cur_index = -1;
-        r = lister_move_to(lister, 0, 0);
+        cat->pages = page;
+        cat->count = index;
+        // set cur_page and cur_index to invalid values so catalog_set_cursor will move to new page
+        cat->cur_page = -1;
+        cat->cur_index = -1;
+        r = catalog_set_cursor(cat, 0, 0);
     } while (0);
     
     return r;
@@ -547,112 +563,111 @@ static int _open_catalog(lister_t *lister, bool safe_mode)
 // If safe_mode is false, existing directory catalog will be read.
 // If safe_mode is true, existing directory catalog will be verified before read.
 // If no existing catalog found, it will be created.
-int lister_open_dir(const char *path, const char * const patterns[], int page_size, bool safe_mode, lister_t **lister)
+int catalog_open_dir(const char *path, const char * const patterns[], int page_size, bool safe_mode, catalog_t **cat)
 {
-    // 1. Allocate lister object
+    // 1. Allocate catalog object
     // 2. Open directory and calculate checksum
-    // 3. Open catalog file, If no valid catalog found then create one
-    int r = LS_OK;
-    lister_t* lst = 0;
+    // 3. Open catalog file, if no valid catalog file found then create one
+    int r = CAT_OK;
+    catalog_t* c = 0;
     int count = 0;
     uint16_t checksum = 0;
     do
     {
-        lst = MY_CALLOC(sizeof(lister_t), 1);
-        if (0 == lst)
+        c = MY_CALLOC(sizeof(catalog_t), 1);
+        if (0 == c)
         {
-            r = LS_ERR_MEMORY;
+            r = CAT_ERR_MEMORY;
             break;
         }
         // calculate checksum for the directory (if safe_mode is true)
        if (safe_mode && (_calculate_checksum(path, patterns, page_size * MAX_PAGES, &checksum, &count) != FR_OK))
         {
-            r = LS_ERR_FATFS;
+            r = CAT_ERR_FATFS;
             break;
         }
-        lst->page_size = page_size;
-        lst->count = count;
-        lst->checksum = checksum;
-        path_copy(path, lst->dir, FF_LFN_BUF + 1);
+        c->page_size = page_size;
+        c->count = count;
+        c->checksum = checksum;
+        path_copy(path, c->dir, FF_LFN_BUF + 1);
         // try open existing catalog
-        r = _open_catalog(lst, safe_mode);
-        if (r == LS_OK) // success
+        r = _open_catalog(c, safe_mode);
+        if (r == CAT_OK) // success
             break;
         // Reach here if no valid catalog found. If we havn't calculated checksum (safe_mode is off), we need to do now
         if (!safe_mode)
         { 
             if (_calculate_checksum(path, patterns, page_size * MAX_PAGES, &checksum, &count) != FR_OK)
             {
-                r = LS_ERR_FATFS;
+                r = CAT_ERR_FATFS;
                 break;
             }
-            lst->count = count;
-            lst->checksum = checksum;
+            c->count = count;
+            c->checksum = checksum;
         }
-        r = _create_catalog(patterns, lst);
+        r = _create_catalog(patterns, c);
     } while (0);
 
-    if (r != LS_OK) MY_FREE(lst);
-    *lister = lst;
+    if (r != CAT_OK) MY_FREE(c);
+    *cat = c;
 
     return r;
 }
 
 
-int lister_close(lister_t *lister)
+int catalog_close(catalog_t *cat)
 {
-    if (lister)
+    if (cat)
     {
-        f_close(&(lister->fd)); // file object is validated inside f_close
-        MY_FREE(lister);
+        f_close(&(cat->fd)); // file object is validated inside f_close
+        MY_FREE(cat);
     }
-    return LS_OK;
+    return CAT_OK;
 }
 
 
-// move lister pointer to the specific page and index.
-// the following lister_get_entry will retrieve the entry.
-int lister_move_to(lister_t *lister, int page, int index)
+// move catalog cursor to the specific page and index.
+// the following catalog_get_entry will retrieve the entry.
+int catalog_set_cursor(catalog_t *cat, int page, int index)
 {
-    int r = LS_OK;
-    char *p;
+    int r = CAT_OK;
     do
     {
         // We need to rewind/move to another page in case:
-        if ((page != lister->cur_page)                                  // a different page is requested
+        if ((page != cat->cur_page)                                  // a different page is requested
             ||
-            (index < lister->cur_index)                                 // a previous entry is requested
+            (index < cat->cur_index)                                 // a previous entry is requested
             ||
-            (index == lister->cur_index && lister->cache[0] != '\0')    // requesting entry at the cursor but this entry is already read
+            (index == cat->cur_index && cat->cache[0] != '\0')    // requesting entry at the cursor but this entry is already read
         )
         {
-            _fr = f_lseek(&(lister->fd), (FSIZE_t)(lister->page_offset[page]));
+            _fr = f_lseek(&(cat->fd), (FSIZE_t)(cat->page_offset[page]));
             if (_fr != FR_OK)
             {
-                r = LS_ERR_FATFS;
+                r = CAT_ERR_FATFS;
                 break;
             }
-            lister->cur_page = page;
-            lister->cur_index = 0;
-            lister->cache[0] = '\0';
+            cat->cur_page = page;
+            cat->cur_index = 0;
+            cat->cache[0] = '\0';
         }
         // read all entries before the requested entry then discard.
         // note if cache is not empty, we will start reading from cur_index + 1.
-        int start = ('\0' == lister->cache[0]) ? lister->cur_index : lister->cur_index + 1;
+        int start = ('\0' == cat->cache[0]) ? cat->cur_index : cat->cur_index + 1;
         for (; start < index; ++start)
         {
-            if (0 == f_gets(lister->cache, FF_LFN_BUF + 3, &(lister->fd)))
+            if (0 == f_gets(cat->cache, FF_LFN_BUF + 3, &(cat->fd)))
             {
-                r = LS_ERR_EOF;
+                r = CAT_ERR_EOF;
                 break;
             }
-            lister->cache[0] = '\0';
+            cat->cache[0] = '\0';
         }
         // set index
-        if (lister->cur_index != index)
+        if (cat->cur_index != index)
         {
-            lister->cur_index = index;
-            lister->cache[0] = '\0';
+            cat->cur_index = index;
+            cat->cache[0] = '\0';
         }
     } while (0);
     return r;    
@@ -660,31 +675,31 @@ int lister_move_to(lister_t *lister, int page, int index)
 
 
 // get content of an entry
-// read from cache if alraedy read
-int lister_get_entry(lister_t *lister, char *out, int len, uint8_t *type)
+// read from cache if already read
+int catalog_get_entry(catalog_t *cat, char *out, int len, uint8_t *type)
 {
-    int r = LS_OK;
+    int r = CAT_OK;
     do
     {
         // fetch cache if not already fetched
-        if ('\0' == lister->cache[0])
+        if ('\0' == cat->cache[0])
         {
-            if (0 == f_gets(lister->cache, FF_LFN_BUF + 3, &(lister->fd)))
+            if (0 == f_gets(cat->cache, FF_LFN_BUF + 3, &(cat->fd)))
             {
-                r = LS_ERR_EOF;
+                r = CAT_ERR_EOF;
                 break;
             }
-            path_trim_back(lister->cache);
+            path_trim_back(cat->cache);
         }
-        if ('!' == lister->cache[0])
+        if ('!' == cat->cache[0])
         {
-            if (out != 0) path_copy(&(lister->cache[1]), out, len);
-            *type = LS_TYPE_DIRECTORY;
+            if (out != 0) path_copy(&(cat->cache[1]), out, len);
+            *type = CAT_TYPE_DIRECTORY;
         }
         else
         {
-            if (out != 0) path_copy(lister->cache, out, len);
-            *type = LS_TYPE_FILE;
+            if (out != 0) path_copy(cat->cache, out, len);
+            *type = CAT_TYPE_FILE;
         }
     } while (0);
     return r;
@@ -696,61 +711,60 @@ int lister_get_entry(lister_t *lister, char *out, int len, uint8_t *type)
 //   in_page = true: return EOF; in_page = false: advance to the next page
 // when at the end of the catalog:
 //   wrap = true: wrap to the very beginning of the catalog; wrap = false: return EOF
-int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type)
+int catalog_get_next_entry(catalog_t *cat, bool in_page, bool wrap, char *out, int len, uint8_t *type)
 {
-    int r = LS_OK;
+    int r = CAT_OK;
     do
     {
-        if ('\0' == lister->cache[0])
+        if ('\0' == cat->cache[0])
         {
-            // cache is empty if we just opened catalog or called lister_select_page
-            // do not move cursor
+            // cache is empty if we just opened catalog. cursor is at the beginning, next entry is the first entry
             break;
         }
         else
         {
-            int i = lister->cur_index;
-            int p = lister->cur_page;
-            int last = (lister->count - 1) % lister->page_size;   // calculate index of last entry
-            if ((p + 1 == lister->pages) && (i == last)) // if we are at the last entry of last page
+            int i = cat->cur_index;
+            int p = cat->cur_page;
+            int last = (cat->count - 1) % cat->page_size;   // calculate index of last entry
+            if ((p + 1 == cat->pages) && (i == last)) // if we are at the last entry of last page
             {
                 if (!wrap)
                 {
                     // not wrap operation, return eof
-                    r = LS_ERR_EOF;
+                    r = CAT_ERR_EOF;
                     break;
                 }
                 else
                 {
                     // wrap to beginning
-                    r = lister_move_to(lister, 0, 0);
+                    r = catalog_set_cursor(cat, 0, 0);
                     break;
                 }
             }
-            else if (i + 1 >= lister->page_size)    // if we are at the last entry of a middle page
+            else if (i + 1 >= cat->page_size)    // if we are at the last entry of a middle page
             {
                 if (in_page)
                 {
                     // in_page operation, return eof
-                    r = LS_ERR_EOF;
+                    r = CAT_ERR_EOF;
                     break;
                 }
                 else
                 {
                     // advance to next page
-                    r = lister_move_to(lister, p + 1, 0);
+                    r = catalog_set_cursor(cat, p + 1, 0);
                     break;
                 }
             }
             else
             {
                 // no page adjustment, advance index
-                r = lister_move_to(lister, p, i + 1);
+                r = catalog_set_cursor(cat, p, i + 1);
                 break;
             }
         }
     } while (0);
-    if (LS_OK == r) r = lister_get_entry(lister, out, len, type);
+    if (CAT_OK == r) r = catalog_get_entry(cat, out, len, type);
     return r;
 }
 
@@ -760,14 +774,14 @@ int lister_get_next_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
 //   in_page = true: return EOF; in_page = false: move up to the last entry of previous page
 // when at the very beginning of the catalog:
 //   wrap = true: wrap to the last entry; wrap = false: return EOF
-int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, int len, uint8_t *type)
+int catalog_get_prev_entry(catalog_t *cat, bool in_page, bool wrap, char *out, int len, uint8_t *type)
 {
     // vs. move_next: 
     // in move_next, if cache is empty, we will fetch cache instead of move forward
     // in move_prev, even if cache is empty. we will move backward
-    int r = LS_OK;
-    int i = lister->cur_index;
-    int p = lister->cur_page;
+    int r = CAT_OK;
+    int i = cat->cur_index;
+    int p = cat->cur_page;
     do
     {
         if (i <= 0) // if we are at the first entry of a page
@@ -775,7 +789,7 @@ int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
             if (in_page)
             {
                 // in_page operation, return EOF
-                r = LS_ERR_EOF;
+                r = CAT_ERR_EOF;
                 break;
             }
             else
@@ -786,15 +800,15 @@ int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
                     if (!wrap)
                     {
                         // !wrap operation, return eof
-                        r = LS_ERR_EOF;
+                        r = CAT_ERR_EOF;
                         break;
                     }
                     else
                     {
                         // go to last page, last entry, fetch cache
-                        p = lister->pages - 1;
-                        i = (lister->count - 1) % lister->page_size;
-                        r = lister_move_to(lister, p, i);
+                        p = cat->pages - 1;
+                        i = (cat->count - 1) % cat->page_size;
+                        r = catalog_set_cursor(cat, p, i);
                         break;
                     }
                 }
@@ -802,8 +816,8 @@ int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
                 {
                     // go to the last entry of previous page
                     --p;
-                    i = lister->page_size - 1;  // previous page will always be a full page, no need to check i
-                    r = lister_move_to(lister, p, i);
+                    i = cat->page_size - 1;  // previous page will always be a full page, no need to check i
+                    r = catalog_set_cursor(cat, p, i);
                     break;
                 }
             }
@@ -811,17 +825,17 @@ int lister_get_prev_entry(lister_t *lister, bool in_page, bool wrap, char *out, 
         else
         {
             // no page adjustment, just move index
-            r = lister_move_to(lister, p, i - 1);
+            r = catalog_set_cursor(cat, p, i - 1);
             break;
         }
     } while (0);
     // read entry
-    if (LS_OK == r) r = lister_get_entry(lister, out, len, type);
+    if (CAT_OK == r) r = catalog_get_entry(cat, out, len, type);
     return r;
 }
 
 
-FRESULT lister_get_fatfs_error()
+FRESULT catalog_get_fatfs_error()
 {
     return _fr;
 }

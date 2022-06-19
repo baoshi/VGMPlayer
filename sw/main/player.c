@@ -12,7 +12,7 @@
 #include "ec.h"
 #include "audio.h"
 #include "decoder_s16.h"
-#include "lister.h"
+#include "catalog.h"
 #include "app.h"
 
 
@@ -257,8 +257,8 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             uint8_t type;
             int r;
             // Get the current file to play
-            r = lister_get_entry(me->lister, ctx->file, FF_LFN_BUF + 1, &type);
-            if ((LS_OK == r) && (LS_TYPE_FILE == type))
+            r = catalog_get_entry(me->catalog, ctx->file, FF_LFN_BUF + 1, &type);
+            if ((CAT_OK == r) && (CAT_TYPE_FILE == type))
             {
                 lv_label_set_text(ctx->lbl_bottom, ctx->file);
             }
@@ -275,18 +275,18 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             do
             {
                 // Get the next file to play
-                r = lister_get_next_entry(me->lister, false, true, ctx->file, FF_LFN_BUF + 1, &type);
-                if ((LS_OK == r) && (LS_TYPE_FILE == type))
+                r = catalog_get_next_entry(me->catalog, false, true, ctx->file, FF_LFN_BUF + 1, &type);
+                if ((CAT_OK == r) && (CAT_TYPE_FILE == type))
                     break;
-                if (LS_ERR_EOF == r)
+                if (CAT_ERR_EOF == r)
                     break;
             } while (1);
             switch (r)
             {
-                case LS_OK:
+                case CAT_OK:
                     lv_label_set_text(ctx->lbl_bottom, ctx->file);
                     break;
-                case LS_ERR_EOF:
+                case CAT_ERR_EOF:
                     PL_LOGD("Player: No more file\n");
                     break;
                 default:
@@ -301,18 +301,18 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             do
             {
                 // Get the previous file to play
-                r = lister_get_prev_entry(me->lister, false, true, ctx->file, FF_LFN_BUF + 1, &type);
-                if ((LS_OK == r) && (LS_TYPE_FILE == type))
+                r = catalog_get_prev_entry(me->catalog, false, true, ctx->file, FF_LFN_BUF + 1, &type);
+                if ((CAT_OK == r) && (CAT_TYPE_FILE == type))
                     break;
-                if (LS_ERR_EOF == r)
+                if (CAT_ERR_EOF == r)
                     break;
             } while (1);
             switch (r)
             {
-                case LS_OK:
+                case CAT_OK:
                     lv_label_set_text(ctx->lbl_bottom, ctx->file);
                     break;
-                case LS_ERR_EOF:
+                case CAT_ERR_EOF:
                     PL_LOGD("Player: No more file\n");
                     break;
                 default:
@@ -327,8 +327,8 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         }
         case EVT_PLAYER_EXIT_TO_BROWSER:
         {
-            me->lister_history_page[me->lister_history_index] = me->lister->cur_page;
-            me->lister_history_selection[me->lister_history_index] = me->lister->cur_index;
+            me->catalog_history_page[me->catalog_history_index] = me->catalog->cur_page;
+            me->catalog_history_selection[me->catalog_history_index] = me->catalog->cur_index;
             me->browser_ctx.skip_first_click = true;
             STATE_TRAN(me, &(me->browser_disk));
             break;

@@ -10,9 +10,9 @@
 
 
 // Maximun files listed per page.
-#define LISTER_PAGE_SIZE                10
-// Remember # levels history in file lister
-#define LISTER_HISTORY_DEPTH            10
+#define CATALOG_PAGER_SIZE              10
+// Remember # levels of history in file navigation
+#define CATALOG_HISTORY_DEPTH           10
 
 #define AUDIO_SAMPLE_RATE               48000
 #define AUDIO_POWER_SAVER_MS            5000

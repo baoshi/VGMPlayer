@@ -5,7 +5,7 @@
 #include "sw_conf.h"
 #include "decoder.h"
 #include "hsm.h"
-#include "lister.h"
+#include "catalog.h"
 
 
 typedef struct app_s app_t;
@@ -18,9 +18,9 @@ typedef struct app_s app_t;
 typedef struct browser_s
 {
     lv_obj_t *screen;
-    lv_obj_t *lbl_top;    // Top indicators
-    lv_obj_t *lbl_bottom; // Bottom label
-    lv_obj_t *lst_files;  // File List
+    lv_obj_t *lbl_top;      // Top indicators
+    lv_obj_t *lbl_bottom;   // Bottom label
+    lv_obj_t *lst_files;    // List of files
     int alarm_ui_update;
     bool skip_first_click;
 } browser_t;
@@ -59,10 +59,9 @@ struct app_s
     state_t player, player_s16, player_s16_playing, player_s16_paused;
     player_t player_ctx;
     // data shared by all states
-    lister_t *lister;
-    int lister_history_page[LISTER_HISTORY_DEPTH];
-    int lister_history_selection[LISTER_HISTORY_DEPTH];
-    int lister_history_index;
-
+    catalog_t *catalog;
+    int catalog_history_page[CATALOG_HISTORY_DEPTH];
+    int catalog_history_selection[CATALOG_HISTORY_DEPTH];
+    int catalog_history_index;
 };
 
