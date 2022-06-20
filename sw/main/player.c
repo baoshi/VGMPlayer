@@ -43,7 +43,8 @@
 enum
 {
     PLAYER_OK = 0,
-    PLAYER_ERR_UNSUPPORTED,
+    PLAYER_ERR_FILE_NOT_ACCESSIBLE,
+    PLAYER_ERR_FILE_NOT_SUPPORTED
 };
 
 
@@ -252,6 +253,18 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         case EVT_START:
         {
             PL_LOGD("Player: start\n");
+            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_SONG);
+            break;
+        }
+        case EVT_PLAYER_UI_UPDATE:
+        {
+            char buf[32];
+            sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
+            lv_label_set_text(ctx->lbl_top, buf);
+            break;
+        }
+        case EVT_PLAYER_PLAY_SONG:
+        {
             int r;
             char ext[4];
             uint8_t type;
@@ -264,50 +277,30 @@ event_t const *player_handler(app_t *me, event_t const *evt)
                 {
                     if (0 == strcasecmp(ext, "s16"))
                     {
-                        //STATE_START(me, &me->player_s16);
+                        STATE_START(me, &me->player_s16);
                     }
                     else
                     {
                         PL_LOGE("Player: unsupported file %s\n", ctx->file);
-                        ctx->exception = PLAYER_ERR_UNSUPPORTED;
+                        ctx->exception = PLAYER_ERR_FILE_NOT_SUPPORTED;
                         error = true;
                     }
                 }
                 else
                 {
+                    PL_LOGE("Player: unsupported file %s\n", ctx->file);
+                    ctx->exception = PLAYER_ERR_FILE_NOT_SUPPORTED;
                     error = true;
                 }
             }
             else
             {
+                ctx->exception = PLAYER_ERR_FILE_NOT_ACCESSIBLE;
                 error = true;
             }
             if (error)
             {
-                STATE_START(me, &me->player_exp);
-            }
-            break;
-        }
-        case EVT_PLAYER_UI_UPDATE:
-        {
-            char buf[32];
-            sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
-            lv_label_set_text(ctx->lbl_top, buf);
-            break;
-        }
-        case EVT_PLAYER_PLAY_SONG:
-        {
-            uint8_t type;
-            int r;
-            // Get the current file to play
-            r = catalog_get_entry(me->catalog, ctx->file, FF_LFN_BUF + 1, &type);
-            if ((CAT_OK == r) && (CAT_TYPE_FILE == type))
-            {
-                lv_label_set_text(ctx->lbl_bottom, ctx->file);
-            }
-            else
-            {
-                PL_LOGE("Player: cannot open file to play\n");
+                STATE_TRAN(me, &me->player_exp);
             }
             break;
         }
@@ -327,7 +320,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             switch (r)
             {
                 case CAT_OK:
-                    lv_label_set_text(ctx->lbl_bottom, ctx->file);
+                    EQ_QUICK_PUSH(EVT_PLAYER_PLAY_SONG);
                     break;
                 case CAT_ERR_EOF:
                     PL_LOGD("Player: No more file\n");
@@ -353,7 +346,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             switch (r)
             {
                 case CAT_OK:
-                    lv_label_set_text(ctx->lbl_bottom, ctx->file);
+                    EQ_QUICK_PUSH(EVT_PLAYER_PLAY_SONG);
                     break;
                 case CAT_ERR_EOF:
                     PL_LOGD("Player: No more file\n");
@@ -361,19 +354,6 @@ event_t const *player_handler(app_t *me, event_t const *evt)
                 default:
                     break;
             }
-            break;
-        }
-        case EVT_PLAYER_SONG_ENDED:
-        {
-            STATE_TRAN(me, &(me->browser_disk));
-            break;
-        }
-        case EVT_PLAYER_EXIT_TO_BROWSER:
-        {
-            me->catalog_history_page[me->catalog_history_index] = me->catalog->cur_page;
-            me->catalog_history_selection[me->catalog_history_index] = me->catalog->cur_index;
-            me->browser_ctx.skip_first_click = true;
-            STATE_TRAN(me, &(me->browser_disk));
             break;
         }
         default:
@@ -396,7 +376,7 @@ event_t const *player_exp_handler(app_t *me, event_t const *evt)
             char message[256];
             switch (ctx->exception)
             {
-                case PLAYER_ERR_UNSUPPORTED:
+                case PLAYER_ERR_FILE_NOT_SUPPORTED:
                 {
                     snprintf(message, 256, "File %s cannot be played", ctx->file);
                     break;
@@ -445,26 +425,31 @@ event_t const *player_s16_handler(app_t *me, event_t const *evt)
     {
     case EVT_ENTRY:
         PL_LOGD("Player_S16: entry\n");
-        MY_ASSERT(ctx->decoder == 0);
-        ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
-        // TODO: Handle error here
-        MY_ASSERT(ctx->decoder != 0);
         break;
     case EVT_EXIT:
         PL_LOGD("Player_S16: exit\n");
-        audio_stop_playback();
-        if (ctx->decoder)
-        {
-            decoder_s16_destroy((decoder_s16_t *)(ctx->decoder));
-            ctx->decoder = 0;
-        }
         break;
     case EVT_START:
-        PL_LOGD("Player: s16: start\n");
-        audio_setup_playback(ctx->decoder);
-        audio_start_playback();
-        STATE_START(me, &me->player_s16_playing); 
+    {
+        PL_LOGD("Player_S16: start\n");
+        // save history
+        me->catalog_history_page[me->catalog_history_index] = me->catalog->cur_page;
+        me->catalog_history_selection[me->catalog_history_index] = me->catalog->cur_index;
+        lv_label_set_text(ctx->lbl_bottom, ctx->file);
         break;
+    }
+    case EVT_PLAYER_PLAY_NEXT:
+    {
+        PL_LOGD("Player_S16: stop and play next song\n");
+        r = evt;    // let player_handler to handle further
+        break;
+    }
+    case EVT_PLAYER_PLAY_PREV:
+    {
+        PL_LOGD("Player_S16: stop and play previous song\n");
+        r = evt;    // let player_handler to handle further
+        break;
+    }
     default:
         r = evt;
         break;
