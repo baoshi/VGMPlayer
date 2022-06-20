@@ -253,22 +253,22 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         {
             PL_LOGD("Player: start\n");
             int r;
-            char file[FF_LFN_BUF + 1], ext[4];
+            char ext[4];
             uint8_t type;
             bool error = false;
-            r = catalog_get_entry(me->catalog, file, FF_LFN_BUF + 1, &type);
+            r = catalog_get_entry(me->catalog, ctx->file, FF_LFN_BUF + 1, &type);
             if (CAT_OK == r)
             {
                 // check file extension and go into substates
-                if (path_get_ext(file, ext, 4))
+                if (path_get_ext(ctx->file, ext, 4))
                 {
                     if (0 == strcasecmp(ext, "s16"))
                     {
-                        STATE_START(me, &me->player_s16);
+                        //STATE_START(me, &me->player_s16);
                     }
                     else
                     {
-                        PL_LOGE("Player: unsupported file %s\n", file);
+                        PL_LOGE("Player: unsupported file %s\n", ctx->file);
                         ctx->exception = PLAYER_ERR_UNSUPPORTED;
                         error = true;
                     }
@@ -393,10 +393,24 @@ event_t const *player_exp_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
         {
             PL_LOGD("Player_Exp: entry\n");
-            ctx->mbx_alert = lv_msgbox_create(ctx->screen, "", "Message", NULL, false);
+            char message[256];
+            switch (ctx->exception)
+            {
+                case PLAYER_ERR_UNSUPPORTED:
+                {
+                    snprintf(message, 256, "File %s cannot be played", ctx->file);
+                    break;
+                }
+                default:
+                {
+                    strncpy(message, "Unknown error occurred", 256);
+                    break;
+                }
+            }
+            ctx->mbx_alert = lv_msgbox_create(ctx->screen, NULL, message, NULL, false);
             lv_obj_set_width(ctx->mbx_alert, 200);
             lv_obj_center(ctx->mbx_alert);
-            ctx->timer_general = tick_arm_timer_event(2000, false, EVT_PLAYER_GENERAL_TIMER, true);
+            ctx->timer_general = tick_arm_timer_event(2000, false, EVT_PLAYER_GENERAL_TIMER, true);        
             break;
         }
         case EVT_EXIT:

@@ -3,13 +3,13 @@
 /*********************
  *      DEFINES
  *********************/
-#define COLOR_BACKGROUND            lv_color_hex(0x0A1929)
-#define COLOR_TEXT                  lv_color_hex(0xBABAC2)
-#define COLOR_BORDER                lv_color_hex(0x14385C)
-#define COLOR_BUTTON_FACE_INACTIVE  lv_color_hex(0x14385C)
-#define COLOR_BUTTON_TEXT_INACTIVE  lv_color_hex(0x66B2FF)
-#define COLOR_BUTTON_FACE_ACTIVE    lv_color_hex(0x14385C)
-#define COLOR_BUTTON_TEXT_ACTIVE    lv_color_hex(0xFFFFFF)
+#define COLOR_BACKGROUND            lv_color_hex(0x000000)
+#define COLOR_TEXT                  lv_color_hex(0xc8992c)
+#define COLOR_BORDER                lv_color_hex(0x80621c)
+#define COLOR_BUTTON_FACE_INACTIVE  lv_color_hex(0x80621c)
+#define COLOR_BUTTON_TEXT_INACTIVE  lv_color_hex(0x000000)
+#define COLOR_BUTTON_FACE_ACTIVE    lv_color_hex(0xc8992c)
+#define COLOR_BUTTON_TEXT_ACTIVE    lv_color_hex(0x000000)
 
 
 #define COLOR_SCR     lv_color_black()
@@ -34,12 +34,8 @@ typedef struct
     lv_style_t dark;
     lv_style_t dim;
     lv_style_t scrollbar;
-    lv_style_t scrollbar_scrolled;
-#if LV_USE_TEXTAREA
-    lv_style_t ta_cursor;
-#endif
-    lv_style_t panel;
-    lv_style_t list_btn, list_btn_focused, list_btn_pressed;
+    lv_style_t listbox, list_btn, list_btn_focused, list_btn_pressed;
+    lv_style_t msgbox;
 } theme_styles_t;
 
 
@@ -67,6 +63,7 @@ static void style_init(void)
     lv_style_set_bg_color(&styles.scr, COLOR_BACKGROUND);
     lv_style_set_text_color(&styles.scr, COLOR_TEXT);
     lv_style_set_text_font(&styles.scr, LV_FONT_DEFAULT);
+    
     // Scrollbar
     style_init_reset(&styles.scrollbar);
     lv_style_set_bg_color(&styles.scrollbar, COLOR_BUTTON_FACE_INACTIVE);
@@ -76,22 +73,21 @@ static void style_init(void)
     lv_style_set_pad_top(&styles.scrollbar,  4);
     lv_style_set_pad_bottom(&styles.scrollbar,  4);
     lv_style_set_size(&styles.scrollbar,  5);
-    // Panel
-    style_init_reset(&styles.panel);
-    lv_style_set_radius(&styles.panel, RADIUS_DEFAULT); // Round rectangle
-    lv_style_set_bg_opa(&styles.panel, LV_OPA_COVER);   // Same opqaue background as screen
-    lv_style_set_bg_color(&styles.panel, COLOR_BACKGROUND);
-    lv_style_set_border_color(&styles.panel, COLOR_BORDER);  // 1 pixel border
-    lv_style_set_border_width(&styles.panel, 1);
-    lv_style_set_border_post(&styles.panel, true);      // border shall draw after children
-    lv_style_set_pad_right(&styles.panel, 14);
-    lv_style_set_pad_top(&styles.panel, 8);
-    lv_style_set_pad_bottom(&styles.panel, 8);
-    lv_style_set_pad_left(&styles.panel, 8);
-    lv_style_set_clip_corner(&styles.panel, true);      // clip the overflowed content on the rounded corner
     
-    // List box
-    lv_style_set_pad_row(&styles.panel, 4);             // 4 pixels gap between each row
+    // Listbox
+    style_init_reset(&styles.listbox);
+    lv_style_set_radius(&styles.listbox, RADIUS_DEFAULT); // Round rectangle
+    lv_style_set_bg_opa(&styles.listbox, LV_OPA_COVER);   // Same opqaue background as screen
+    lv_style_set_bg_color(&styles.listbox, COLOR_BACKGROUND);
+    lv_style_set_border_color(&styles.listbox, COLOR_BORDER);  // 1 pixel border
+    lv_style_set_border_width(&styles.listbox, 1);
+    lv_style_set_border_post(&styles.listbox, true);      // border shall draw after children
+    lv_style_set_pad_right(&styles.listbox, 14);
+    lv_style_set_pad_top(&styles.listbox, 4);
+    lv_style_set_pad_bottom(&styles.listbox, 4);
+    lv_style_set_pad_left(&styles.listbox, 8);
+    lv_style_set_clip_corner(&styles.listbox, true);      // clip the overflowed content on the rounded corner
+    lv_style_set_pad_row(&styles.listbox, 4);             // 4 pixels gap between each row
     // Default list button
     style_init_reset(&styles.list_btn);
     lv_style_set_pad_left(&styles.list_btn, 8);
@@ -109,6 +105,18 @@ static void style_init(void)
     lv_style_set_bg_opa(&styles.list_btn_pressed, LV_OPA_COVER);
     lv_style_set_bg_color(&styles.list_btn_pressed, COLOR_BUTTON_FACE_ACTIVE);
     lv_style_set_text_color(&styles.list_btn_pressed, COLOR_BUTTON_TEXT_ACTIVE);
+
+    // Message Box
+    style_init_reset(&styles.msgbox);
+    lv_style_set_radius(&styles.msgbox, RADIUS_DEFAULT);        // Round rectangle
+    lv_style_set_bg_opa(&styles.msgbox, LV_OPA_COVER);          // Same opqaue background as screen
+    lv_style_set_bg_color(&styles.msgbox, COLOR_BACKGROUND);    // Colors
+    lv_style_set_text_color(&styles.msgbox, COLOR_TEXT);
+    lv_style_set_border_color(&styles.msgbox, COLOR_BORDER);    // 2 pixel border
+    lv_style_set_border_width(&styles.msgbox, 2);
+    lv_style_set_border_post(&styles.msgbox, true);             // border shall draw after children
+    lv_style_set_pad_all(&styles.msgbox, 10);                   // Leave some space from border
+    lv_style_set_clip_corner(&styles.msgbox, true);             // clip the overflowed content on the rounded corner
 
     style_init_reset(&styles.white);
     lv_style_set_bg_opa(&styles.white, LV_OPA_COVER);
@@ -143,14 +151,7 @@ static void style_init(void)
     lv_style_set_arc_width(&styles.dim, 2);
     lv_style_set_arc_color(&styles.dim, COLOR_DIM);
 
-#if LV_USE_TEXTAREA
-    style_init_reset(&styles.ta_cursor);
-    lv_style_set_border_side(&styles.ta_cursor, LV_BORDER_SIDE_LEFT);
-    lv_style_set_border_color(&styles.ta_cursor, COLOR_DIM);
-    lv_style_set_border_width(&styles.ta_cursor, 2);
-    lv_style_set_bg_opa(&styles.ta_cursor, LV_OPA_TRANSP);
-    lv_style_set_anim_time(&styles.ta_cursor, 500);
-#endif
+
 }
 
 
@@ -186,7 +187,7 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
     // List box
     else if (lv_obj_check_type(obj, &lv_list_class)) 
     {
-        lv_obj_add_style(obj, &styles.panel, 0);
+        lv_obj_add_style(obj, &styles.listbox, 0);
         lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
     }
     // Buttons in list box
@@ -197,10 +198,10 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
         lv_obj_add_style(obj, &styles.list_btn_focused, LV_STATE_FOCUS_KEY);
         lv_obj_add_style(obj, &styles.list_btn_pressed, LV_STATE_PRESSED);
     }
+    // Message box
     else if (lv_obj_check_type(obj, &lv_msgbox_class)) 
     {
-        lv_obj_add_style(obj, &styles.panel, 0);
-        return;
+        lv_obj_add_style(obj, &styles.msgbox, 0);
     }
 
 #if LV_USE_BAR
@@ -224,7 +225,6 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
     else if(lv_obj_check_type(obj, &lv_textarea_class)) {
         lv_obj_add_style(obj, &styles.white, 0);
         lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-        lv_obj_add_style(obj, &styles.ta_cursor, LV_PART_CURSOR);
     }
 #endif
 
