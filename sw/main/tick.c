@@ -115,7 +115,7 @@ void tick_register_hook(tick_hook_t hook, void* param)
  * @brief De-register time event
  * @param id    Alarm id
  **/
-void tick_disarm_time_event(int id)
+void tick_disarm_timer_event(int id)
 {
     MY_ASSERT((id >= 0) && (id < TICK_MAX_EVENTS));
     _slot_status[id] = ALARM_UNUSED;
@@ -127,10 +127,10 @@ void tick_disarm_time_event(int id)
  * @param timeout_ms    Alarm time. Set to 0 to alarm at TICK_GRANULARITY_MS
  * @param repeat        If the alarm is to be repeated every timeout_ms
  * @param event         Event code. Time event will be posted to the global event queue with millis as param
- * @param start         If counting is to start immediately. If false, use tick_resume_time_event() to start counting
+ * @param start         If true start counting immediately. If false, use tick_resume_timer_event() to start counting
  * @return              Alarm id (for cancellation). Non-repeating alarm will be cleared automatically after the event is fired
  **/
-int tick_arm_time_event(uint32_t timeout_ms, bool repeat, int event, bool start)
+int tick_arm_timer_event(uint32_t timeout_ms, bool repeat, int event, bool start)
 {
     int ret = -1;
     for (int i = 0; i < TICK_MAX_EVENTS; ++i)
@@ -160,7 +160,7 @@ int tick_arm_time_event(uint32_t timeout_ms, bool repeat, int event, bool start)
  * 
  * @param id    Alarm id
  */
-void tick_reset_time_event(int id)
+void tick_reset_timer_event(int id)
 {
     MY_ASSERT((id >= 0) && (id < TICK_MAX_EVENTS));
     _slots[id].counter = - (TICK_GRANULARITY_MS - (TICK_GRANULARITY_MS * systick_hw->cvr / systick_hw->rvr));
@@ -173,7 +173,7 @@ void tick_reset_time_event(int id)
  * 
  * @param id    Alarm id
  */
-void tick_pause_time_event(int id)
+void tick_pause_timer_event(int id)
 {
     MY_ASSERT((id >= 0) && (id < TICK_MAX_EVENTS));
     _slot_status[id] = ALARM_PAUSED;
@@ -185,7 +185,7 @@ void tick_pause_time_event(int id)
  * 
  * @param id    Alarm id
  */
-void tick_resume_time_event(int id)
+void tick_resume_timer_event(int id)
 {
     MY_ASSERT((id >= 0) && (id < TICK_MAX_EVENTS));
     _slot_status[id] = ALARM_ARMED;

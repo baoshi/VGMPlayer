@@ -326,14 +326,14 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
             BR_LOGD("Browser: entry\n");
             create_screen(ctx);
-            me->browser_ctx.alarm_ui_update = tick_arm_time_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
+            me->browser_ctx.alarm_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
             break;
         case EVT_START:
             STATE_START(me, &me->browser_nodisk);   // default to nodisk state and wait card insertion
             break;
         case EVT_EXIT:
             BR_LOGD("Browser: exit\n");
-            tick_disarm_time_event(me->browser_ctx.alarm_ui_update);
+            tick_disarm_timer_event(me->browser_ctx.alarm_ui_update);
             ctx->alarm_ui_update = -1;
             break;
         case EVT_BROWSER_UI_UPDATE:
