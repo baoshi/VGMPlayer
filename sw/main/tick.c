@@ -7,6 +7,7 @@
 #include "event_queue.h"
 #include "tick.h"
 
+#define TIMER_ID_BASE 101
 
 // Tick hooks
 tick_hook_t _hook = 0;
@@ -21,9 +22,9 @@ static struct
     bool repeat;
 } _slots[TICK_MAX_EVENTS];
 
-#define ALARM_UNUSED    0x00
-#define ALARM_ARMED     0x01
-#define ALARM_PAUSED    0x02
+#define TIMER_UNUSED    0x00
+#define TIMER_ARMED     0x01
+#define TIMER_PAUSED    0x02
 static uint8_t _slot_status[TICK_MAX_EVENTS]; // 0-unused; 1-used; 2-paused
 
 
@@ -38,7 +39,7 @@ void isr_systick()
     // Send time events
     for (int i = 0; i < TICK_MAX_EVENTS; ++i)
     {
-        if (ALARM_ARMED == _slot_status[i])
+        if (TIMER_ARMED == _slot_status[i])
         {
             if (0 == _slots[i].timeout)   // repeating tick event
             {
@@ -67,7 +68,7 @@ void isr_systick()
                     }
                     else
                     {
-                        _slot_status[i] = ALARM_UNUSED;
+                        _slot_status[i] = TIMER_UNUSED;
                     }
                 }
             }
@@ -117,8 +118,9 @@ void tick_register_hook(tick_hook_t hook, void* param)
  **/
 void tick_disarm_timer_event(int id)
 {
+    id -= TIMER_ID_BASE;
     MY_ASSERT((id >= 0) && (id < TICK_MAX_EVENTS));
-    _slot_status[id] = ALARM_UNUSED;
+    _slot_status[id] = TIMER_UNUSED;
 }
 
 
@@ -135,14 +137,14 @@ int tick_arm_timer_event(uint32_t timeout_ms, bool repeat, int event, bool start
     int ret = -1;
     for (int i = 0; i < TICK_MAX_EVENTS; ++i)
     {
-        if (ALARM_UNUSED == _slot_status[i])
+        if (TIMER_UNUSED == _slot_status[i])
         {
             _slots[i].event = event;
             _slots[i].repeat = repeat;
             _slots[i].timeout = timeout_ms;
             // Adjust for already elapsed cycles
             _slots[i].counter = - (TICK_GRANULARITY_MS - (TICK_GRANULARITY_MS * systick_hw->cvr / systick_hw->rvr));
-            _slot_status[i] = start ? ALARM_ARMED : ALARM_PAUSED;
+            _slot_status[i] = start ? TIMER_ARMED : TIMER_PAUSED;
             ret = i;
             break;
         }
@@ -151,7 +153,7 @@ int tick_arm_timer_event(uint32_t timeout_ms, bool repeat, int event, bool start
     {
         MY_ASSERT("Too many systick time event");
     }
-    return ret;
+    return ret + TIMER_ID_BASE;
 }
 
 
@@ -162,9 +164,10 @@ int tick_arm_timer_event(uint32_t timeout_ms, bool repeat, int event, bool start
  */
 void tick_reset_timer_event(int id)
 {
+    id -= TIMER_ID_BASE;
     MY_ASSERT((id >= 0) && (id < TICK_MAX_EVENTS));
     _slots[id].counter = - (TICK_GRANULARITY_MS - (TICK_GRANULARITY_MS * systick_hw->cvr / systick_hw->rvr));
-    _slot_status[id] = ALARM_ARMED;
+    _slot_status[id] = TIMER_ARMED;
 }
 
 
@@ -175,8 +178,9 @@ void tick_reset_timer_event(int id)
  */
 void tick_pause_timer_event(int id)
 {
+    id -= TIMER_ID_BASE;
     MY_ASSERT((id >= 0) && (id < TICK_MAX_EVENTS));
-    _slot_status[id] = ALARM_PAUSED;
+    _slot_status[id] = TIMER_PAUSED;
 }
 
 
@@ -187,8 +191,9 @@ void tick_pause_timer_event(int id)
  */
 void tick_resume_timer_event(int id)
 {
+    id -= TIMER_ID_BASE;
     MY_ASSERT((id >= 0) && (id < TICK_MAX_EVENTS));
-    _slot_status[id] = ALARM_ARMED;
+    _slot_status[id] = TIMER_ARMED;
 }
 
 

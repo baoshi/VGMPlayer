@@ -237,7 +237,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         {
             PL_LOGD("Player: entry\n");
             create_screen(ctx);
-            ctx->alarm_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
+            ctx->timer_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
             ctx->exception = PLAYER_OK;
             ctx->decoder = 0;
             break;
@@ -245,8 +245,8 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         case EVT_EXIT:
         {
             PL_LOGD("Player: exit\n");
-            tick_disarm_timer_event(ctx->alarm_ui_update);
-            ctx->alarm_ui_update = -1;
+            tick_disarm_timer_event(ctx->timer_ui_update);
+            ctx->timer_ui_update = 0;
             break;
         }
         case EVT_START:
@@ -393,19 +393,23 @@ event_t const *player_exp_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
         {
             PL_LOGD("Player_Exp: entry\n");
+            ctx->msg_alert = lv_msgbox_create(ctx->screen, "Error", "Message", NULL, false);
+            lv_obj_center(ctx->msg_alert);
+            ctx->timer_general = tick_arm_timer_event(2000, false, EVT_PLAYER_GENERAL_TIMER, true);
             break;
         }
         case EVT_EXIT:
         {
             PL_LOGD("Player_Exp: exit\n");
+            tick_disarm_timer_event(ctx->timer_general);
+            ctx->timer_general = 0;
             break;
         }
-        case EVT_START:
+        case EVT_PLAYER_GENERAL_TIMER:
         {
-            PL_LOGD("Player_Exp: start\n");
-            const char *btn_txts[] = { NULL };
-            ctx->msg_alert = lv_msgbox_create(NULL, "Error", "Message", NULL, false);
-            lv_obj_center(ctx->msg_alert);
+            lv_msgbox_close(ctx->msg_alert);    // will delete msg_alert internally
+            ctx->msg_alert = 0;
+            STATE_TRAN(me, &(me->browser_disk));
             break;
         }
         default:

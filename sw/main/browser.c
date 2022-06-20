@@ -435,7 +435,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     populate_file_list(me, 0);
                     break;
                 case 2:     // current dir is not accessible but disk is ok (TODO: Possible?)
-                    BR_LOGW("Browser_Disk: current dir not accessible, go to root");
+                    BR_LOGW("Browser_Disk: current dir not accessible, go to root\n");
                     catalog_close(me->catalog);
                     me->catalog = 0;
                     me->catalog_history_page[0] = 0;
