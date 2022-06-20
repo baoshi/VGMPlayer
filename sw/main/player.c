@@ -219,7 +219,7 @@ static void create_screen(player_t* ctx)
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
     // No message box yet
-    ctx->msg_alert = 0;
+    ctx->mbx_alert = 0;
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Load screen
@@ -393,8 +393,9 @@ event_t const *player_exp_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
         {
             PL_LOGD("Player_Exp: entry\n");
-            ctx->msg_alert = lv_msgbox_create(ctx->screen, "Error", "Message", NULL, false);
-            lv_obj_center(ctx->msg_alert);
+            ctx->mbx_alert = lv_msgbox_create(ctx->screen, "", "Message", NULL, false);
+            lv_obj_set_width(ctx->mbx_alert, 200);
+            lv_obj_center(ctx->mbx_alert);
             ctx->timer_general = tick_arm_timer_event(2000, false, EVT_PLAYER_GENERAL_TIMER, true);
             break;
         }
@@ -407,8 +408,8 @@ event_t const *player_exp_handler(app_t *me, event_t const *evt)
         }
         case EVT_PLAYER_GENERAL_TIMER:
         {
-            lv_msgbox_close(ctx->msg_alert);    // will delete msg_alert internally
-            ctx->msg_alert = 0;
+            lv_msgbox_close(ctx->mbx_alert);    // will delete msg_alert internally
+            ctx->mbx_alert = 0;
             STATE_TRAN(me, &(me->browser_disk));
             break;
         }

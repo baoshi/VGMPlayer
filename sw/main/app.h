@@ -39,7 +39,7 @@ typedef struct player_s
     lv_obj_t* screen;
     lv_obj_t* lbl_top;      // Top indicators
     lv_obj_t* lbl_bottom;   // Bottom indicators
-    lv_obj_t* msg_alert;    // Alert message
+    lv_obj_t* mbx_alert;    // Alert message
     int timer_ui_update;    // UI update timer
     int timer_general;      // General purpose timer
     int exception;

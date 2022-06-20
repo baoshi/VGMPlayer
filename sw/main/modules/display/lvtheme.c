@@ -32,7 +32,7 @@ typedef struct
     lv_style_t ta_cursor;
 #endif
     lv_style_t panel;
-    lv_style_t list_bg, list_btn, list_btn_focused, list_btn_pressed;
+    lv_style_t list_btn, list_btn_focused, list_btn_pressed;
 } theme_styles_t;
 
 
@@ -54,23 +54,21 @@ static bool inited;
 
 static void style_init(void)
 {
+    // Default screen style
     style_init_reset(&styles.scr);
     lv_style_set_bg_opa(&styles.scr, LV_OPA_COVER);
     lv_style_set_bg_color(&styles.scr, COLOR_SCR);
     lv_style_set_text_color(&styles.scr, COLOR_TEXT);
     lv_style_set_text_font(&styles.scr, LV_FONT_DEFAULT);
-
+    // Scrollbar
     style_init_reset(&styles.scrollbar);
     lv_style_set_bg_color(&styles.scrollbar, lv_color_darken(COLOR_TEXT, 50));
     lv_style_set_bg_opa(&styles.scrollbar, LV_OPA_COVER);
     lv_style_set_radius(&styles.scrollbar, LV_RADIUS_CIRCLE);
     lv_style_set_pad_right(&styles.scrollbar, 4);
     lv_style_set_pad_top(&styles.scrollbar,  4);
+    lv_style_set_pad_bottom(&styles.scrollbar,  4);
     lv_style_set_size(&styles.scrollbar,  5);
-        
-    style_init_reset(&styles.scrollbar_scrolled);
-    lv_style_set_bg_color(&styles.scrollbar_scrolled, COLOR_TEXT);
-
     // Panel
     style_init_reset(&styles.panel);
     lv_style_set_radius(&styles.panel, RADIUS_DEFAULT); // Round rectangle
@@ -78,16 +76,16 @@ static void style_init(void)
     lv_style_set_bg_color(&styles.panel, COLOR_SCR);
     lv_style_set_border_color(&styles.panel, lv_color_darken(COLOR_TEXT, 50));  // 1 pixel darker border
     lv_style_set_border_width(&styles.panel, 1);
-    lv_style_set_border_post(&styles.panel, true);  // border shall draw after children
+    lv_style_set_border_post(&styles.panel, true);      // border shall draw after children
     lv_style_set_pad_right(&styles.panel, 14);
     lv_style_set_pad_top(&styles.panel, 8);
     lv_style_set_pad_bottom(&styles.panel, 8);
     lv_style_set_pad_left(&styles.panel, 8);
+    lv_style_set_clip_corner(&styles.panel, true);      // clip the overflowed content on the rounded corner
     
     // List box
     lv_style_set_pad_row(&styles.panel, 4);             // 4 pixels gap between each row
-    lv_style_set_clip_corner(&styles.list_bg, true);    // clip the overflowed content on the rounded corner
-
+    
     // Default list button
     style_init_reset(&styles.list_btn);
     lv_style_set_pad_left(&styles.list_btn, 8);
@@ -171,70 +169,33 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
     if (lv_obj_get_parent(obj) == NULL) // Apply to a screen
     {
         lv_obj_add_style(obj, &styles.scr, 0);
-        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-        lv_obj_add_style(obj, &styles.scrollbar_scrolled, LV_PART_SCROLLBAR | LV_STATE_SCROLLED);
         return;
     }
 
-    if(lv_obj_check_type(obj, &lv_obj_class)) {
-#if LV_USE_TABVIEW
-        lv_obj_t * parent = lv_obj_get_parent(obj);
-        /*Tabview content area*/
-        if(lv_obj_check_type(parent, &lv_tabview_class)) {
-            lv_obj_add_style(obj, &styles.scr, 0);
-            return;
-        }
-        /*Tabview pages*/
-        else if(lv_obj_check_type(lv_obj_get_parent(parent), &lv_tabview_class)) {
-            lv_obj_add_style(obj, &styles.scr, 0);
-            lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-            return;
-        }
-#endif
-
-#if LV_USE_WIN
-        /*Header*/
-        if(lv_obj_get_index(obj) == 0 && lv_obj_check_type(lv_obj_get_parent(obj), &lv_win_class)) {
-            lv_obj_add_style(obj, &styles.light, 0);
-            return;
-        }
-        /*Content*/
-        else if(lv_obj_get_index(obj) == 1 && lv_obj_check_type(lv_obj_get_parent(obj), &lv_win_class)) {
-            lv_obj_add_style(obj, &styles.light, 0);
-            lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-            return;
-        }
-#endif
-        lv_obj_add_style(obj, &styles.white, 0);
+    if (lv_obj_check_type(obj, &lv_obj_class)) 
+    {
+        //lv_obj_add_style(obj, &styles.white, 0);
         lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
     }
-#if LV_USE_BTN
-    else if(lv_obj_check_type(obj, &lv_btn_class)) {
-        lv_obj_add_style(obj, &styles.dark, 0);
+    // List box
+    else if (lv_obj_check_type(obj, &lv_list_class)) 
+    {
+        lv_obj_add_style(obj, &styles.panel, 0);
+        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
     }
-#endif
-
-#if LV_USE_BTNMATRIX
-    else if(lv_obj_check_type(obj, &lv_btnmatrix_class)) {
-#if LV_USE_MSGBOX
-        if(lv_obj_check_type(lv_obj_get_parent(obj), &lv_msgbox_class)) {
-            lv_obj_add_style(obj, &styles.light, LV_PART_ITEMS);
-            lv_obj_add_style(obj, &styles.dark, LV_PART_ITEMS | LV_STATE_PRESSED);
-            return;
-        }
-#endif
-#if LV_USE_TABVIEW
-        if(lv_obj_check_type(lv_obj_get_parent(obj), &lv_tabview_class)) {
-            lv_obj_add_style(obj, &styles.light, LV_PART_ITEMS);
-            lv_obj_add_style(obj, &styles.dark, LV_PART_ITEMS | LV_STATE_PRESSED);
-            return;
-        }
-#endif
-        lv_obj_add_style(obj, &styles.white, 0);
-        lv_obj_add_style(obj, &styles.light, LV_PART_ITEMS);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_ITEMS | LV_STATE_PRESSED);
+    // Buttons in list box
+    else if (lv_obj_check_type(obj, &lv_list_btn_class)) 
+    {
+        lv_obj_add_style(obj, &styles.list_btn, 0);
+        lv_obj_add_style(obj, &styles.list_btn_focused, LV_STATE_FOCUSED);
+        lv_obj_add_style(obj, &styles.list_btn_focused, LV_STATE_FOCUS_KEY);
+        lv_obj_add_style(obj, &styles.list_btn_pressed, LV_STATE_PRESSED);
     }
-#endif
+    else if (lv_obj_check_type(obj, &lv_msgbox_class)) 
+    {
+        lv_obj_add_style(obj, &styles.panel, 0);
+        return;
+    }
 
 #if LV_USE_BAR
     else if(lv_obj_check_type(obj, &lv_bar_class)) {
@@ -251,70 +212,7 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
     }
 #endif
 
-#if LV_USE_TABLE
-    else if(lv_obj_check_type(obj, &lv_table_class)) {
-        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-        lv_obj_add_style(obj, &styles.light, LV_PART_ITEMS);
-    }
-#endif
 
-#if LV_USE_CHECKBOX
-    else if(lv_obj_check_type(obj, &lv_checkbox_class)) {
-        lv_obj_add_style(obj, &styles.light, LV_PART_INDICATOR);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_INDICATOR | LV_STATE_CHECKED);
-    }
-#endif
-
-#if LV_USE_SWITCH
-    else if(lv_obj_check_type(obj, &lv_switch_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_INDICATOR);
-        lv_obj_add_style(obj, &styles.dim, LV_PART_KNOB);
-    }
-#endif
-
-#if LV_USE_CHART
-    else if(lv_obj_check_type(obj, &lv_chart_class)) {
-        lv_obj_add_style(obj, &styles.white, 0);
-        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-        lv_obj_add_style(obj, &styles.light, LV_PART_ITEMS);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_TICKS);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_CURSOR);
-    }
-#endif
-
-#if LV_USE_ROLLER
-    else if(lv_obj_check_type(obj, &lv_roller_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_SELECTED);
-    }
-#endif
-
-#if LV_USE_DROPDOWN
-    else if(lv_obj_check_type(obj, &lv_dropdown_class)) {
-        lv_obj_add_style(obj, &styles.white, 0);
-    }
-    else if(lv_obj_check_type(obj, &lv_dropdownlist_class)) {
-        lv_obj_add_style(obj, &styles.white, 0);
-        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-        lv_obj_add_style(obj, &styles.light, LV_PART_SELECTED);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_SELECTED | LV_STATE_CHECKED);
-    }
-#endif
-
-#if LV_USE_ARC
-    else if(lv_obj_check_type(obj, &lv_arc_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_INDICATOR);
-        lv_obj_add_style(obj, &styles.dim, LV_PART_KNOB);
-    }
-#endif
-
-#if LV_USE_METER
-    else if(lv_obj_check_type(obj, &lv_meter_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-    }
-#endif
 
 #if LV_USE_TEXTAREA
     else if(lv_obj_check_type(obj, &lv_textarea_class)) {
@@ -324,52 +222,7 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
     }
 #endif
 
-#if LV_USE_CALENDAR
-    else if(lv_obj_check_type(obj, &lv_calendar_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-        lv_obj_add_style(obj, &styles.light, LV_PART_ITEMS | LV_STATE_PRESSED);
-    }
-#endif
 
-#if LV_USE_KEYBOARD
-    else if(lv_obj_check_type(obj, &lv_keyboard_class)) {
-        lv_obj_add_style(obj, &styles.scr, 0);
-        lv_obj_add_style(obj, &styles.white, LV_PART_ITEMS);
-        lv_obj_add_style(obj, &styles.light, LV_PART_ITEMS | LV_STATE_CHECKED);
-    }
-#endif
-#if LV_USE_LIST
-    else if (lv_obj_check_type(obj, &lv_list_class)) 
-    {
-        lv_obj_add_style(obj, &styles.panel, 0);
-        lv_obj_add_style(obj, &styles.list_bg, 0);
-        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-        lv_obj_add_style(obj, &styles.scrollbar_scrolled, LV_PART_SCROLLBAR | LV_STATE_SCROLLED);
-        return;
-    }
-    else if(lv_obj_check_type(obj, &lv_list_text_class)) 
-    {
-        //lv_obj_add_style(obj, &styles.bg_color_grey, 0);
-        //lv_obj_add_style(obj, &styles.list_item_grow, 0);
-    }
-    else if(lv_obj_check_type(obj, &lv_list_btn_class)) 
-    {
-        //lv_obj_add_style(obj, &styles.bg_color_white, 0);
-        lv_obj_add_style(obj, &styles.list_btn, 0);
-        lv_obj_add_style(obj, &styles.list_btn_focused, LV_STATE_FOCUSED);
-        lv_obj_add_style(obj, &styles.list_btn_focused, LV_STATE_FOCUS_KEY);
-        //lv_obj_add_style(obj, &styles.bg_color_primary, LV_STATE_FOCUS_KEY);
-        //lv_obj_add_style(obj, &styles.list_item_grow, LV_STATE_FOCUS_KEY);
-        //lv_obj_add_style(obj, &styles.list_item_grow, LV_STATE_PRESSED);
-        lv_obj_add_style(obj, &styles.list_btn_pressed, LV_STATE_PRESSED);
-    }
-#endif
-#if LV_USE_MSGBOX
-    else if(lv_obj_check_type(obj, &lv_msgbox_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-        return;
-    }
-#endif
 #if LV_USE_SPINBOX
     else if(lv_obj_check_type(obj, &lv_spinbox_class)) {
         lv_obj_add_style(obj, &styles.light, 0);
