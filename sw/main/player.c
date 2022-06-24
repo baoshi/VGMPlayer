@@ -7,9 +7,9 @@
 #include "tick.h"
 #include "event_ids.h"
 #include "event_queue.h"
+#include "ec.h"
 #include "disk.h"
 #include "path_utils.h"
-#include "ec.h"
 #include "audio.h"
 #include "decoder_s16.h"
 #include "catalog.h"
@@ -48,6 +48,39 @@ enum
 };
 
 
+// Setup audio and decoder using current selected file
+// Return false if fail. me->exception contains failure reason.
+// get file name from catalog
+// detect 
+static bool setup_song(player_t *ctx)
+{
+    bool r = false;
+    do
+    {
+        char ext[4];
+        uint8_t type;
+        // Get file extension
+        if (!path_get_ext(ctx->file, ext, 4))
+        {
+            ctx->exception = PLAYER_ERR_FILE_NOT_SUPPORTED;
+            break;
+        }
+        if (0 == strcasecmp(ext, "s16"))
+        {
+            // s16 file
+            r = true;
+            break;
+        }
+        else
+        {
+            ctx->exception = PLAYER_ERR_FILE_NOT_SUPPORTED;
+            break;
+        }
+    } while (0);
+    return r;
+}
+
+
 static void screen_event_handler(lv_event_t* e)
 {
     player_t* ctx = (player_t*)lv_event_get_user_data(e);
@@ -79,7 +112,6 @@ static void button_play_handler(lv_event_t* e)
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
         PL_LOGD("Play button long pressed\n");
-        EQ_QUICK_PUSH(EVT_PLAYER_EXIT_TO_BROWSER);
     }
 }
 
@@ -91,7 +123,7 @@ static void button_up_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("Up button pressed\n");
+        EQ_QUICK_PUSH(EVT_PLAYER_UP_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -107,7 +139,7 @@ static void button_down_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("Down button pressed\n");
+        EQ_QUICK_PUSH(EVT_PLAYER_DOWN_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -116,36 +148,34 @@ static void button_down_handler(lv_event_t* e)
 }
 
 
-static void button_next_handler(lv_event_t* e)
+static void button_mode_handler(lv_event_t* e)
 {
     player_t* ctx = (player_t*)lv_event_get_user_data(e);
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("Next button pressed\n");
-        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+        EQ_QUICK_PUSH(EVT_PLAYER_MODE_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        PL_LOGD("Next button long pressed\n");
+        PL_LOGD("Mode button long pressed\n");
     }
 }
 
 
-static void button_prev_handler(lv_event_t* e)
+static void button_back_handler(lv_event_t* e)
 {
     player_t* ctx = (player_t*)lv_event_get_user_data(e);
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        PL_LOGD("Prev button pressed\n");
-        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_PREV);
+        EQ_QUICK_PUSH(EVT_PLAYER_BACK_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        PL_LOGD("Prev button long pressed\n");
+        PL_LOGD("Back button long pressed\n");
     }
 }
 
@@ -175,38 +205,38 @@ static void create_screen(player_t* ctx)
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_play_handler, LV_EVENT_ALL, (void*)ctx);
-    // NW / Vol up
+    // NW / Mode
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 1, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_up_handler, LV_EVENT_ALL, (void*)ctx);
-    // SW / Vol down
+    lv_obj_add_event_cb(btn, button_mode_handler, LV_EVENT_ALL, (void*)ctx);
+    // SW / Back
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 2, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_down_handler, LV_EVENT_ALL, (void*)ctx);
-    // NE / Prev
+    lv_obj_add_event_cb(btn, button_back_handler, LV_EVENT_ALL, (void*)ctx);
+    // NE / Up
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 3, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_prev_handler, LV_EVENT_ALL, (void*)ctx);
-    // SE / Next
+    lv_obj_add_event_cb(btn, button_up_handler, LV_EVENT_ALL, (void*)ctx);
+    // SE / Down
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 4, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_next_handler, LV_EVENT_ALL, (void*)ctx);
+    lv_obj_add_event_cb(btn, button_down_handler, LV_EVENT_ALL, (void*)ctx);
     // Create top label
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_top, 200);
@@ -240,7 +270,11 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             create_screen(ctx);
             ctx->timer_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
             ctx->exception = PLAYER_OK;
+            ctx->first_song = true;
+            ctx->next_dir = 0;  // default to play next
+            ctx->timer_general = 0;
             ctx->decoder = 0;
+            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_SONG);
             break;
         }
         case EVT_EXIT:
@@ -248,12 +282,6 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             PL_LOGD("Player: exit\n");
             tick_disarm_timer_event(ctx->timer_ui_update);
             ctx->timer_ui_update = 0;
-            break;
-        }
-        case EVT_START:
-        {
-            PL_LOGD("Player: start\n");
-            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_SONG);
             break;
         }
         case EVT_PLAYER_UI_UPDATE:
@@ -265,43 +293,25 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         }
         case EVT_PLAYER_PLAY_SONG:
         {
-            int r;
-            char ext[4];
-            uint8_t type;
-            bool error = false;
-            r = catalog_get_entry(me->catalog, ctx->file, FF_LFN_BUF + 1, &type);
-            if (CAT_OK == r)
-            {
-                // check file extension and go into substates
-                if (path_get_ext(ctx->file, ext, 4))
-                {
-                    if (0 == strcasecmp(ext, "s16"))
-                    {
-                        STATE_START(me, &me->player_s16);
-                    }
-                    else
-                    {
-                        PL_LOGE("Player: unsupported file %s\n", ctx->file);
-                        ctx->exception = PLAYER_ERR_FILE_NOT_SUPPORTED;
-                        error = true;
-                    }
-                }
-                else
-                {
-                    PL_LOGE("Player: unsupported file %s\n", ctx->file);
-                    ctx->exception = PLAYER_ERR_FILE_NOT_SUPPORTED;
-                    error = true;
-                }
-            }
-            else
+            if (CAT_OK != catalog_get_entry(me->catalog, ctx->file, FF_LFN_BUF + 1, 0))
             {
                 ctx->exception = PLAYER_ERR_FILE_NOT_ACCESSIBLE;
-                error = true;
-            }
-            if (error)
-            {
                 STATE_TRAN(me, &me->player_exp);
+                break;
             }
+            lv_label_set_text(ctx->lbl_bottom, ctx->file);
+            // save history
+            me->catalog_history_page[me->catalog_history_index] = me->catalog->cur_page;
+            me->catalog_history_selection[me->catalog_history_index] = me->catalog->cur_index;
+            PL_LOGD("Player: setup song %s\n", ctx->file);
+            if (!setup_song(ctx))
+            {
+                // exception was set inside setup_song
+                STATE_TRAN(me, &me->player_exp);
+                break;
+            }
+            PL_LOGD("Player: play song %s\n", ctx->file);
+            ctx->first_song = false;
             break;
         }
         case EVT_PLAYER_PLAY_NEXT:
@@ -311,11 +321,22 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             do
             {
                 // Get the next file to play
-                r = catalog_get_next_entry(me->catalog, false, true, ctx->file, FF_LFN_BUF + 1, &type);
+                if (0 == ctx->next_dir)
+                    r = catalog_get_next_entry(me->catalog, false, false, ctx->file, FF_LFN_BUF + 1, &type);
+                else
+                    r = catalog_get_prev_entry(me->catalog, false, false, ctx->file, FF_LFN_BUF + 1, &type);
                 if ((CAT_OK == r) && (CAT_TYPE_FILE == type))
+                {
+                    // found a file
                     break;
-                if (CAT_ERR_EOF == r)
-                    break;
+                }
+                if ((CAT_OK == r) && (CAT_TYPE_DIRECTORY == type))
+                {
+                    // found a directory
+                    continue;
+                }
+                // all other errors
+                break;
             } while (1);
             switch (r)
             {
@@ -323,42 +344,64 @@ event_t const *player_handler(app_t *me, event_t const *evt)
                     EQ_QUICK_PUSH(EVT_PLAYER_PLAY_SONG);
                     break;
                 case CAT_ERR_EOF:
-                    PL_LOGD("Player: No more file\n");
+                    PL_LOGD("Player: no more files\n");
+                    // restore catalog cursor to the last song we have played / are playing
+                    catalog_set_cursor(me->catalog, 
+                        me->catalog_history_page[me->catalog_history_index], 
+                        me->catalog_history_selection[me->catalog_history_index]);
+                    catalog_get_entry(me->catalog, 0, 0, 0);
+                    break;
+                case CAT_ERR_FATFS:
+                    if (disk_present())
+                    {
+                        PL_LOGD("Player: card error\n");
+                        EQ_QUICK_PUSH(EVT_DISK_ERROR);
+                    }
+                    else
+                    {
+                        PL_LOGD("Player: card ejected\n");
+                        EQ_QUICK_PUSH(EVT_DISK_EJECTED);
+                    }
                     break;
                 default:
+                    PL_LOGD("Player: unhandled error looking for next file. Error code %d\n", r);
+                    STATE_TRAN(me, &(me->browser));
                     break;
             }
             break;
         }
-        case EVT_PLAYER_PLAY_PREV:
+        case EVT_PLAYER_UP_CLICKED:
         {
-            uint8_t type;
-            int r;
-            do
-            {
-                // Get the previous file to play
-                r = catalog_get_prev_entry(me->catalog, false, true, ctx->file, FF_LFN_BUF + 1, &type);
-                if ((CAT_OK == r) && (CAT_TYPE_FILE == type))
-                    break;
-                if (CAT_ERR_EOF == r)
-                    break;
-            } while (1);
-            switch (r)
-            {
-                case CAT_OK:
-                    EQ_QUICK_PUSH(EVT_PLAYER_PLAY_SONG);
-                    break;
-                case CAT_ERR_EOF:
-                    PL_LOGD("Player: No more file\n");
-                    break;
-                default:
-                    break;
-            }
+            ctx->next_dir = 1;
+            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+            break;
+        }
+        case EVT_PLAYER_DOWN_CLICKED:
+        {
+            ctx->next_dir = 0;
+            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+            break;
+        }
+        case EVT_PLAYER_BACK_CLICKED:
+        {
+            STATE_TRAN(me, &(me->browser_disk));
+            break;
+        }
+        case EVT_DISK_ERROR:
+        {
+            STATE_TRAN((hsm_t*)me, &me->browser_baddisk);
+            break;
+        }
+        case EVT_DISK_EJECTED:
+        {
+            STATE_TRAN((hsm_t*)me, &me->browser_nodisk);
             break;
         }
         default:
+        {
             r = evt;
             break;
+        }
     }
     return r;
 }
@@ -396,15 +439,51 @@ event_t const *player_exp_handler(app_t *me, event_t const *evt)
         case EVT_EXIT:
         {
             PL_LOGD("Player_Exp: exit\n");
-            tick_disarm_timer_event(ctx->timer_general);
-            ctx->timer_general = 0;
+            if (ctx->timer_general)
+            {
+                tick_disarm_timer_event(ctx->timer_general);
+                ctx->timer_general = 0;
+            }
             break;
         }
         case EVT_PLAYER_GENERAL_TIMER:
         {
-            lv_msgbox_close(ctx->mbx_alert);    // will delete msg_alert internally
+            lv_msgbox_close(ctx->mbx_alert); // will also delete msg_alert internally
             ctx->mbx_alert = 0;
-            STATE_TRAN(me, &(me->browser_disk));
+            // If fail occurred at first song, fail to browser. Otherwise go to next song
+            if (ctx->first_song)
+            {
+                STATE_TRAN(me, &(me->browser_disk));
+            }
+            else
+            {
+                STATE_TRAN(me, &(me->player));
+                EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+            }
+            break;
+        }
+        case EVT_PLAYER_UP_CLICKED:
+        {
+            // quickly finish the timer
+            if (ctx->timer_general)
+            {
+                tick_disarm_timer_event(ctx->timer_general);
+                ctx->timer_general = 0;
+            }
+            EQ_QUICK_PUSH(EVT_PLAYER_GENERAL_TIMER);
+            ctx->next_dir = 1;
+            break;
+        }
+        case EVT_PLAYER_DOWN_CLICKED:
+        {
+            // quickly finish the timer
+            if (ctx->timer_general)
+            {
+                tick_disarm_timer_event(ctx->timer_general);
+                ctx->timer_general = 0;
+            }
+            EQ_QUICK_PUSH(EVT_PLAYER_GENERAL_TIMER);
+            ctx->next_dir = 0;
             break;
         }
         default:
@@ -417,64 +496,17 @@ event_t const *player_exp_handler(app_t *me, event_t const *evt)
 }
 
 
-event_t const *player_s16_handler(app_t *me, event_t const *evt)
+event_t const *player_volume_handler(app_t *me, event_t const *evt)
 {
     event_t const *r = 0;
     player_t *ctx = &(me->player_ctx);
     switch (evt->code)
     {
     case EVT_ENTRY:
-        PL_LOGD("Player_S16: entry\n");
+        PL_LOGD("Player_Volume: entry\n");
         break;
     case EVT_EXIT:
-        PL_LOGD("Player_S16: exit\n");
-        break;
-    case EVT_START:
-    {
-        PL_LOGD("Player_S16: start\n");
-        // save history
-        me->catalog_history_page[me->catalog_history_index] = me->catalog->cur_page;
-        me->catalog_history_selection[me->catalog_history_index] = me->catalog->cur_index;
-        lv_label_set_text(ctx->lbl_bottom, ctx->file);
-        break;
-    }
-    case EVT_PLAYER_PLAY_NEXT:
-    {
-        PL_LOGD("Player_S16: stop and play next song\n");
-        r = evt;    // let player_handler to handle further
-        break;
-    }
-    case EVT_PLAYER_PLAY_PREV:
-    {
-        PL_LOGD("Player_S16: stop and play previous song\n");
-        r = evt;    // let player_handler to handle further
-        break;
-    }
-    default:
-        r = evt;
-        break;
-    }
-    return r;
-}
-
-
-event_t const *player_s16_playing_handler(app_t *me, event_t const *evt)
-{
-    event_t const *r = 0;
-    player_t *ctx = &(me->player_ctx);
-    switch (evt->code)
-    {
-    case EVT_ENTRY:
-        PL_LOGD("Player_S16_Playing: entry\n");
-        break;
-    case EVT_EXIT:
-        PL_LOGD("Player_S16_Playing: exit\n");
-        break;
-    case EVT_START:
-        PL_LOGD("Player_S16_Playing: start\n");
-        break;
-    case EVT_PLAYER_SONG_ENDED:
-        STATE_TRAN(me, &(me->browser_disk));
+        PL_LOGD("Player_Volume: exit\n");
         break;
     default:
         r = evt;
@@ -484,24 +516,20 @@ event_t const *player_s16_playing_handler(app_t *me, event_t const *evt)
 }
 
 
-event_t const *player_s16_paused_handler(app_t *me, event_t const *evt)
+event_t const *player_visual_handler(app_t *me, event_t const *evt)
 {
     event_t const *r = 0;
     player_t *ctx = &(me->player_ctx);
     switch (evt->code)
     {
     case EVT_ENTRY:
-        PL_LOGD("Player_S16_Paused: entry\n");
+        PL_LOGD("Player_Visual: entry\n");
         break;
     case EVT_EXIT:
-        PL_LOGD("Player_S16_Paused: exit\n");
+        PL_LOGD("Player_Visual: exit\n");
         break;
     case EVT_START:
-        PL_LOGD("Player_S16_Paused: start\n");
-        break;
-    case EVT_PLAYER_PLAY_CLICKED:
-        audio_unpause_playback();
-        STATE_TRAN(me, &(me->player_s16_playing));
+        PL_LOGD("Player_Visual: start\n");
         break;
     default:
         r = evt;
@@ -509,3 +537,4 @@ event_t const *player_s16_paused_handler(app_t *me, event_t const *evt)
     }
     return r;
 }
+

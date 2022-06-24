@@ -584,21 +584,11 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         }
         case EVT_DISK_ERROR:
         {
-            catalog_close(me->catalog);
-            me->catalog = 0;
-            me->catalog_history_page[0] = 0;
-            me->catalog_history_selection[0] = 0;
-            me->catalog_history_index = 0;
             STATE_TRAN((hsm_t*)me, &me->browser_baddisk);
             break;
         }
         case EVT_DISK_EJECTED:
         {
-            catalog_close(me->catalog);
-            me->catalog = 0;
-            me->catalog_history_page[0] = 0;
-            me->catalog_history_selection[0] = 0;
-            me->catalog_history_index = 0;
             STATE_TRAN((hsm_t*)me, &me->browser_nodisk);
             break;
         }
@@ -628,6 +618,11 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             BR_LOGD("Browser_Nodisk: entry\n");
             lv_label_set_text(me->browser_ctx.lbl_bottom, "No card");
             lv_obj_clean(me->browser_ctx.lst_files);
+            catalog_close(me->catalog);
+            me->catalog = 0;
+            me->catalog_history_page[0] = 0;
+            me->catalog_history_selection[0] = 0;
+            me->catalog_history_index = 0;
             break;
         }
         case EVT_EXIT:
@@ -669,6 +664,11 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
             BR_LOGD("Browser_Baddisk: entry\n");
             lv_label_set_text(me->browser_ctx.lbl_bottom, "Card error");
             lv_obj_clean(me->browser_ctx.lst_files);
+            catalog_close(me->catalog);
+            me->catalog = 0;
+            me->catalog_history_page[0] = 0;
+            me->catalog_history_selection[0] = 0;
+            me->catalog_history_index = 0;
             break;
         }
         case EVT_EXIT:

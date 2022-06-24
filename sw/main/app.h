@@ -40,19 +40,19 @@ typedef struct player_s
     lv_obj_t* lbl_top;      // Top indicators
     lv_obj_t* lbl_bottom;   // Bottom indicators
     lv_obj_t* mbx_alert;    // Alert message
-    int timer_ui_update;    // UI update timer
-    int timer_general;      // General purpose timer
     int exception;
-    char file[FF_LFN_BUF + 1]; // file to play
+    int timer_ui_update;    // UI update timer
+    char file[FF_LFN_BUF + 1];
+    bool first_song;        // Playing first song?
+    int next_dir;           // direction when search next song, 0 = next, 1 = previous
+    int timer_general;      // General purpose timer
     decoder_t* decoder;
 } player_t;
 
 event_t const *player_handler(app_t *me, event_t const *evt);
 event_t const *player_exp_handler(app_t *me, event_t const *evt);
-event_t const *player_s16_handler(app_t *me, event_t const *evt);
-event_t const *player_s16_playing_handler(app_t *me, event_t const *evt);
-event_t const *player_s16_paused_handler(app_t *me, event_t const *evt);
-
+event_t const *player_volume_handler(app_t *me, event_t const *evt);
+event_t const *player_visual_handler(app_t *me, event_t const *evt);
 
 // Application level state machine
 struct app_s
@@ -60,7 +60,7 @@ struct app_s
     hsm_t super;
     state_t browser, browser_disk, browser_nodisk, browser_baddisk;
     browser_t browser_ctx;
-    state_t player, player_exp, player_s16, player_s16_playing, player_s16_paused;
+    state_t player, player_exp, player_volume, player_visual;
     player_t player_ctx;
     // data shared by all states
     catalog_t *catalog;

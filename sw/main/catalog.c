@@ -658,7 +658,15 @@ int catalog_set_cursor(catalog_t *cat, int page, int index)
         {
             if (0 == f_gets(cat->cache, FF_LFN_BUF + 3, &(cat->fd)))
             {
-                r = CAT_ERR_EOF;
+                if (f_eof(&(cat->fd)))
+                {
+                    r = CAT_ERR_EOF;
+                }
+                else
+                {
+                    _fr = f_error(&(cat->fd));
+                    r = CAT_ERR_FATFS;
+                }
                 break;
             }
             cat->cache[0] = '\0';
@@ -686,7 +694,13 @@ int catalog_get_entry(catalog_t *cat, char *out, int len, uint8_t *type)
         {
             if (0 == f_gets(cat->cache, FF_LFN_BUF + 3, &(cat->fd)))
             {
-                r = CAT_ERR_EOF;
+                if (f_eof(&(cat->fd)))
+                    r = CAT_ERR_EOF;
+                else
+                {
+                    _fr = f_error(&(cat->fd));
+                    r = CAT_ERR_FATFS;
+                }
                 break;
             }
             path_trim_back(cat->cache);
@@ -694,12 +708,12 @@ int catalog_get_entry(catalog_t *cat, char *out, int len, uint8_t *type)
         if ('!' == cat->cache[0])
         {
             if (out != 0) path_copy(&(cat->cache[1]), out, len);
-            *type = CAT_TYPE_DIRECTORY;
+            if (type != 0) *type = CAT_TYPE_DIRECTORY;
         }
         else
         {
             if (out != 0) path_copy(cat->cache, out, len);
-            *type = CAT_TYPE_FILE;
+            if (type != 0) *type = CAT_TYPE_FILE;
         }
     } while (0);
     return r;
