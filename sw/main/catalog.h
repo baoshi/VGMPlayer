@@ -45,7 +45,7 @@ int catalog_open_dir(const char *path, const char * const pats[], int page_size,
 
 int catalog_close(catalog_t *cat);
 
-int catalog_set_cursor(catalog_t *cat, int page, int index);
+int catalog_move_cursor(catalog_t *cat, int page, int index);
 
 int catalog_get_entry(catalog_t *cat, char *out, int len, uint8_t *type);
 

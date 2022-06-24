@@ -346,7 +346,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
                 case CAT_ERR_EOF:
                     PL_LOGD("Player: no more files\n");
                     // restore catalog cursor to the last song we have played / are playing
-                    catalog_set_cursor(me->catalog, 
+                    catalog_move_cursor(me->catalog, 
                         me->catalog_history_page[me->catalog_history_index], 
                         me->catalog_history_selection[me->catalog_history_index]);
                     catalog_get_entry(me->catalog, 0, 0, 0);

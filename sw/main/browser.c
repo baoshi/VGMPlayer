@@ -121,7 +121,7 @@ static void populate_file_list(app_t *me, int mode)
         lv_obj_add_event_cb(btn, list_button_handler, LV_EVENT_ALL, (void*)ctx);
     }
 
-    catalog_set_cursor(me->catalog, page, 0);
+    catalog_move_cursor(me->catalog, page, 0);
     uint8_t type;
     char name[FF_LFN_BUF + 3];
     while (CAT_OK == catalog_get_next_entry(me->catalog, true, false, name + 1, FF_LFN_BUF + 1, &type))
@@ -491,7 +491,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     me->catalog_history_selection[me->catalog_history_index] = entry_index;
                     // Move catalog cursor to current selection and hand over to player
                     BR_LOGD("Browser_Disk: play entry %d in page %d\n", entry_index, me->catalog->cur_page);
-                    catalog_set_cursor(me->catalog, me->catalog->cur_page, entry_index);
+                    catalog_move_cursor(me->catalog, me->catalog->cur_page, entry_index);
                     STATE_TRAN((hsm_t*)me, &me->player);
                     break;
                 }

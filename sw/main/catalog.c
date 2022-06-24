@@ -399,10 +399,10 @@ static int _merge_catalog_chunks(catalog_t* cat, int chunk_count)
         // reopen catalog file
         f_close(&(cat->fd));
         f_open(&(cat->fd), cat_name, FA_OPEN_EXISTING | FA_READ);
-        // set cur_page and cur_index to invalid values so catalog_set_cursor will move to new page
+        // set cur_page and cur_index to invalid values so catalog_move_cursor will move to new page
         cat->cur_page = -1;
         cat->cur_index = -1;
-        r = catalog_set_cursor(cat, 0, 0);
+        r = catalog_move_cursor(cat, 0, 0);
     } while (0);
 
     if (r != CAT_OK)
@@ -492,7 +492,11 @@ static int _open_catalog(catalog_t *cat, bool safe_mode)
         if (safe_mode)
         {
             // 1st line is checksum
-            f_gets(temp, 16, &(cat->fd));
+            if (0 == f_gets(temp, 16, &(cat->fd)))
+            {
+                r = CAT_ERR_MISMATCH;
+                break;
+            }
             val = atoi(temp);
             if (cat->checksum != val)
             {
@@ -500,7 +504,11 @@ static int _open_catalog(catalog_t *cat, bool safe_mode)
                 break;
             }
             // 2nd line is entry count
-            f_gets(temp, 16, &(cat->fd));
+            if (0 == f_gets(temp, 16, &(cat->fd)))
+            {
+                r = CAT_ERR_MISMATCH;
+                break;
+            }
             val = atoi(temp);
             if (cat->count != val)
             {
@@ -510,12 +518,21 @@ static int _open_catalog(catalog_t *cat, bool safe_mode)
         }
         else
         {
+            // unsafe mode, assume everything read from file are correct, unless cannot read
             // 1st line is checksum
-            f_gets(temp, 16, &(cat->fd));
+            if (0 == f_gets(temp, 16, &(cat->fd)))
+            {
+                r = CAT_ERR_MISMATCH;
+                break;
+            }
             val = atoi(temp);
             cat->checksum = val;
             // 2nd line is entry count
-            f_gets(temp, 16, &(cat->fd));
+            if (0 == f_gets(temp, 16, &(cat->fd)))
+            {
+                r = CAT_ERR_MISMATCH;
+                break;
+            }
             val = atoi(temp);
             cat->count = val;
         }
@@ -531,28 +548,39 @@ static int _open_catalog(catalog_t *cat, bool safe_mode)
                     break;
                 ++page;
             }
-            if (f_gets(cat_file, FF_LFN_BUF + 1, &(cat->fd)))  // reuse cat as buffer
+            if (f_gets(cat_file, FF_LFN_BUF + 1, &(cat->fd)))  // reuse cat_file as buffer
             {
                 ++index;
             }
             else
             {
-                // if we just added a new page, remove it because it is empty
-                if (0 == (index % cat->page_size))
+                if (f_eof(&(cat->fd)))
                 {
-                    cat->page_offset[page] = 0;
-                    --page;
+                    // f_gets returns 0 because of EOF
+                    // if we just added a new page, remove it because it is empty
+                    if (0 == (index % cat->page_size))
+                    {
+                        cat->page_offset[page] = 0;
+                        --page;
+                    }
+                }
+                else
+                {
+                    // f_gets returns 0 because of file system error
+                    _fr = f_error(&(cat->fd));
+                    r = CAT_ERR_FATFS;
                 }
                 break;
             }
         }
+        if (r != CAT_OK) break; // probably CAT_ERR_FATFS
         // other structure members
         cat->pages = page;
         cat->count = index;
-        // set cur_page and cur_index to invalid values so catalog_set_cursor will move to new page
+        // set cur_page and cur_index to invalid values so catalog_move_cursor will move to new page
         cat->cur_page = -1;
         cat->cur_index = -1;
-        r = catalog_set_cursor(cat, 0, 0);
+        r = catalog_move_cursor(cat, 0, 0);
     } while (0);
     
     return r;
@@ -628,7 +656,7 @@ int catalog_close(catalog_t *cat)
 
 // move catalog cursor to the specific page and index.
 // the following catalog_get_entry will retrieve the entry.
-int catalog_set_cursor(catalog_t *cat, int page, int index)
+int catalog_move_cursor(catalog_t *cat, int page, int index)
 {
     int r = CAT_OK;
     do
@@ -695,7 +723,9 @@ int catalog_get_entry(catalog_t *cat, char *out, int len, uint8_t *type)
             if (0 == f_gets(cat->cache, FF_LFN_BUF + 3, &(cat->fd)))
             {
                 if (f_eof(&(cat->fd)))
+                {
                     r = CAT_ERR_EOF;
+                }
                 else
                 {
                     _fr = f_error(&(cat->fd));
@@ -732,7 +762,7 @@ int catalog_get_next_entry(catalog_t *cat, bool in_page, bool wrap, char *out, i
     {
         if ('\0' == cat->cache[0])
         {
-            // cache is empty if we just opened catalog. cursor is at the beginning, next entry is the first entry
+            // cache is empty if we just opened catalog or moved cursor. it is not necessary to move cursor again
             break;
         }
         else
@@ -751,7 +781,7 @@ int catalog_get_next_entry(catalog_t *cat, bool in_page, bool wrap, char *out, i
                 else
                 {
                     // wrap to beginning
-                    r = catalog_set_cursor(cat, 0, 0);
+                    r = catalog_move_cursor(cat, 0, 0);
                     break;
                 }
             }
@@ -766,14 +796,14 @@ int catalog_get_next_entry(catalog_t *cat, bool in_page, bool wrap, char *out, i
                 else
                 {
                     // advance to next page
-                    r = catalog_set_cursor(cat, p + 1, 0);
+                    r = catalog_move_cursor(cat, p + 1, 0);
                     break;
                 }
             }
             else
             {
                 // no page adjustment, advance index
-                r = catalog_set_cursor(cat, p, i + 1);
+                r = catalog_move_cursor(cat, p, i + 1);
                 break;
             }
         }
@@ -822,7 +852,7 @@ int catalog_get_prev_entry(catalog_t *cat, bool in_page, bool wrap, char *out, i
                         // go to last page, last entry, fetch cache
                         p = cat->pages - 1;
                         i = (cat->count - 1) % cat->page_size;
-                        r = catalog_set_cursor(cat, p, i);
+                        r = catalog_move_cursor(cat, p, i);
                         break;
                     }
                 }
@@ -831,7 +861,7 @@ int catalog_get_prev_entry(catalog_t *cat, bool in_page, bool wrap, char *out, i
                     // go to the last entry of previous page
                     --p;
                     i = cat->page_size - 1;  // previous page will always be a full page, no need to check i
-                    r = catalog_set_cursor(cat, p, i);
+                    r = catalog_move_cursor(cat, p, i);
                     break;
                 }
             }
@@ -839,7 +869,7 @@ int catalog_get_prev_entry(catalog_t *cat, bool in_page, bool wrap, char *out, i
         else
         {
             // no page adjustment, just move index
-            r = catalog_set_cursor(cat, p, i - 1);
+            r = catalog_move_cursor(cat, p, i - 1);
             break;
         }
     } while (0);
