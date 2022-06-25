@@ -155,7 +155,7 @@ static void button_mode_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        EQ_QUICK_PUSH(EVT_PLAYER_MODE_CLICKED);
+        EQ_QUICK_PUSH(EVT_PLAYER_SETTING_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -187,8 +187,8 @@ static void create_screen(player_t* ctx)
     // Self-destruction callback
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void*)ctx);
     // All buttons used as "Button" device
-    lvi_clear_keypad_group();
     lvi_disable_keypad();
+    lv_group_remove_all_objs(lvi_keypad_group);
     lvi_disable_button();
     lvi_pos_button(LVI_BUTTON_PLAY, 0, 0);
     lvi_pos_button(LVI_BUTTON_NW, 1, 0);

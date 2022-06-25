@@ -44,8 +44,11 @@ void app_ctor(app_t* me)
     hsm_ctor((hsm_t*)me, "app", (event_handler_t)app_top);
     state_ctor(&(me->browser), "browser", &((hsm_t*)me)->top, (event_handler_t)browser_handler);
         state_ctor(&(me->browser_disk), "browser_disk", &(me->browser), (event_handler_t)browser_disk_handler);
+            state_ctor(&(me->browser_disk_brightness), "browser_disk_brightness", &(me->browser_disk), (event_handler_t)browser_disk_brightness_handler);
         state_ctor(&(me->browser_nodisk), "browser_nodisk", &(me->browser), (event_handler_t)browser_nodisk_handler);
+            state_ctor(&(me->browser_nodisk_brightness), "browser_nodisk_brightness", &(me->browser_nodisk), (event_handler_t)browser_nodisk_brightness_handler);
         state_ctor(&(me->browser_baddisk), "browser_baddisk", &(me->browser), (event_handler_t)browser_baddisk_handler);
+            state_ctor(&(me->browser_baddisk_brightness), "browser_baddisk_brightness", &(me->browser_baddisk), (event_handler_t)browser_baddisk_brightness_handler);
     state_ctor(&(me->player), "player", &((hsm_t*)me)->top, (event_handler_t)player_handler);
         state_ctor(&(me->player_exp), "player_exp", &(me->player), (event_handler_t)player_exp_handler);
         state_ctor(&(me->player_volume), "player_volume", &(me->player), (event_handler_t)player_volume_handler);

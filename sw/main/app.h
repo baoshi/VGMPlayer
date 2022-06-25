@@ -21,14 +21,18 @@ typedef struct browser_s
     lv_obj_t *lbl_top;      // Top indicators
     lv_obj_t *lbl_bottom;   // Bottom label
     lv_obj_t *lst_files;    // List of files
+    lv_obj_t *focused;      // focused file in the list
+    lv_obj_t *bar_brignthess;
     int alarm_ui_update;
-    bool skip_first_click;
 } browser_t;
 
 event_t const *browser_handler(app_t *me, event_t const *evt);
 event_t const *browser_disk_handler(app_t *me, event_t const *evt);
+event_t const *browser_disk_brightness_handler(app_t *me, event_t const *evt);
 event_t const *browser_nodisk_handler(app_t *me, event_t const *evt);
+event_t const *browser_nodisk_brightness_handler(app_t *me, event_t const *evt);
 event_t const *browser_baddisk_handler(app_t *me, event_t const *evt);
+event_t const *browser_baddisk_brightness_handler(app_t *me, event_t const *evt);
 
 
 //
@@ -58,7 +62,7 @@ event_t const *player_visual_handler(app_t *me, event_t const *evt);
 struct app_s
 {
     hsm_t super;
-    state_t browser, browser_disk, browser_nodisk, browser_baddisk;
+    state_t browser, browser_disk, browser_disk_brightness, browser_nodisk, browser_nodisk_brightness, browser_baddisk, browser_baddisk_brightness;
     browser_t browser_ctx;
     state_t player, player_exp, player_volume, player_visual;
     player_t player_ctx;

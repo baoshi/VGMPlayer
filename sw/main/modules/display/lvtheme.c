@@ -1,4 +1,6 @@
+#include "lvsupp.h"
 #include "lvtheme.h"
+
 
 /*********************
  *      DEFINES
@@ -35,7 +37,7 @@ typedef struct
     lv_style_t dim;
     lv_style_t scrollbar;
     lv_style_t listbox, list_btn, list_btn_focused, list_btn_pressed;
-    lv_style_t msgbox;
+    lv_style_t popup;
 } theme_styles_t;
 
 
@@ -106,17 +108,17 @@ static void style_init(void)
     lv_style_set_bg_color(&styles.list_btn_pressed, COLOR_BUTTON_FACE_ACTIVE);
     lv_style_set_text_color(&styles.list_btn_pressed, COLOR_BUTTON_TEXT_ACTIVE);
 
-    // Message Box
-    style_init_reset(&styles.msgbox);
-    lv_style_set_radius(&styles.msgbox, RADIUS_DEFAULT);        // Round rectangle
-    lv_style_set_bg_opa(&styles.msgbox, LV_OPA_COVER);          // Same opqaue background as screen
-    lv_style_set_bg_color(&styles.msgbox, COLOR_BACKGROUND);    // Colors
-    lv_style_set_text_color(&styles.msgbox, COLOR_TEXT);
-    lv_style_set_border_color(&styles.msgbox, COLOR_BORDER);    // 2 pixel border
-    lv_style_set_border_width(&styles.msgbox, 2);
-    lv_style_set_border_post(&styles.msgbox, true);             // border shall draw after children
-    lv_style_set_pad_all(&styles.msgbox, 10);                   // Leave some space from border
-    lv_style_set_clip_corner(&styles.msgbox, true);             // clip the overflowed content on the rounded corner
+    // Popup Box
+    style_init_reset(&styles.popup);
+    lv_style_set_radius(&styles.popup, RADIUS_DEFAULT);        // Round rectangle
+    lv_style_set_bg_opa(&styles.popup, LV_OPA_COVER);          // Same opqaue background as screen
+    lv_style_set_bg_color(&styles.popup, COLOR_BACKGROUND);    // Colors
+    lv_style_set_text_color(&styles.popup, COLOR_TEXT);
+    lv_style_set_border_color(&styles.popup, COLOR_BORDER);    // 2 pixel border
+    lv_style_set_border_width(&styles.popup, 2);
+    lv_style_set_border_post(&styles.popup, true);             // border shall draw after children
+    lv_style_set_pad_all(&styles.popup, 10);                   // Leave some space from border
+    lv_style_set_clip_corner(&styles.popup, true);             // clip the overflowed content on the rounded corner
 
     style_init_reset(&styles.white);
     lv_style_set_bg_opa(&styles.white, LV_OPA_COVER);
@@ -125,7 +127,6 @@ static void style_init(void)
     lv_style_set_line_color(&styles.white, COLOR_WHITE);
     lv_style_set_arc_width(&styles.white, 2);
     lv_style_set_arc_color(&styles.white, COLOR_WHITE);
-
 
     style_init_reset(&styles.light);
     lv_style_set_bg_opa(&styles.light, LV_OPA_COVER);
@@ -201,9 +202,13 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
     // Message box
     else if (lv_obj_check_type(obj, &lv_msgbox_class)) 
     {
-        lv_obj_add_style(obj, &styles.msgbox, 0);
+        lv_obj_add_style(obj, &styles.popup, 0);
     }
-
+    // Bar box
+    else if (lv_obj_check_type(obj, &lv_barbox_class)) 
+    {
+        lv_obj_add_style(obj, &styles.popup, 0);
+    }
 #if LV_USE_BAR
     else if(lv_obj_check_type(obj, &lv_bar_class)) {
         lv_obj_add_style(obj, &styles.light, 0);

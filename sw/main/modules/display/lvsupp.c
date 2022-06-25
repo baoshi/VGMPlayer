@@ -42,3 +42,40 @@ void lv_list_btn_set_label_long_mode(lv_obj_t * btn, lv_label_long_mode_t mode)
         }
     }
 }
+
+
+const lv_obj_class_t lv_barbox_class = 
+{
+    .base_class = &lv_obj_class,
+    .width_def = 200,
+    .height_def = LV_SIZE_CONTENT,
+    .instance_size = sizeof(lv_barbox_t)
+};
+
+
+lv_obj_t *lv_barbox_create(lv_obj_t *parent, int32_t min, int32_t max, int32_t value)
+{
+    lv_obj_t *obj = lv_obj_class_create_obj(&lv_barbox_class, parent);
+    LV_ASSERT_MALLOC(obj);
+    if (obj == NULL) return NULL;
+    lv_obj_class_init_obj(obj);
+    lv_barbox_t *bbox = (lv_barbox_t *)obj;
+    bbox->bar = lv_bar_create(obj);
+    lv_bar_set_range(bbox->bar, min, max);
+    lv_bar_set_value(bbox->bar, value, false);
+    lv_obj_set_width(bbox->bar, lv_pct(100));
+    lv_obj_center(obj);
+    return obj;
+}
+
+
+void lv_barbox_close(lv_obj_t *bbox)
+{
+    lv_obj_del(bbox);
+}
+
+
+void lv_barbox_close_async(lv_obj_t *bbox)
+{
+    lv_obj_del_async(bbox);
+}

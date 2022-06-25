@@ -196,8 +196,3 @@ void lvi_disable_keypad()
     _keypad_mapping[4] = 0;
 }
 
-
-void lvi_clear_keypad_group()
-{
-    lv_group_remove_all_objs(lvi_keypad_group);
-}
