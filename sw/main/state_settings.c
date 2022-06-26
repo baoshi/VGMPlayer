@@ -11,7 +11,7 @@
 
 
 // State "settings"
-// State "settings" contains 2 sub-states: "settings-brightness", "settings-volume"
+// State "settings" contains 2 sub-states: "settings-volume", "settings-brightness", 
 // State "settings" is not initialzed at program start. Caller use settings_create() to append it to the current state
 // State "settings" does not transit to other states except for when exit, it transit to the creator's state and emit EVT_SETTING_CLOSED event
 
@@ -55,6 +55,7 @@ static void settings_exit(app_t *me)
 {
     // Transit to the creator's state
     settings_t *ctx = &(me->settings_ctx);
+    ST_LOGD("Settings: exit, transit to %s state\n", ctx->creator->name);
     STATE_TRAN_DYNAMIC(me, ctx->creator);
     EQ_QUICK_PUSH(EVT_SETTING_CLOSED);
 }
@@ -83,6 +84,68 @@ event_t const *settings_handler(app_t *me, event_t const *evt)
         {
             ST_LOGD("Settings: start\n");
             STATE_START(me, &(me->settings_volume));
+            break;
+        }
+        case EVT_BACK_CLICKED:
+        {
+            settings_exit(me);
+            break;
+        }
+        default:
+        {
+            r = evt;
+            break;
+        }
+    }
+    return r;
+}
+
+
+
+static void volume_event_handler(lv_event_t* e)
+{
+    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
+    int32_t c = *((int32_t *)lv_event_get_param(e));
+    switch (c)
+    {
+        case 'U':
+            ST_LOGD("Settings_Volume: Up\n");
+            break;
+        case 'D':
+            ST_LOGD("Settings_Volume: Down\n");
+            break;
+        default:
+            ST_LOGD("Settings_Volume: (%d)\n", c);
+            break;
+    }
+}
+
+
+event_t const *settings_volume_handler(app_t *me, event_t const *evt)
+{
+    event_t const *r = 0;
+    settings_t *ctx = &(me->settings_ctx);
+    switch (evt->code)
+    {
+        case EVT_ENTRY:
+        {
+            ST_LOGD("Settings_Volume: entry\n");
+            ctx->popup = lv_barbox_create(lv_scr_act(), 0, 100, 20);
+            lv_obj_add_event_cb(ctx->popup, volume_event_handler, LV_EVENT_KEY, (void*)ctx);
+            lv_group_remove_all_objs(lvi_keypad_group);
+            lv_group_add_obj(lvi_keypad_group, ctx->popup);
+            break;
+        }
+        case EVT_EXIT:
+        {
+            ST_LOGD("Settings_Volume: exit\n");
+            lv_barbox_close(ctx->popup);
+            ctx->popup = 0;
+            break;
+        }
+        case EVT_SETTING_CLICKED:
+        {
+            STATE_TRAN(me, &(me->settings_brightness));
             break;
         }
         default:
@@ -138,12 +201,7 @@ event_t const *settings_brightness_handler(app_t *me, event_t const *evt)
         }
         case EVT_SETTING_CLICKED:
         {
-            STATE_TRAN(me, &(me->settings_volume));
-            break;
-        }
-        case EVT_BACK_CLICKED:
-        {
-            settings_exit(me);
+            EQ_QUICK_PUSH(EVT_BACK_CLICKED);    // this exit settings
             break;
         }
         default:
@@ -154,66 +212,5 @@ event_t const *settings_brightness_handler(app_t *me, event_t const *evt)
     }
     return r;
 
-}
-
-
-static void volume_event_handler(lv_event_t* e)
-{
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
-    int32_t c = *((int32_t *)lv_event_get_param(e));
-    switch (c)
-    {
-        case 'U':
-            ST_LOGD("Settings_Volume: Up\n");
-            break;
-        case 'D':
-            ST_LOGD("Settings_Volume: Down\n");
-            break;
-        default:
-            ST_LOGD("Settings_Volume: (%d)\n", c);
-            break;
-    }
-}
-
-
-event_t const *settings_volume_handler(app_t *me, event_t const *evt)
-{
-    event_t const *r = 0;
-    settings_t *ctx = &(me->settings_ctx);
-    switch (evt->code)
-    {
-        case EVT_ENTRY:
-        {
-            ST_LOGD("Settings_Volume: entry\n");
-            ctx->popup = lv_barbox_create(lv_scr_act(), 0, 100, 20);
-            lv_obj_add_event_cb(ctx->popup, volume_event_handler, LV_EVENT_KEY, (void*)ctx);
-            lv_group_remove_all_objs(lvi_keypad_group);
-            lv_group_add_obj(lvi_keypad_group, ctx->popup);
-            break;
-        }
-        case EVT_EXIT:
-        {
-            ST_LOGD("Settings_Volume: exit\n");
-            lv_barbox_close(ctx->popup);
-            ctx->popup = 0;
-            break;
-        }
-        case EVT_SETTING_CLICKED:
-        {
-            STATE_TRAN(me, &(me->settings_brightness));
-            break;
-        }
-        case EVT_BACK_CLICKED:
-        {
-            settings_exit(me);
-            break;
-        }
-        default:
-        {
-            r = evt;
-            break;
-        }
-    }
-    return r;
 }
 

@@ -318,6 +318,20 @@ static void create_screen(browser_t* ctx)
 
 event_t const *browser_handler(app_t *me, event_t const *evt)
 {
+    /* Events
+        EVT_ENTRY:
+            Create screen, arm UI update timer
+        EVT_EXIT:
+            Disarm UI update timer
+        EVT_START:
+            Start browser_nodisk
+        EVT_SETTING_CLICKED:
+            Create settings state and transit to it
+        EVT_SETTING_CLOSED:
+            No action
+        EVT_BROWSER_UI_UPDATE:
+            Update top bar
+    */
     event_t const *r = 0;
     browser_t *ctx = &(me->browser_ctx);
     switch (evt->code)
@@ -329,16 +343,26 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
             me->browser_ctx.alarm_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
             break;
         }
+        case EVT_EXIT:
+        {
+            BR_LOGD("Browser: exit\n");
+            tick_disarm_timer_event(me->browser_ctx.alarm_ui_update);
+            ctx->alarm_ui_update = 0;
+            break;
+        }
         case EVT_START:
         {
             STATE_START(me, &me->browser_nodisk);   // default to nodisk state and wait card insertion
             break;
         }
-        case EVT_EXIT:
+        case EVT_SETTING_CLICKED:
         {
-            BR_LOGD("Browser: exit\n");
-            tick_disarm_timer_event(me->browser_ctx.alarm_ui_update);
-            ctx->alarm_ui_update = -1;
+            settings_create(me);
+            STATE_TRAN_DYNAMIC((hsm_t*)me, &me->settings);
+            break;
+        }
+        case EVT_SETTING_CLOSED:
+        {
             break;
         }
         case EVT_BROWSER_UI_UPDATE:
@@ -618,8 +642,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     break;
                 }
             }
-            settings_create(me);
-            STATE_TRAN_DYNAMIC((hsm_t*)me, &me->settings);
+            r = evt;    // leave browser state to process further
             break;
         }
         case EVT_SETTING_CLOSED:
@@ -640,6 +663,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             {
                 lv_group_focus_obj(ctx->focused);
             }
+            r = evt;    // leave browser state to process further
             break;
         }
         case EVT_DISK_ERROR:
@@ -668,10 +692,6 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             Disable keypad
         EVT_EXIT:
             No action
-        EVT_SETTING_CLICKED:
-            Create settings state and transit to it
-        EVT_SETTING_CLOSED:
-            No action
         EVT_DISK_INSERTED:
             Transit to browser_disk state
     */
@@ -698,17 +718,6 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             BR_LOGD("Browser_Nodisk: exit\n");
             break;
         }
-        case EVT_SETTING_CLICKED:
-        {
-            ctx->focused = 0;
-            settings_create(me);
-            STATE_TRAN_DYNAMIC((hsm_t*)me, &me->settings);
-            break;
-        }
-        case EVT_SETTING_CLOSED:
-        {
-            break;
-        }
         case EVT_DISK_INSERTED:
         {
             // when cur_dir is null browser_disk will start browser from root
@@ -732,10 +741,6 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
             Clear file list
             Disable keypad
         EVT_EXIT:
-            No action
-        EVT_SETTING_CLICKED:
-            Create settings state and transit to it
-        EVT_SETTING_CLOSED:
             No action
         EVT_DISK_EJECTED:
             Transit to browser_nodisk state
@@ -761,17 +766,6 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
         case EVT_EXIT:
         {
             BR_LOGD("Browser_Baddisk: exit\n");
-            break;
-        }
-        case EVT_SETTING_CLICKED:
-        {
-            ctx->focused = 0;
-            settings_create(me);
-            STATE_TRAN_DYNAMIC((hsm_t*)me, &me->settings);
-            break;
-        }
-        case EVT_SETTING_CLOSED:
-        {
             break;
         }
         case EVT_DISK_EJECTED:

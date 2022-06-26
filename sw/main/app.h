@@ -81,7 +81,7 @@ struct app_s
     browser_t browser_ctx;
     state_t player, player_exp, player_volume, player_visual;
     player_t player_ctx;
-    state_t settings, settings_brightness, settings_volume;
+    state_t settings, settings_volume, settings_brightness;
     settings_t settings_ctx;
     // data shared by all states
     catalog_t *catalog;

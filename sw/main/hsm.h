@@ -45,7 +45,6 @@ struct hsm_s
     char const *name;             /* state machine name */
     state_t *curr;                /* current state */
     state_t *next;                /* next state */
-    state_t *source;              /* source state during last transition */
     state_t top;                  /* top-level state object */
 };
 

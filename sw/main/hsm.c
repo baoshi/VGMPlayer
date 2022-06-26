@@ -56,7 +56,6 @@ void hsm_on_event(hsm_t* me, event_t const* evt)
     register state_t* s;
     for (s = me->curr; s; s = s->super)     /* travel upwards */
     {
-        me->source = s;                     /* level of outermost event handler */
         evt = HANDLE_EVENT(s, me, evt);
         if (evt == 0)                       /* HANDLE_EVENT returns 0 if event is processed */
         {
@@ -101,11 +100,11 @@ uint8_t hsm_to_lca_(hsm_t* me, state_t* target)
 {
     state_t *s, *t;
     uint8_t levels = 0;
-    if (me->source == target) 
+    if (me->curr == target) 
     {
         return 1;
     }
-    for (s = me->source; s; ++levels, s = s->super) 
+    for (s = me->curr; s; ++levels, s = s->super) 
     {
         for (t = target; t; t = t->super) 
         {
@@ -122,16 +121,10 @@ uint8_t hsm_to_lca_(hsm_t* me, state_t* target)
 /* exit current states and all superstates up to LCA */
 void hsm_exit_(hsm_t* me, uint8_t levels) 
 {
-    register state_t* s = me->curr;
-    while (s != me->source) 
+    register state_t* s;
+    for (s = me->curr; levels > 0; --levels, s = s->super)
     {
         HANDLE_EVENT(s, me, &evt_exit);
-        s = s->super;
-    }
-    while (levels--) 
-    {
-        HANDLE_EVENT(s, me, &evt_exit);
-        s = s->super;
     }
     me->curr = s;
 }

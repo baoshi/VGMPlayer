@@ -54,8 +54,9 @@ void app_ctor(app_t* me)
         state_ctor(&(me->player_volume), "player_volume", &(me->player), (event_handler_t)player_volume_handler);
         state_ctor(&(me->player_visual), "player_visual", &(me->player), (event_handler_t)player_visual_handler);
     // settings_xxx is substates of settings. settings state will be dynamically attached using settings_popup() call
-    state_ctor(&(me->settings_brightness), "settings_brightness", &(me->settings), (event_handler_t)settings_brightness_handler);
     state_ctor(&(me->settings_volume), "settings_volume", &(me->settings), (event_handler_t)settings_volume_handler);
+    state_ctor(&(me->settings_brightness), "settings_brightness", &(me->settings), (event_handler_t)settings_brightness_handler);
+    
 }
 
 
