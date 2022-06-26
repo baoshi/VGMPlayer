@@ -18,7 +18,6 @@
 
 #define UI_UPDATE_INTERVAL_MS   200
 
-
 #ifndef PLAYER_DEBUG
 # define PLAYER_DEBUG 1
 #endif
@@ -100,83 +99,10 @@ static void screen_event_handler(lv_event_t* e)
 }
 
 
-static void button_play_handler(lv_event_t* e)
+static void button_clicked_handler(lv_event_t *e)
 {
-    player_t* ctx = (player_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t* btn = lv_event_get_target(e);
-    if (code == LV_EVENT_CLICKED) 
-    {
-        PL_LOGD("Play button pressed\n");
-    }
-    else if (code == LV_EVENT_LONG_PRESSED) 
-    {
-        PL_LOGD("Play button long pressed\n");
-    }
-}
-
-
-static void button_up_handler(lv_event_t* e)
-{
-    player_t* ctx = (player_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t* btn = lv_event_get_target(e);
-    if (code == LV_EVENT_CLICKED) 
-    {
-        EQ_QUICK_PUSH(EVT_PLAYER_UP_CLICKED);
-    }
-    else if (code == LV_EVENT_LONG_PRESSED) 
-    {
-        PL_LOGD("Up button long pressed\n");
-    }
-}
-
-
-static void button_down_handler(lv_event_t* e)
-{
-    player_t* ctx = (player_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t* btn = lv_event_get_target(e);
-    if (code == LV_EVENT_CLICKED) 
-    {
-        EQ_QUICK_PUSH(EVT_PLAYER_DOWN_CLICKED);
-    }
-    else if (code == LV_EVENT_LONG_PRESSED) 
-    {
-        PL_LOGD("Down button long pressed\n");
-    }
-}
-
-
-static void button_setting_handler(lv_event_t* e)
-{
-    player_t* ctx = (player_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t* btn = lv_event_get_target(e);
-    if (code == LV_EVENT_CLICKED) 
-    {
-        EQ_QUICK_PUSH(EVT_SETTING_CLICKED);
-    }
-    else if (code == LV_EVENT_LONG_PRESSED) 
-    {
-        PL_LOGD("Mode button long pressed\n");
-    }
-}
-
-
-static void button_back_handler(lv_event_t* e)
-{
-    player_t* ctx = (player_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t* btn = lv_event_get_target(e);
-    if (code == LV_EVENT_CLICKED) 
-    {
-        EQ_QUICK_PUSH(EVT_BACK_CLICKED);
-    }
-    else if (code == LV_EVENT_LONG_PRESSED) 
-    {
-        PL_LOGD("Back button long pressed\n");
-    }
+    int event_id = (int)lv_event_get_user_data(e);
+    EQ_QUICK_PUSH(event_id);
 }
 
 
@@ -204,7 +130,7 @@ static void create_screen(player_t* ctx)
     lv_obj_set_pos(btn, 0, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_play_handler, LV_EVENT_ALL, (void*)ctx);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_PLAYER_PLAY_CLICKED);
     // NW / Back
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
@@ -212,7 +138,7 @@ static void create_screen(player_t* ctx)
     lv_obj_set_pos(btn, 1, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_back_handler, LV_EVENT_ALL, (void*)ctx);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_BACK_CLICKED);
     // SW / Setting
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
@@ -220,7 +146,7 @@ static void create_screen(player_t* ctx)
     lv_obj_set_pos(btn, 2, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_setting_handler, LV_EVENT_ALL, (void*)ctx);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_SETTING_CLICKED);
     // NE / Up
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
@@ -228,7 +154,7 @@ static void create_screen(player_t* ctx)
     lv_obj_set_pos(btn, 3, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_up_handler, LV_EVENT_ALL, (void*)ctx);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_PLAYER_UP_CLICKED);
     // SE / Down
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
@@ -236,7 +162,7 @@ static void create_screen(player_t* ctx)
     lv_obj_set_pos(btn, 4, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_down_handler, LV_EVENT_ALL, (void*)ctx);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_PLAYER_DOWN_CLICKED);
     // Create top label
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_top, 200);

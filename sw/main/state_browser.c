@@ -39,9 +39,8 @@
 
 static void screen_event_handler(lv_event_t* e);
 // H/W button handler
-static void button_setting_handler(lv_event_t* e);
-static void button_back_handler(lv_event_t* e);
-// Handler for S/W buttons in file list
+static void button_clicked_handler(lv_event_t* e);
+// S/W button handler
 static void list_button_handler(lv_event_t* e);
 
 
@@ -193,33 +192,11 @@ static void screen_event_handler(lv_event_t* e)
 }
 
 
-static void button_setting_handler(lv_event_t* e)
+// Callback for on-screen button event
+static void button_clicked_handler(lv_event_t *e)
 {
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_SHORT_CLICKED) 
-    {
-        EQ_QUICK_PUSH(EVT_SETTING_CLICKED);
-    }
-    else if (code == LV_EVENT_LONG_PRESSED) 
-    {
-        BR_LOGD("Browser: SETTING button long pressed\n");
-    }
-}
-
-
-static void button_back_handler(lv_event_t* e)
-{
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
-    lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_SHORT_CLICKED) 
-    {
-        EQ_QUICK_PUSH(EVT_BACK_CLICKED);
-    }
-    else if (code == LV_EVENT_LONG_PRESSED) 
-    {
-        BR_LOGD("Browser: BACK button long pressed\n");
-    }
+    int event_id = (int)lv_event_get_user_data(e);
+    EQ_QUICK_PUSH(event_id);
 }
 
 
@@ -268,28 +245,36 @@ static void create_screen(browser_t* ctx)
     // Keypad not used initially
     lvi_disable_keypad();
     lv_group_remove_all_objs(lvi_keypad_group);
-    // Buttons: NW as Back at pos(0,0)
-    //          SW as Setting at pos(1,0)
-    lvi_disable_button();
+    //
+    // Invisible on-screen buttons
+    // Cord     Button
+    // (0, 0)   [BACK]
+    // (1, 0)   [SETTING]
+    //
     lv_obj_t* btn;
-    // Invisible button at coordinate (0,0)
-    lvi_pos_button(LVI_BUTTON_NW, 0, 0);
+    // (0, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 0, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_back_handler, LV_EVENT_ALL, (void*)ctx);
-    // Invisible button at coordinate (1,0)
-    lvi_pos_button(LVI_BUTTON_SW, 1, 0);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_BACK_CLICKED);
+    // (1, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 1, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_setting_handler, LV_EVENT_ALL, (void*)ctx);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_SETTING_CLICKED);
+    // Map hardware buttons to on-screen buttons
+    lvi_disable_button();
+    lvi_pos_button(LVI_BUTTON_NW, 0, 0);    // NW -> BACK (0, 0)
+    lvi_pos_button(LVI_BUTTON_SW, 1, 0);    // SW -> SETTINGS (1, 0)
+    //
+    // UI Elements
+    //
     // Create top label
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_top, 200);
