@@ -9,10 +9,10 @@ enum
     EVT_DISK_EJECTED,
     EVT_DISK_ERROR,
 
-    EVT_SETTING_CLICKED,
-    EVT_BACK_CLICKED,
+    EVT_SETTING_CLICKED,    // Setting button event
+    EVT_BACK_CLICKED,       // Back button event
 
-    EVT_SETTINGS_CLOSED,
+    EVT_SETTING_CLOSED,     // Setting popup closed
     
     EVT_BROWSER_UI_UPDATE,
     EVT_BROWSER_PLAY_CLICKED,

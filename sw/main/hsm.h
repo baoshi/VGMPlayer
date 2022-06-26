@@ -85,6 +85,20 @@ void hsm_exit_(hsm_t *me, uint8_t levels);
     } while (0)
 
 
+/* state transition including exit superstates up to LCA */
+/* note levels_ is always calculated so this macro can be */        \
+/* used with dynamically created states */                          \
+#define STATE_TRAN_DYNAMIC(me_, target_)                            \
+    do                                                              \
+    {                                                               \
+        assert(((hsm_t *)me_)->next == 0);                          \
+        uint8_t levels_ = hsm_to_lca_((hsm_t *)(me_), (target_));   \
+        hsm_exit_((hsm_t *)(me_), levels_);                         \
+        ((hsm_t *)(me_))->next = (target_);                         \
+    } while (0)
+
+
+
 #ifdef __cplusplus
 }
 #endif

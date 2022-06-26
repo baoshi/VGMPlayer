@@ -12,7 +12,6 @@
 #include "path_utils.h"
 #include "ec.h"
 #include "catalog.h"
-#include "settings.h"
 #include "app.h"
 
 #define UI_UPDATE_INTERVAL_MS   200
@@ -46,7 +45,7 @@ static void button_back_handler(lv_event_t* e);
 static void list_button_handler(lv_event_t* e);
 
 
-enum 
+enum _file_list_entry_type
 {
     FILE_LIST_ENTRY_TYPE_FILE = 0,
     FILE_LIST_ENTRY_TYPE_DIR,
@@ -204,7 +203,7 @@ static void button_setting_handler(lv_event_t* e)
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        BR_LOGD("Browser: Setting button long pressed\n");
+        BR_LOGD("Browser: SETTING button long pressed\n");
     }
 }
 
@@ -219,7 +218,7 @@ static void button_back_handler(lv_event_t* e)
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
-        BR_LOGD("Browser: Back button long pressed\n");
+        BR_LOGD("Browser: BACK button long pressed\n");
     }
 }
 
@@ -241,7 +240,7 @@ static void list_button_handler(lv_event_t* e)
         }
         case LV_EVENT_LONG_PRESSED:
         {
-            BR_LOGD("Browser_File: Play long Pressed\n");
+            BR_LOGD("Browser_File: PLAY button long pressed\n");
             break;
         }
         case LV_EVENT_FOCUSED:
@@ -266,10 +265,11 @@ static void create_screen(browser_t* ctx)
     ctx->screen = lv_obj_create(NULL);
     // Self-destruction callback
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void*)ctx);
-    // Cleanup Keypad
+    // Keypad not used initially
     lvi_disable_keypad();
     lv_group_remove_all_objs(lvi_keypad_group);
-    // Setup Buttons, use NW/Back at pos(0,0), SW/Setting at pos(1,0)
+    // Buttons: NW as Back at pos(0,0)
+    //          SW as Setting at pos(1,0)
     lvi_disable_button();
     lv_obj_t* btn;
     // Invisible button at coordinate (0,0)
@@ -323,18 +323,24 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
     switch (evt->code)
     {
         case EVT_ENTRY:
+        {
             BR_LOGD("Browser: entry\n");
             create_screen(ctx);
             me->browser_ctx.alarm_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
             break;
+        }
         case EVT_START:
+        {
             STATE_START(me, &me->browser_nodisk);   // default to nodisk state and wait card insertion
             break;
+        }
         case EVT_EXIT:
+        {
             BR_LOGD("Browser: exit\n");
             tick_disarm_timer_event(me->browser_ctx.alarm_ui_update);
             ctx->alarm_ui_update = -1;
             break;
+        }
         case EVT_BROWSER_UI_UPDATE:
         {
             char buf[32];
@@ -343,8 +349,10 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
             break;
         }
         default:
+        {
             r = evt;
             break;
+        }
     }
     return r;
 }
@@ -367,7 +375,9 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         EVT_BACK_CLICKED:
             Pop history and navigate to parent directory
         EVT_SETTING_CLICKED:
-            Transit to browser_disk_brightness
+            Clean keypad map
+            Save current focused file
+            Create settings state and transit to it
         EVT_SETTING_CLOSED:
             Restore keypad map
             Bind input group to file list
@@ -596,6 +606,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         }
         case EVT_SETTING_CLICKED:
         {
+            lvi_disable_keypad();
             // before entering setting, save current focused file
             ctx->focused = 0;
             for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_files); ++i)
@@ -604,12 +615,14 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                 if (lv_obj_has_state(obj, LV_STATE_FOCUSED))
                 {
                     ctx->focused = obj;
+                    break;
                 }
             }
-            settings_popup(me, &(me->browser_disk));
+            settings_create(me);
+            STATE_TRAN_DYNAMIC((hsm_t*)me, &me->settings);
             break;
         }
-        case EVT_SETTINGS_CLOSED:
+        case EVT_SETTING_CLOSED:
         {
             // restore keypad mapping and input group
             lvi_disable_keypad();
@@ -617,14 +630,13 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             lvi_map_keypad(LVI_BUTTON_NE, LV_KEY_PREV);     // NE -> Prev, used in file list navigation
             lvi_map_keypad(LVI_BUTTON_SE, LV_KEY_NEXT);     // SE -> Next, used in file list navigation
             lv_group_remove_all_objs(lvi_keypad_group);
-            uint32_t cnt = lv_obj_get_child_cnt(ctx->lst_files);
-            for (uint32_t i = 0; i < cnt; ++i)
+            for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_files); ++i)
             {
                 lv_obj_t* obj = lv_obj_get_child(ctx->lst_files, i);
                 lv_group_add_obj(lvi_keypad_group, obj);
             }
             // Set focus if necessary
-            if (ctx->focused != NULL)
+            if (ctx->focused != 0)
             {
                 lv_group_focus_obj(ctx->focused);
             }
@@ -648,68 +660,6 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
 }
 
 
-static void brightness_barbox_event_handler(lv_event_t* e)
-{
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
-    int32_t c = *((int32_t *)lv_event_get_param(e));
-    switch (c)
-    {
-        case 'U':
-            BR_LOGD("Brightness: Up\n");
-            break;
-        case 'D':
-            BR_LOGD("Brigntness: Down\n");
-            break;
-        default:
-            BR_LOGD("Brigntness: (%d)\n", c);
-            break;
-    }
-}
-
-
-event_t const *browser_disk_brightness_handler(app_t *me, event_t const *evt)
-{
-    event_t const *r = 0;
-    browser_t *ctx = &(me->browser_ctx);
-    switch (evt->code)
-    {
-        case EVT_ENTRY:
-        {
-            BR_LOGD("Browser_Disk_Brigntness: entry\n");
-            ctx->bar_brignthess = lv_barbox_create(ctx->screen, 0, 100, 50);
-            lv_obj_add_event_cb(ctx->bar_brignthess, brightness_barbox_event_handler, LV_EVENT_KEY, (void*)ctx);
-            // Remap keypad and attach input group to the barbox
-            lv_group_remove_all_objs(lvi_keypad_group);
-            lvi_disable_keypad();
-            lvi_map_keypad(LVI_BUTTON_NE, 'U');  // Remap NE -> character 'U'
-            lvi_map_keypad(LVI_BUTTON_SE, 'D');  // Remap SE -> character 'D'
-            lv_group_add_obj(lvi_keypad_group, ctx->bar_brignthess);
-            break;
-        }
-        case EVT_EXIT:
-        {
-            BR_LOGD("Browser_Disk_Brigntness: exit\n");
-            lv_barbox_close(ctx->bar_brignthess);
-            ctx->bar_brignthess = 0;
-            break;
-        }
-        case EVT_SETTING_CLICKED:
-        case EVT_BACK_CLICKED:
-        {
-            STATE_TRAN(me, &(me->browser_disk));
-            EQ_QUICK_PUSH(EVT_BROWSER_SETTING_CLOSED);
-            break;
-        }
-        default:
-        {
-            r = evt;
-            break;
-        }
-    }
-    return r;
-}
-
-
 event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
 {
     /* Events
@@ -718,21 +668,22 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             Disable keypad
         EVT_EXIT:
             No action
+        EVT_SETTING_CLICKED:
+            Create settings state and transit to it
+        EVT_SETTING_CLOSED:
+            No action
         EVT_DISK_INSERTED:
             Transit to browser_disk state
-        EVT_SETTING_CLICKED:
-            Transit to browser_nodisk_brightness
-        EVT_BROWSER_SETTING_CLOSED:
-            Disable keypad
     */
     event_t const *r = 0;
+    browser_t *ctx = &(me->browser_ctx);
     switch (evt->code)
     {
         case EVT_ENTRY:
         {
             BR_LOGD("Browser_Nodisk: entry\n");
-            lv_label_set_text(me->browser_ctx.lbl_bottom, "No card");
-            lv_obj_clean(me->browser_ctx.lst_files);
+            lv_label_set_text(ctx->lbl_bottom, "No card");
+            lv_obj_clean(ctx->lst_files);
             lv_group_remove_all_objs(lvi_keypad_group);
             lvi_disable_keypad();
             catalog_close(me->catalog);
@@ -747,23 +698,23 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             BR_LOGD("Browser_Nodisk: exit\n");
             break;
         }
+        case EVT_SETTING_CLICKED:
+        {
+            ctx->focused = 0;
+            settings_create(me);
+            STATE_TRAN_DYNAMIC((hsm_t*)me, &me->settings);
+            break;
+        }
+        case EVT_SETTING_CLOSED:
+        {
+            break;
+        }
         case EVT_DISK_INSERTED:
         {
             // when cur_dir is null browser_disk will start browser from root
             STATE_TRAN((hsm_t*)me, &me->browser_disk);
             break;
         }
-        case EVT_SETTING_CLICKED:
-        {
-            STATE_TRAN(me, &(me->browser_nodisk_brightness));
-            break;
-        }
-        case EVT_BROWSER_SETTING_CLOSED:
-        {
-            // restore keypad mapping and input group
-            lvi_disable_keypad();
-            break;
-        }
         default:
         {
             r = evt;
@@ -772,50 +723,6 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
     }
     return r;
 }
-
-
-event_t const *browser_nodisk_brightness_handler(app_t *me, event_t const *evt)
-{
-    event_t const *r = 0;
-    browser_t *ctx = &(me->browser_ctx);
-    switch (evt->code)
-    {
-        case EVT_ENTRY:
-        {
-            BR_LOGD("Browser_Nodisk_Brigntness: entry\n");
-            ctx->bar_brignthess = lv_barbox_create(ctx->screen, 0, 100, 50);
-            lv_obj_add_event_cb(ctx->bar_brignthess, brightness_barbox_event_handler, LV_EVENT_KEY, (void*)ctx);
-            // Remap keypad and attach input group to the barbox
-            lv_group_remove_all_objs(lvi_keypad_group);
-            lvi_disable_keypad();
-            lvi_map_keypad(LVI_BUTTON_NE, 'U');  // Remap NE -> character 'U'
-            lvi_map_keypad(LVI_BUTTON_SE, 'D');  // Remap SE -> character 'D'
-            lv_group_add_obj(lvi_keypad_group, ctx->bar_brignthess);
-            break;
-        }
-        case EVT_EXIT:
-        {
-            BR_LOGD("Browser_Nodisk_Brigntness: exit\n");
-            lv_barbox_close(ctx->bar_brignthess);
-            ctx->bar_brignthess = 0;
-            break;
-        }
-        case EVT_SETTING_CLICKED:
-        case EVT_BACK_CLICKED:
-        {
-            STATE_TRAN(me, &(me->browser_nodisk));
-            EQ_QUICK_PUSH(EVT_BROWSER_SETTING_CLOSED);
-            break;
-        }
-        default:
-        {
-            r = evt;
-            break;
-        }
-    }
-    return r;
-}
-
 
 
 event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
@@ -826,21 +733,22 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
             Disable keypad
         EVT_EXIT:
             No action
+        EVT_SETTING_CLICKED:
+            Create settings state and transit to it
+        EVT_SETTING_CLOSED:
+            No action
         EVT_DISK_EJECTED:
             Transit to browser_nodisk state
-        EVT_SETTING_CLICKED:
-            Transit to browser_baddisk_brightness
-        EVT_BROWSER_SETTING_CLOSED:
-            Disable keypad
     */
     event_t const *r = 0;
+    browser_t *ctx = &(me->browser_ctx);
     switch (evt->code)
     {
         case EVT_ENTRY:
         {
             BR_LOGD("Browser_Baddisk: entry\n");
-            lv_label_set_text(me->browser_ctx.lbl_bottom, "Card error");
-            lv_obj_clean(me->browser_ctx.lst_files);
+            lv_label_set_text(ctx->lbl_bottom, "Card error");
+            lv_obj_clean(ctx->lst_files);
             lv_group_remove_all_objs(lvi_keypad_group);
             lvi_disable_keypad();
             catalog_close(me->catalog);
@@ -855,22 +763,22 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
             BR_LOGD("Browser_Baddisk: exit\n");
             break;
         }
+        case EVT_SETTING_CLICKED:
+        {
+            ctx->focused = 0;
+            settings_create(me);
+            STATE_TRAN_DYNAMIC((hsm_t*)me, &me->settings);
+            break;
+        }
+        case EVT_SETTING_CLOSED:
+        {
+            break;
+        }
         case EVT_DISK_EJECTED:
         {
             STATE_TRAN((hsm_t*)me, &me->browser_nodisk);
             break;
         }
-        case EVT_SETTING_CLICKED:
-        {
-            STATE_TRAN(me, &(me->browser_baddisk_brightness));
-            break;
-        }
-        case EVT_BROWSER_SETTING_CLOSED:
-        {
-            // restore keypad mapping and input group
-            lvi_disable_keypad();
-            break;
-        }
         default:
         {
             r = evt;
@@ -880,45 +788,3 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
     return r;
 }
 
-
-event_t const *browser_baddisk_brightness_handler(app_t *me, event_t const *evt)
-{
-    event_t const *r = 0;
-    browser_t *ctx = &(me->browser_ctx);
-    switch (evt->code)
-    {
-        case EVT_ENTRY:
-        {
-            BR_LOGD("Browser_Baddisk_Brigntness: entry\n");
-            ctx->bar_brignthess = lv_barbox_create(ctx->screen, 0, 100, 50);
-            lv_obj_add_event_cb(ctx->bar_brignthess, brightness_barbox_event_handler, LV_EVENT_KEY, (void*)ctx);
-            // Remap keypad and attach input group to the barbox
-            lv_group_remove_all_objs(lvi_keypad_group);
-            lvi_disable_keypad();
-            lvi_map_keypad(LVI_BUTTON_NE, 'U');  // Remap NE -> character 'U'
-            lvi_map_keypad(LVI_BUTTON_SE, 'D');  // Remap SE -> character 'D'
-            lv_group_add_obj(lvi_keypad_group, ctx->bar_brignthess);
-            break;
-        }
-        case EVT_EXIT:
-        {
-            BR_LOGD("Browser_Baddisk_Brigntness: exit\n");
-            lv_barbox_close(ctx->bar_brignthess);
-            ctx->bar_brignthess = 0;
-            break;
-        }
-        case EVT_SETTING_CLICKED:
-        case EVT_BACK_CLICKED:
-        {
-            STATE_TRAN(me, &(me->browser_baddisk));
-            EQ_QUICK_PUSH(EVT_BROWSER_SETTING_CLOSED);
-            break;
-        }
-        default:
-        {
-            r = evt;
-            break;
-        }
-    }
-    return r;
-}

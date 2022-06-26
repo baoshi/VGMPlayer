@@ -12,6 +12,7 @@ typedef struct app_s app_t;
 
 // Centralized declaration of all state machine related structure and functions
 
+
 //
 // Browser
 //
@@ -28,12 +29,8 @@ typedef struct browser_s
 
 event_t const *browser_handler(app_t *me, event_t const *evt);
 event_t const *browser_disk_handler(app_t *me, event_t const *evt);
-event_t const *browser_disk_brightness_handler(app_t *me, event_t const *evt);
 event_t const *browser_nodisk_handler(app_t *me, event_t const *evt);
-event_t const *browser_nodisk_brightness_handler(app_t *me, event_t const *evt);
 event_t const *browser_baddisk_handler(app_t *me, event_t const *evt);
-event_t const *browser_baddisk_brightness_handler(app_t *me, event_t const *evt);
-
 
 //
 // Player
@@ -64,14 +61,16 @@ event_t const *player_visual_handler(app_t *me, event_t const *evt);
 //
 typedef struct settings_s
 {
-    state_t *super;
+    state_t *creator;
     lv_obj_t* popup;
 } settings_t;
 
 event_t const *settings_handler(app_t *me, event_t const *evt);
 event_t const *settings_brightness_handler(app_t *me, event_t const *evt);
-event_t const *settings_earpiece_handler(app_t *me, event_t const *evt);
-event_t const *settings_speaker_handler(app_t *me, event_t const *evt);
+event_t const *settings_volume_handler(app_t *me, event_t const *evt);
+
+
+void settings_create(app_t *me);
 
 
 // Application level state machine
@@ -82,7 +81,7 @@ struct app_s
     browser_t browser_ctx;
     state_t player, player_exp, player_volume, player_visual;
     player_t player_ctx;
-    state_t settings, settings_brightness, settings_earpiece, settings_speaker;
+    state_t settings, settings_brightness, settings_volume;
     settings_t settings_ctx;
     // data shared by all states
     catalog_t *catalog;

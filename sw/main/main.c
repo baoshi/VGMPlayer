@@ -23,16 +23,19 @@
 #include "app.h"
 
 
-event_t const *app_top(app_t *me, event_t const *evt)
+
+event_t const *top_handler(app_t *me, event_t const *evt)
 {
     event_t const *r = evt;
     switch (evt->code)
     {
-    case EVT_START:
-        // initial state is browser
-        STATE_START(me, &me->browser);
-        r = 0;
-        break;
+        case EVT_START:
+        {
+            // initial state is browser
+            STATE_START(me, &me->browser);
+            r = 0;
+            break;
+        }
     }
     return r;
 }
@@ -41,23 +44,18 @@ event_t const *app_top(app_t *me, event_t const *evt)
 void app_ctor(app_t* me)
 {
     memset(me, 0, sizeof(app_t));
-    hsm_ctor((hsm_t*)me, "app", (event_handler_t)app_top);
+    hsm_ctor((hsm_t*)me, "app", (event_handler_t)top_handler);
     state_ctor(&(me->browser), "browser", &((hsm_t*)me)->top, (event_handler_t)browser_handler);
         state_ctor(&(me->browser_disk), "browser_disk", &(me->browser), (event_handler_t)browser_disk_handler);
-            state_ctor(&(me->browser_disk_brightness), "browser_disk_brightness", &(me->browser_disk), (event_handler_t)browser_disk_brightness_handler);
         state_ctor(&(me->browser_nodisk), "browser_nodisk", &(me->browser), (event_handler_t)browser_nodisk_handler);
-            state_ctor(&(me->browser_nodisk_brightness), "browser_nodisk_brightness", &(me->browser_nodisk), (event_handler_t)browser_nodisk_brightness_handler);
         state_ctor(&(me->browser_baddisk), "browser_baddisk", &(me->browser), (event_handler_t)browser_baddisk_handler);
-            state_ctor(&(me->browser_baddisk_brightness), "browser_baddisk_brightness", &(me->browser_baddisk), (event_handler_t)browser_baddisk_brightness_handler);
     state_ctor(&(me->player), "player", &((hsm_t*)me)->top, (event_handler_t)player_handler);
         state_ctor(&(me->player_exp), "player_exp", &(me->player), (event_handler_t)player_exp_handler);
         state_ctor(&(me->player_volume), "player_volume", &(me->player), (event_handler_t)player_volume_handler);
         state_ctor(&(me->player_visual), "player_visual", &(me->player), (event_handler_t)player_visual_handler);
     // settings_xxx is substates of settings. settings state will be dynamically attached using settings_popup() call
     state_ctor(&(me->settings_brightness), "settings_brightness", &(me->settings), (event_handler_t)settings_brightness_handler);
-    state_ctor(&(me->settings_earpiece), "settings_earpiece", &(me->settings), (event_handler_t)settings_earpiece_handler);
-    state_ctor(&(me->settings_speaker), "settings_speaker", &(me->settings), (event_handler_t)settings_speaker_handler);
-
+    state_ctor(&(me->settings_volume), "settings_volume", &(me->settings), (event_handler_t)settings_volume_handler);
 }
 
 
