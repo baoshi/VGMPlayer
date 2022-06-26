@@ -45,6 +45,7 @@ add_executable(${PROJ_NAME}
     catalog.c
     browser.c
     player.c
+    settings.c
     decoder_s16.c
     main.c
 )

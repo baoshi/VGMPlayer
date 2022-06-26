@@ -12,6 +12,7 @@
 #include "path_utils.h"
 #include "ec.h"
 #include "catalog.h"
+#include "settings.h"
 #include "app.h"
 
 #define UI_UPDATE_INTERVAL_MS   200
@@ -199,7 +200,7 @@ static void button_setting_handler(lv_event_t* e)
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_SHORT_CLICKED) 
     {
-        EQ_QUICK_PUSH(EVT_BROWSER_SETTING_CLICKED);
+        EQ_QUICK_PUSH(EVT_SETTING_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -214,7 +215,7 @@ static void button_back_handler(lv_event_t* e)
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_SHORT_CLICKED) 
     {
-        EQ_QUICK_PUSH(EVT_BROWSER_BACK_CLICKED);
+        EQ_QUICK_PUSH(EVT_BACK_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -363,11 +364,11 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             If clicked on file, transit to player state
             If clilck on [..], enqueue EVT_BROWSER_CLICKED event
             If click on Page Up/Down, navigate page
-        EVT_BROWSER_BACK_CLICKED:
+        EVT_BACK_CLICKED:
             Pop history and navigate to parent directory
-        EVT_BROWSER_SETTING_CLICKED:
+        EVT_SETTING_CLICKED:
             Transit to browser_disk_brightness
-        EVT_BROWSER_SETTING_CLOSED:
+        EVT_SETTING_CLOSED:
             Restore keypad map
             Bind input group to file list
             Restore file list focused item
@@ -549,7 +550,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                 }
                 case FILE_LIST_ENTRY_TYPE_PARENT:
                     // Same as back button
-                    EQ_QUICK_PUSH(EVT_BROWSER_BACK_CLICKED);
+                    EQ_QUICK_PUSH(EVT_BACK_CLICKED);
                     break;
                 case FILE_LIST_ENTRY_TYPE_PAGEUP:
                     populate_file_list(me, 2);
@@ -560,7 +561,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             }
             break;
         }
-        case EVT_BROWSER_BACK_CLICKED:
+        case EVT_BACK_CLICKED:
         {
             // Go to parent directory
             char path[FF_LFN_BUF + 1];
@@ -593,7 +594,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             }
             break;
         }
-        case EVT_BROWSER_SETTING_CLICKED:
+        case EVT_SETTING_CLICKED:
         {
             // before entering setting, save current focused file
             ctx->focused = 0;
@@ -605,10 +606,10 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     ctx->focused = obj;
                 }
             }
-            STATE_TRAN(me, &(me->browser_disk_brightness));
+            settings_popup(me, &(me->browser_disk));
             break;
         }
-        case EVT_BROWSER_SETTING_CLOSED:
+        case EVT_SETTINGS_CLOSED:
         {
             // restore keypad mapping and input group
             lvi_disable_keypad();
@@ -692,8 +693,8 @@ event_t const *browser_disk_brightness_handler(app_t *me, event_t const *evt)
             ctx->bar_brignthess = 0;
             break;
         }
-        case EVT_BROWSER_SETTING_CLICKED:
-        case EVT_BROWSER_BACK_CLICKED:
+        case EVT_SETTING_CLICKED:
+        case EVT_BACK_CLICKED:
         {
             STATE_TRAN(me, &(me->browser_disk));
             EQ_QUICK_PUSH(EVT_BROWSER_SETTING_CLOSED);
@@ -719,7 +720,7 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             No action
         EVT_DISK_INSERTED:
             Transit to browser_disk state
-        EVT_BROWSER_SETTING_CLICKED:
+        EVT_SETTING_CLICKED:
             Transit to browser_nodisk_brightness
         EVT_BROWSER_SETTING_CLOSED:
             Disable keypad
@@ -752,7 +753,7 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             STATE_TRAN((hsm_t*)me, &me->browser_disk);
             break;
         }
-        case EVT_BROWSER_SETTING_CLICKED:
+        case EVT_SETTING_CLICKED:
         {
             STATE_TRAN(me, &(me->browser_nodisk_brightness));
             break;
@@ -799,8 +800,8 @@ event_t const *browser_nodisk_brightness_handler(app_t *me, event_t const *evt)
             ctx->bar_brignthess = 0;
             break;
         }
-        case EVT_BROWSER_SETTING_CLICKED:
-        case EVT_BROWSER_BACK_CLICKED:
+        case EVT_SETTING_CLICKED:
+        case EVT_BACK_CLICKED:
         {
             STATE_TRAN(me, &(me->browser_nodisk));
             EQ_QUICK_PUSH(EVT_BROWSER_SETTING_CLOSED);
@@ -827,7 +828,7 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
             No action
         EVT_DISK_EJECTED:
             Transit to browser_nodisk state
-        EVT_BROWSER_SETTING_CLICKED:
+        EVT_SETTING_CLICKED:
             Transit to browser_baddisk_brightness
         EVT_BROWSER_SETTING_CLOSED:
             Disable keypad
@@ -859,7 +860,7 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
             STATE_TRAN((hsm_t*)me, &me->browser_nodisk);
             break;
         }
-        case EVT_BROWSER_SETTING_CLICKED:
+        case EVT_SETTING_CLICKED:
         {
             STATE_TRAN(me, &(me->browser_baddisk_brightness));
             break;
@@ -906,8 +907,8 @@ event_t const *browser_baddisk_brightness_handler(app_t *me, event_t const *evt)
             ctx->bar_brignthess = 0;
             break;
         }
-        case EVT_BROWSER_SETTING_CLICKED:
-        case EVT_BROWSER_BACK_CLICKED:
+        case EVT_SETTING_CLICKED:
+        case EVT_BACK_CLICKED:
         {
             STATE_TRAN(me, &(me->browser_baddisk));
             EQ_QUICK_PUSH(EVT_BROWSER_SETTING_CLOSED);

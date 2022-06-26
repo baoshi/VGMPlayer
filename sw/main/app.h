@@ -58,14 +58,32 @@ event_t const *player_exp_handler(app_t *me, event_t const *evt);
 event_t const *player_volume_handler(app_t *me, event_t const *evt);
 event_t const *player_visual_handler(app_t *me, event_t const *evt);
 
+
+//
+// Settings
+//
+typedef struct settings_s
+{
+    state_t *super;
+    lv_obj_t* popup;
+} settings_t;
+
+event_t const *settings_handler(app_t *me, event_t const *evt);
+event_t const *settings_brightness_handler(app_t *me, event_t const *evt);
+event_t const *settings_earpiece_handler(app_t *me, event_t const *evt);
+event_t const *settings_speaker_handler(app_t *me, event_t const *evt);
+
+
 // Application level state machine
 struct app_s
 {
     hsm_t super;
-    state_t browser, browser_disk, browser_disk_brightness, browser_nodisk, browser_nodisk_brightness, browser_baddisk, browser_baddisk_brightness;
+    state_t browser, browser_disk, browser_nodisk, browser_baddisk;
     browser_t browser_ctx;
     state_t player, player_exp, player_volume, player_visual;
     player_t player_ctx;
+    state_t settings, settings_brightness, settings_earpiece, settings_speaker;
+    settings_t settings_ctx;
     // data shared by all states
     catalog_t *catalog;
     int catalog_history_page[CATALOG_HISTORY_DEPTH];
