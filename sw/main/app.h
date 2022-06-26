@@ -79,7 +79,7 @@ struct app_s
     hsm_t super;
     state_t browser, browser_disk, browser_nodisk, browser_baddisk;
     browser_t browser_ctx;
-    state_t player, player_exp, player_volume, player_visual;
+    state_t player, player_exp;
     player_t player_ctx;
     state_t settings, settings_volume, settings_brightness;
     settings_t settings_ctx;

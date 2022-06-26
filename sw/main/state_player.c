@@ -148,14 +148,14 @@ static void button_down_handler(lv_event_t* e)
 }
 
 
-static void button_mode_handler(lv_event_t* e)
+static void button_setting_handler(lv_event_t* e)
 {
     player_t* ctx = (player_t*)lv_event_get_user_data(e);
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        EQ_QUICK_PUSH(EVT_PLAYER_SETTING_CLICKED);
+        EQ_QUICK_PUSH(EVT_SETTING_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -171,7 +171,7 @@ static void button_back_handler(lv_event_t* e)
     lv_obj_t* btn = lv_event_get_target(e);
     if (code == LV_EVENT_CLICKED) 
     {
-        EQ_QUICK_PUSH(EVT_PLAYER_BACK_CLICKED);
+        EQ_QUICK_PUSH(EVT_BACK_CLICKED);
     }
     else if (code == LV_EVENT_LONG_PRESSED) 
     {
@@ -205,22 +205,22 @@ static void create_screen(player_t* ctx)
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_play_handler, LV_EVENT_ALL, (void*)ctx);
-    // NW / Mode
+    // NW / Back
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 1, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_mode_handler, LV_EVENT_ALL, (void*)ctx);
-    // SW / Back
+    lv_obj_add_event_cb(btn, button_back_handler, LV_EVENT_ALL, (void*)ctx);
+    // SW / Setting
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
     lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 2, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_back_handler, LV_EVENT_ALL, (void*)ctx);
+    lv_obj_add_event_cb(btn, button_setting_handler, LV_EVENT_ALL, (void*)ctx);
     // NE / Up
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_button, 0);
@@ -382,7 +382,29 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
             break;
         }
-        case EVT_PLAYER_BACK_CLICKED:
+        case EVT_SETTING_CLICKED:
+        {
+            // Leave NW/SW control by buttons
+            lvi_disable_button();
+            lvi_pos_button(LVI_BUTTON_NW, 1, 0);
+            lvi_pos_button(LVI_BUTTON_SW, 2, 0);
+            lvi_disable_keypad();
+            settings_create(me);
+            STATE_TRAN_DYNAMIC((hsm_t*)me, &me->settings);
+            break;
+        }
+        case EVT_SETTING_CLOSED:
+        {
+            // reenable buttons
+            lvi_disable_button();
+            lvi_pos_button(LVI_BUTTON_PLAY, 0, 0);
+            lvi_pos_button(LVI_BUTTON_NW, 1, 0);
+            lvi_pos_button(LVI_BUTTON_SW, 2, 0);
+            lvi_pos_button(LVI_BUTTON_NE, 3, 0);
+            lvi_pos_button(LVI_BUTTON_SE, 4, 0);
+            break;
+        }
+        case EVT_BACK_CLICKED:
         {
             STATE_TRAN(me, &(me->browser_disk));
             break;
@@ -494,47 +516,3 @@ event_t const *player_exp_handler(app_t *me, event_t const *evt)
     }
     return r;
 }
-
-
-event_t const *player_volume_handler(app_t *me, event_t const *evt)
-{
-    event_t const *r = 0;
-    player_t *ctx = &(me->player_ctx);
-    switch (evt->code)
-    {
-    case EVT_ENTRY:
-        PL_LOGD("Player_Volume: entry\n");
-        break;
-    case EVT_EXIT:
-        PL_LOGD("Player_Volume: exit\n");
-        break;
-    default:
-        r = evt;
-        break;
-    }
-    return r;
-}
-
-
-event_t const *player_visual_handler(app_t *me, event_t const *evt)
-{
-    event_t const *r = 0;
-    player_t *ctx = &(me->player_ctx);
-    switch (evt->code)
-    {
-    case EVT_ENTRY:
-        PL_LOGD("Player_Visual: entry\n");
-        break;
-    case EVT_EXIT:
-        PL_LOGD("Player_Visual: exit\n");
-        break;
-    case EVT_START:
-        PL_LOGD("Player_Visual: start\n");
-        break;
-    default:
-        r = evt;
-        break;
-    }
-    return r;
-}
-

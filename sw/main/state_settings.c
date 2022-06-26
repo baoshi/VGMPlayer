@@ -78,6 +78,7 @@ event_t const *settings_handler(app_t *me, event_t const *evt)
         case EVT_EXIT:
         {
             ST_LOGD("Settings: exit\n");
+            lvi_disable_keypad();
             break;
         }
         case EVT_START:
