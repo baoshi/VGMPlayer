@@ -369,6 +369,21 @@ static void browser_disk_map_keypad()
 }
 
 
+static void browser_disk_cleanup(app_t* me, browser_t *ctx)
+{
+    // unmap keypad and input group
+    lv_group_remove_all_objs(lvi_keypad_group);
+    lv_obj_clean(ctx->lst_files);
+    lvi_disable_keypad();
+    // clear catalog
+    catalog_close(me->catalog);
+    me->catalog = 0;
+    me->catalog_history_page[0] = 0;
+    me->catalog_history_selection[0] = 0;
+    me->catalog_history_index = 0;
+}
+
+
 static void browser_disk_on_entry(app_t *me, browser_t *ctx)
 {
     // Setup keypad
@@ -455,21 +470,6 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
             break;
         }
     }
-}
-
-
-static void browser_disk_on_exit(app_t* me, browser_t *ctx)
-{
-    // unmap keypad and input group
-    lv_group_remove_all_objs(lvi_keypad_group);
-    lv_obj_clean(ctx->lst_files);
-    lvi_disable_keypad();
-    // clear catalog
-    catalog_close(me->catalog);
-    me->catalog = 0;
-    me->catalog_history_page[0] = 0;
-    me->catalog_history_selection[0] = 0;
-    me->catalog_history_index = 0;
 }
 
 
@@ -631,7 +631,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             Create catalog from root directory or restore catalog history
             Populate file list
         EVT_EXIT:
-            Clearup
+            Do nothing. Cleanup is done on EVT_DISK_ERROR or EVT_DISK_EJECTED
         EVT_BROWSER_PLAY_CLICKED:
             If clicked on a directory, push history and navigate to that directory
             If clicked on file, transit to player state
@@ -648,8 +648,10 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             Bind input group to file list
             Restore file list focused item
         EVT_DISK_ERROR:
+            Cleanup
             Transit to browser_baddisk state
         EVT_DISK_EJECTED:
+            Cleaup
             Transit to browser_error state
     */
     event_t const *r = 0;
@@ -662,7 +664,6 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         break;
     case EVT_EXIT:
         BR_LOGD("Browser_Disk: exit\n");
-        browser_disk_on_exit(me, ctx);
         break;
     case EVT_BROWSER_PLAY_CLICKED:
         browser_disk_on_play(me, ctx, evt);
@@ -679,9 +680,11 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         r = evt; // super state browser will process EVT_SETTING_CLICKED further
         break;
     case EVT_DISK_ERROR:
+        browser_disk_cleanup(me, ctx);
         STATE_TRAN((hsm_t *)me, &me->browser_baddisk);
         break;
     case EVT_DISK_EJECTED:
+        browser_disk_cleanup(me, ctx);
         STATE_TRAN((hsm_t *)me, &me->browser_nodisk);
         break;
     default:
@@ -690,6 +693,11 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
     }
     return r;
 }
+
+
+//
+// State Browser_Nodisk
+//
 
 
 event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
@@ -723,6 +731,12 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
     }
     return r;
 }
+
+
+
+//
+// State Browser_Baddsk
+//
 
 
 event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
