@@ -23,7 +23,6 @@ typedef struct browser_s
     lv_obj_t *lbl_bottom;   // Bottom label
     lv_obj_t *lst_files;    // List of files
     lv_obj_t *focused;      // focused file in the list
-    lv_obj_t *bar_brignthess;
     int alarm_ui_update;
 } browser_t;
 

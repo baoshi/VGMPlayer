@@ -181,12 +181,12 @@ static void screen_event_handler(lv_event_t* e)
     {
         switch (code)
         {
-            case LV_EVENT_SCREEN_UNLOADED:
-                BR_LOGD("Browser: screen unloaded\n");
-                lv_obj_del(ctx->screen);
-                break;
-            default:
-                break;
+        case LV_EVENT_SCREEN_UNLOADED:
+            BR_LOGD("Browser: screen unloaded\n");
+            lv_obj_del(ctx->screen);
+            break;
+        default:
+            break;
         }
     }
 }
@@ -236,13 +236,13 @@ static void list_button_handler(lv_event_t* e)
 }
 
 
-static void create_screen(browser_t* ctx)
+static void browser_on_entry(browser_t *ctx)
 {
     // Create screen
     ctx->screen = lv_obj_create(NULL);
     // Self-destruction callback
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void*)ctx);
-    // Keypad not used initially
+    // Keypad input device not used initially
     lvi_disable_keypad();
     lv_group_remove_all_objs(lvi_keypad_group);
     //
@@ -268,36 +268,45 @@ static void create_screen(browser_t* ctx)
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_SETTING_CLICKED);
-    // Map hardware buttons to on-screen buttons
+    // NW, SW used as LVGL button input device
     lvi_disable_button();
     lvi_pos_button(LVI_BUTTON_NW, 0, 0);    // NW -> BACK (0, 0)
     lvi_pos_button(LVI_BUTTON_SW, 1, 0);    // SW -> SETTINGS (1, 0)
     //
     // UI Elements
     //
-    // Create top label
+    // Top label
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_top, 200);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_label_set_text(ctx->lbl_top, "");
-    // Create status label
+    // Status label
     ctx->lbl_bottom = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_bottom, 240);
     lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    // Create file list
+    // File list
     ctx->lst_files = lv_list_create(ctx->screen);
     lv_obj_set_size(ctx->lst_files, 240, 192);
     lv_obj_set_pos(ctx->lst_files, 0, 24);
-    // Other ui elements
+    // Other UI elements
     ctx->focused = 0;
-    ctx->bar_brignthess = 0;
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Load screen
     lv_scr_load(ctx->screen);
+    // arm update timer
+    ctx->alarm_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
+}
+
+
+static void browser_on_ui_update(browser_t *ctx)
+{
+    char buf[32];
+    sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
+    lv_label_set_text(ctx->lbl_top, buf);
 }
 
 
@@ -321,136 +330,86 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
     browser_t *ctx = &(me->browser_ctx);
     switch (evt->code)
     {
-        case EVT_ENTRY:
-        {
-            BR_LOGD("Browser: entry\n");
-            create_screen(ctx);
-            me->browser_ctx.alarm_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
-            break;
-        }
-        case EVT_EXIT:
-        {
-            BR_LOGD("Browser: exit\n");
-            tick_disarm_timer_event(me->browser_ctx.alarm_ui_update);
-            ctx->alarm_ui_update = 0;
-            break;
-        }
-        case EVT_START:
-        {
-            STATE_START(me, &me->browser_nodisk);   // default to nodisk state and wait card insertion
-            break;
-        }
-        case EVT_SETTING_CLICKED:
-        {
-            settings_create(me);
-            STATE_TRAN_DYNAMIC((hsm_t*)me, &me->settings);
-            break;
-        }
-        case EVT_SETTING_CLOSED:
-        {
-            break;
-        }
-        case EVT_BROWSER_UI_UPDATE:
-        {
-            char buf[32];
-            sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
-            lv_label_set_text(ctx->lbl_top, buf);
-            break;
-        }
-        default:
-        {
-            r = evt;
-            break;
-        }
+    case EVT_ENTRY:
+        BR_LOGD("Browser: entry\n");
+        browser_on_entry(ctx);
+        break;
+    case EVT_EXIT:
+        BR_LOGD("Browser: exit\n");
+        tick_disarm_timer_event(ctx->alarm_ui_update);
+        ctx->alarm_ui_update = 0;
+        break;
+    case EVT_START:
+        STATE_START(me, &me->browser_nodisk);   // default to nodisk state and wait card insertion
+        break;
+    case EVT_SETTING_CLICKED:
+        settings_create(me);
+        STATE_TRAN_DYNAMIC((hsm_t*)me, &me->settings);
+        break;
+    case EVT_SETTING_CLOSED:
+        break;
+    case EVT_BROWSER_UI_UPDATE:
+        browser_on_ui_update(ctx);
+        break;
+    default:
+        r = evt;
+        break;
     }
     return r;
 }
 
 
-event_t const *browser_disk_handler(app_t *me, event_t const *evt)
+//
+// State Browser_Disk
+//
+
+
+static void browser_disk_on_entry(app_t *me, browser_t *ctx)
 {
-    /* Events
-        EVT_ENTRY:
-            Set keypad map
-            Create catalog from root directory or restore catalog history
-            Populate file list
-        EVT_EXIT:
-            No action
-        EVT_BROWSER_PLAY_CLICKED:
-            If clicked on a directory, push history and navigate to that directory
-            If clicked on file, transit to player state
-            If clilck on [..], enqueue EVT_BROWSER_CLICKED event
-            If click on Page Up/Down, navigate page
-        EVT_BACK_CLICKED:
-            Pop history and navigate to parent directory
-        EVT_SETTING_CLICKED:
-            Clean keypad map
-            Save current focused file
-            Create settings state and transit to it
-        EVT_SETTING_CLOSED:
-            Restore keypad map
-            Bind input group to file list
-            Restore file list focused item
-        EVT_DISK_ERROR:
-            Close catalog and clear history
-            Transit to browser_baddisk state
-        EVT_DISK_EJECTED:
-            Close catalog and clear history
-            Transit to browser_error state
-    */
-    event_t const *r = 0;
-    browser_t *ctx = &(me->browser_ctx);
-    switch (evt->code)
+    // PLAY, NE, SE used as navigation keys (LVGL Keypad input device)
+    lvi_disable_keypad();
+    lvi_map_keypad(LVI_BUTTON_PLAY, LV_KEY_ENTER);  // PLAY -> Enter, triggers list button's callback action
+    lvi_map_keypad(LVI_BUTTON_NE, LV_KEY_PREV);     // NE -> Prev, used in file list navigation
+    lvi_map_keypad(LVI_BUTTON_SE, LV_KEY_NEXT);     // SE -> Next, used in file list navigation
+    // build up file list box
+    int t;
+    if (0 == me->catalog)
     {
-        case EVT_ENTRY:
+        // no directory catalog available, we must be entering from nodisk state
+        ec_pause_watchdog();
+        lv_label_set_text(ctx->lbl_bottom, "Loading...");
+        lv_refr_now(NULL);
+        t = disk_check_dir("/");
+        ec_resume_watchdog();
+        if ((1 == t) || (2 == t)) // root dir is accessible
         {
-            BR_LOGD("Browser_Disk: entry\n");
-            // Map keypad keys
-            lvi_disable_keypad();
-            lvi_map_keypad(LVI_BUTTON_PLAY, LV_KEY_ENTER);  // PLAY -> Enter, triggers list button's callback action
-            lvi_map_keypad(LVI_BUTTON_NE, LV_KEY_PREV);     // NE -> Prev, used in file list navigation
-            lvi_map_keypad(LVI_BUTTON_SE, LV_KEY_NEXT);     // SE -> Next, used in file list navigation
-            // build up file list box
-            int t;
-            if (0 == me->catalog)
+            me->catalog_history_page[0] = 0;
+            me->catalog_history_selection[0] = 0;
+            me->catalog_history_index = 0;
+            ec_pause_watchdog();
+            t = catalog_open_dir("/", 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
+            ec_resume_watchdog();
+            if (CAT_OK == t)
             {
-                // no directory catalog available, we must be entering from nodisk state
-                ec_pause_watchdog();
-                lv_label_set_text(ctx->lbl_bottom, "Loading...");
-                lv_refr_now(NULL);
-                t = disk_check_dir("/");
-                ec_resume_watchdog();
-                if ((1 == t) || (2 == t)) // root dir is accessible
-                {
-                    me->catalog_history_page[0] = 0;
-                    me->catalog_history_selection[0] = 0;
-                    me->catalog_history_index = 0;
-                    ec_pause_watchdog();
-                    lv_label_set_text(ctx->lbl_bottom, "Loading...");
-                    lv_refr_now(NULL);
-                    t = catalog_open_dir("/", 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
-                    ec_resume_watchdog();
-                    if (CAT_OK == t)
-                    {
-                        populate_file_list(me, 0);
-                    }
-                    else
-                    {
-                        BR_LOGE("Browser_Disk: open catalog at \"/\" failed with %d\n", t);
-                        if (CAT_ERR_FATFS == t)
-                        {
-                            FRESULT fr = catalog_get_fatfs_error();
-                            BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
-                        }
-                        EQ_QUICK_PUSH(EVT_DISK_ERROR);
-                    }
-                }
-                else    // disk_check_dir error
-                {
-                    BR_LOGE("Browser_Disk: open root directory failed\n");
-                    EQ_QUICK_PUSH(EVT_DISK_ERROR);
-                }
+                populate_file_list(me, 0);
             }
+            else
+            {
+                BR_LOGE("Browser_Disk: open catalog at \"/\" failed with %d\n", t);
+                if (CAT_ERR_FATFS == t)
+                {
+                    FRESULT fr = catalog_get_fatfs_error();
+                    BR_LOGE("Browser_Disk: FatFS error %s (%d)\n", disk_result_str(fr), fr);
+                }
+                EQ_QUICK_PUSH(EVT_DISK_ERROR);
+            }
+        }
+        else    // disk_check_dir error
+        {
+            BR_LOGE("Browser_Disk: open root directory failed\n");
+            EQ_QUICK_PUSH(EVT_DISK_ERROR);
+        }
+    }
             else
             {
                 // we already have directory catalog object (transit from player state)
@@ -498,6 +457,49 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
                     break;
                 }
             }
+
+}
+
+
+event_t const *browser_disk_handler(app_t *me, event_t const *evt)
+{
+    /* Events
+        EVT_ENTRY:
+            Set keypad map
+            Create catalog from root directory or restore catalog history
+            Populate file list
+        EVT_EXIT:
+            No action
+        EVT_BROWSER_PLAY_CLICKED:
+            If clicked on a directory, push history and navigate to that directory
+            If clicked on file, transit to player state
+            If clilck on [..], enqueue EVT_BROWSER_CLICKED event
+            If click on Page Up/Down, navigate page
+        EVT_BACK_CLICKED:
+            Pop history and navigate to parent directory
+        EVT_SETTING_CLICKED:
+            Clean keypad map
+            Save current focused file
+            Create settings state and transit to it
+        EVT_SETTING_CLOSED:
+            Restore keypad map
+            Bind input group to file list
+            Restore file list focused item
+        EVT_DISK_ERROR:
+            Close catalog and clear history
+            Transit to browser_baddisk state
+        EVT_DISK_EJECTED:
+            Close catalog and clear history
+            Transit to browser_error state
+    */
+    event_t const *r = 0;
+    browser_t *ctx = &(me->browser_ctx);
+    switch (evt->code)
+    {
+        case EVT_ENTRY:
+        {
+            BR_LOGD("Browser_Disk: entry\n");
+            
             break;
         }
         case EVT_EXIT:
