@@ -176,7 +176,7 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         break;
     case EVT_SETTING_CLICKED:
         settings_create(me);
-        STATE_TRAN_DYNAMIC((hsm_t *)me, &me->settings);
+        STATE_TRAN((hsm_t *)me, &me->settings);
         break;
     case EVT_SETTING_CLOSED:
         break;
@@ -377,7 +377,6 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
     int t;
     if (0 == me->catalog)
     {
-        
         // no directory catalog available, we must be entering from nodisk state
         ec_pause_watchdog();
         lv_label_set_text(ctx->lbl_bottom, "Loading...");
@@ -456,6 +455,19 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
             break;
         }
     }
+}
+
+
+static void browser_disk_on_exit(app_t* me, browser_t *ctx)
+{
+    lv_group_remove_all_objs(lvi_keypad_group);
+    lv_obj_clean(ctx->lst_files);
+    lvi_disable_keypad();
+    catalog_close(me->catalog);
+    me->catalog = 0;
+    me->catalog_history_page[0] = 0;
+    me->catalog_history_selection[0] = 0;
+    me->catalog_history_index = 0;
 }
 
 
@@ -585,7 +597,7 @@ static void browser_disk_on_setting(browser_t *ctx)
             break;
         }
     }
-    // keypads nolonger control file list
+    // keypads nolonger controls file list
     lv_group_remove_all_objs(lvi_keypad_group);
 }
 
@@ -617,7 +629,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             Create catalog from root directory or restore catalog history
             Populate file list
         EVT_EXIT:
-            No action
+            Clearup
         EVT_BROWSER_PLAY_CLICKED:
             If clicked on a directory, push history and navigate to that directory
             If clicked on file, transit to player state
@@ -634,10 +646,8 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             Bind input group to file list
             Restore file list focused item
         EVT_DISK_ERROR:
-            Close catalog and clear history
             Transit to browser_baddisk state
         EVT_DISK_EJECTED:
-            Close catalog and clear history
             Transit to browser_error state
     */
     event_t const *r = 0;
@@ -650,6 +660,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         break;
     case EVT_EXIT:
         BR_LOGD("Browser_Disk: exit\n");
+        browser_disk_on_exit(me, ctx);
         break;
     case EVT_BROWSER_PLAY_CLICKED:
         browser_disk_on_play(me, ctx, evt);
@@ -695,35 +706,18 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
     switch (evt->code)
     {
     case EVT_ENTRY:
-    {
         BR_LOGD("Browser_Nodisk: entry\n");
         lv_label_set_text(ctx->lbl_bottom, "No card");
-        lv_obj_clean(ctx->lst_files);
-        lv_group_remove_all_objs(lvi_keypad_group);
-        lvi_disable_keypad();
-        catalog_close(me->catalog);
-        me->catalog = 0;
-        me->catalog_history_page[0] = 0;
-        me->catalog_history_selection[0] = 0;
-        me->catalog_history_index = 0;
         break;
-    }
     case EVT_EXIT:
-    {
         BR_LOGD("Browser_Nodisk: exit\n");
         break;
-    }
     case EVT_DISK_INSERTED:
-    {
-        // when cur_dir is null browser_disk will start browser from root
         STATE_TRAN((hsm_t *)me, &me->browser_disk);
         break;
-    }
     default:
-    {
         r = evt;
         break;
-    }
     }
     return r;
 }
@@ -745,34 +739,18 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
     switch (evt->code)
     {
     case EVT_ENTRY:
-    {
         BR_LOGD("Browser_Baddisk: entry\n");
         lv_label_set_text(ctx->lbl_bottom, "Card error");
-        lv_obj_clean(ctx->lst_files);
-        lv_group_remove_all_objs(lvi_keypad_group);
-        lvi_disable_keypad();
-        catalog_close(me->catalog);
-        me->catalog = 0;
-        me->catalog_history_page[0] = 0;
-        me->catalog_history_selection[0] = 0;
-        me->catalog_history_index = 0;
         break;
-    }
     case EVT_EXIT:
-    {
         BR_LOGD("Browser_Baddisk: exit\n");
         break;
-    }
     case EVT_DISK_EJECTED:
-    {
         STATE_TRAN((hsm_t *)me, &me->browser_nodisk);
         break;
-    }
     default:
-    {
         r = evt;
         break;
-    }
     }
     return r;
 }

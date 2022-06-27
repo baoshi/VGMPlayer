@@ -51,12 +51,12 @@ void settings_create(app_t *me)
 }
 
 
-static void settings_exit(app_t *me)
+static void settings_close(app_t *me)
 {
     // Transit to the creator's state
     settings_t *ctx = &(me->settings_ctx);
-    ST_LOGD("Settings: exit, transit to %s state\n", ctx->creator->name);
-    STATE_TRAN_DYNAMIC(me, ctx->creator);
+    ST_LOGD("Settings: close and transit to %s state\n", ctx->creator->name);
+    STATE_TRAN((hsm_t *)me, ctx->creator);
     EQ_QUICK_PUSH(EVT_SETTING_CLOSED);
 }
 
@@ -89,7 +89,7 @@ event_t const *settings_handler(app_t *me, event_t const *evt)
         }
         case EVT_BACK_CLICKED:
         {
-            settings_exit(me);
+            settings_close(me);
             break;
         }
         default:
