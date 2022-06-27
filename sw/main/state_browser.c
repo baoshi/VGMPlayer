@@ -359,7 +359,7 @@ static void populate_file_list(app_t *me, int mode)
 }
 
 
-static void browser_disk_remap_keypad()
+static void browser_disk_map_keypad()
 {
     // PLAY, NE, SE used as keypad input device
     lvi_disable_keypad();
@@ -372,7 +372,7 @@ static void browser_disk_remap_keypad()
 static void browser_disk_on_entry(app_t *me, browser_t *ctx)
 {
     // Setup keypad
-    browser_disk_remap_keypad();
+    browser_disk_map_keypad();
     // build up file list box
     int t;
     if (0 == me->catalog)
@@ -460,9 +460,11 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
 
 static void browser_disk_on_exit(app_t* me, browser_t *ctx)
 {
+    // unmap keypad and input group
     lv_group_remove_all_objs(lvi_keypad_group);
     lv_obj_clean(ctx->lst_files);
     lvi_disable_keypad();
+    // clear catalog
     catalog_close(me->catalog);
     me->catalog = 0;
     me->catalog_history_page[0] = 0;
@@ -605,7 +607,7 @@ static void browser_disk_on_setting(browser_t *ctx)
 static void browser_disk_on_setting_closed(browser_t *ctx)
 {
     // restore keypad mapping
-    browser_disk_remap_keypad();
+    browser_disk_map_keypad();
     // attach input group to file list buttons
     lv_group_remove_all_objs(lvi_keypad_group);
     for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_files); ++i)
