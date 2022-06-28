@@ -23,7 +23,8 @@
 
 MEMORY
 {
-    FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 16384k
+    FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 16384k - 4k
+    EEPROM(rw): ORIGIN = ORIGIN(FLASH) + LENGTH(FLASH), LENGTH = 4k
     RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 256k
     SCRATCH_X(rwx) : ORIGIN = 0x20040000, LENGTH = 4k
     SCRATCH_Y(rwx) : ORIGIN = 0x20041000, LENGTH = 4k
@@ -234,6 +235,10 @@ SECTIONS
     .flash_end : {
         __flash_binary_end = .;
     } > FLASH
+
+    .eeprom_begin : {
+        __eeprom_start = .;
+    } > EEPROM
 
     /* stack limit is poorly named, but historically is maximum heap ptr */
     __StackLimit = ORIGIN(RAM) + LENGTH(RAM);

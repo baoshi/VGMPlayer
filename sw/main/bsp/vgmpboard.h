@@ -31,7 +31,7 @@
 #endif
 
 #ifndef PICO_FLASH_SIZE_BYTES
-#define PICO_FLASH_SIZE_BYTES (16 * 1024 * 1024)
+#define PICO_FLASH_SIZE_BYTES (16 * 1024 * 1024 - 4096)
 #endif
 
 
