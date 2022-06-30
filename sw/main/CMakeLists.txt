@@ -31,6 +31,7 @@ add_subdirectory(modules/backlight)
 add_subdirectory(modules/display)
 add_subdirectory(modules/disk)
 add_subdirectory(modules/audio)
+add_subdirectory(modules/eeprom)
 
 add_executable(${PROJ_NAME}
     my_debug.c
@@ -61,6 +62,7 @@ target_link_libraries(${PROJ_NAME}
     display
     disk
     audio
+    eeprom
 )
 
 #target_compile_definitions(${PROJ_NAME} PRIVATE PICO_DEBUG_MALLOC=1)

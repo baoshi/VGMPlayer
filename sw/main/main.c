@@ -22,6 +22,8 @@
 #include "path_utils.h"
 #include "app.h"
 
+#include "eeprom.h"
+
 
 
 event_t const *top_handler(app_t *me, event_t const *evt)
@@ -59,7 +61,7 @@ void app_ctor(app_t* me)
 
 
 int main()
-{
+ {
     uint32_t now;
     app_t app;
 
@@ -97,6 +99,30 @@ int main()
     }
     // audio powerup stage 2 to be postponed before start play
     //audio_postinit();
+
+    //eeprom_erase_all();
+    {
+        uint8_t data[EEPROM_SIZE];
+        memset(data, 0, EEPROM_SIZE);
+        int r = eeprom_read(data);
+        if (r == EEPROM_NOT_INITIALIZED)
+        {
+            data[0] = 1;
+            eeprom_write(data);
+        }
+        else
+        {
+            for (int i = 0; i < EEPROM_SIZE; ++i)
+            {
+                if (data[i] == 0)
+                {
+                    data[i] = i + 1;
+                    break;
+                }
+            }
+            eeprom_write(data);
+        }
+    }
 
     // initialize state machine
     app_ctor(&app);

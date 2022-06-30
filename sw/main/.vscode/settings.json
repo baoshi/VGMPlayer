@@ -69,7 +69,8 @@
         "event_queue.h": "c",
         "browser.h": "c",
         "lvinput.h": "c",
-        "umm_malloc_cfg.h": "c"
+        "umm_malloc_cfg.h": "c",
+        "my_debug.h": "c"
     },
     "cmake.configureOnOpen": true
 }

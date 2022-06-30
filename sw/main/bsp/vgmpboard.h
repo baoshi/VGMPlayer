@@ -30,11 +30,10 @@
 #define PICO_FLASH_SPI_CLKDIV 2
 #endif
 
+// PICO_FLASH_SIZE_BYTES is checked against writing address in flash.c
 #ifndef PICO_FLASH_SIZE_BYTES
-#define PICO_FLASH_SIZE_BYTES (16 * 1024 * 1024 - 4096)
+#define PICO_FLASH_SIZE_BYTES (16 * 1024 * 1024)
 #endif
-
-
 
 // All boards have B1 RP2040
 #ifndef PICO_FLOAT_SUPPORT_ROM_V1
