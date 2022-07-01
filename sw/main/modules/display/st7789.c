@@ -7,6 +7,7 @@
 #include <pico.h>
 #include <pico/types.h>
 #include <pico/sem.h>
+#include <pico/time.h>
 #include <hardware/clocks.h>
 #include <hardware/gpio.h>
 #include <hardware/dma.h>

@@ -35,7 +35,9 @@ extern "C"
 //  
 
 extern volatile uint8_t i2c_recent_activity;
-    
+
+extern volatile bool i2c_watchdog;
+
 void i2c_start(void);
 void i2c_stop(void);
 void i2c_track_activity(void);

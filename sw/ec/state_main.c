@@ -38,7 +38,16 @@ uint8_t state_main_update(void)
     i2c_track_activity();
     if ((uint8_t)(systick - i2c_recent_activity) >= (TIME_I2C_LOST_TO_OFF / MS_PER_TICK))
     {
-        r = MAIN_STATE_OFF;
+        // I2C communication lost may due to the host freeze or host resets at wrong time 
+        // (e.g., host resets after sending address byte, EC will assert SDA (as ACK) and waiting 
+        // more clocks but nothing happened). It should be addressable by certain interrupt but
+        // we just tap timeout to reset i2c bus.
+        i2c_stop();
+        i2c_start();
+        if (i2c_watchdog)
+        {
+            r = MAIN_STATE_OFF;
+        }
     }
     return r;
 }

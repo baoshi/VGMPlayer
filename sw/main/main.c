@@ -79,7 +79,7 @@ int main()
     // share bus initialization (i2c)
     hw_shared_resource_init();
     // audio powerup stage 1
-    audio_preinit();
+    //audio_preinit();
     // initialize display
     display_init();     // 323ms
     // draw splash screen without backlight

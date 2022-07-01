@@ -17,12 +17,9 @@
 
 volatile uint8_t i2c_recent_activity;
 
+volatile bool i2c_watchdog = false; // For DEV
 
 static bool _activity;
-
-
-static bool _watchdog = false;  // For DEV
-
 
 void i2c_start(void)
 {
@@ -57,18 +54,10 @@ void i2c_stop(void)
 
 void i2c_track_activity(void)
 {
-    if (_watchdog)
+    if (_activity)
     {
-        if (_activity)
-        {
-            i2c_recent_activity = systick;
-            _activity = false;
-        }
-    }
-    else
-    {
-        // watchdog is off, always assume i2c activity just happened
         i2c_recent_activity = systick;
+        _activity = false;
     }
 }
 
@@ -118,10 +107,10 @@ void i2c_slave_ssp_isr(void)
             switch (temp)
             {
             case EC_CMD_WATCHDOG_ON:
-                _watchdog = true;
+                i2c_watchdog = true;
                 break;
             case EC_CMD_WATCHDOG_OFF:
-                _watchdog = false;
+                i2c_watchdog = false;
                 break;
             default:
                 break;

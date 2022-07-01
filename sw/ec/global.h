@@ -26,7 +26,7 @@
 #define TIME_I2C_LOST_TO_OFF            5000u       // Time from lost of uplink connection to power off
 
 // For DFU state
-#define TIME_BOOTSEL_HOLD               100u        // Yime to hold BOOSEL down after power on reset
+#define TIME_BOOTSEL_HOLD               100u        // Time to hold BOOSEL down after power on reset
 
 // For OFF state
 #define TIME_NOTICE_OFF                 2000u
