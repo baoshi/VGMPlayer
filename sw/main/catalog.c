@@ -333,69 +333,79 @@ static int _merge_catalog_chunks(catalog_t* cat, int chunk_count)
             r = CAT_ERR_FATFS;
             break;
         }
-        chunks = MY_CALLOC(chunk_count, sizeof(chunk_info_t));
-        if (0 == chunks)
+        if (chunk_count > 0)
         {
-            r = CAT_ERR_MEMORY;
-            break;
-        }
-        // open all chunks
-        for (int i = 0; i < chunk_count; ++i)
-        {
-            _get_catalog_chunk_name(cat->dir, i, chunk_name, FF_LFN_BUF + 1);
-            r = _open_chunk(chunk_name, &(chunks[i]));
-            if (r != CAT_OK) break;
-        }
-        // catalog file header
-        f_printf(&(cat->fd), "%d\n%d\n", cat->checksum, cat->count);
-        // set page 0 offset in case chunk_count is 0
-        cat->page_offset[0] = (uint32_t)f_tell(&(cat->fd));
-        int index = 0;
-        int page = 0;
-        for (;;)
-        {
-            bool alleofed = true;
-            const char *min = 0, *str;
-            int min_idx = 0;
+            chunks = MY_CALLOC(chunk_count, sizeof(chunk_info_t));
+            if (0 == chunks)
+            {
+                r = CAT_ERR_MEMORY;
+                break;
+            }
+            // open all chunks
             for (int i = 0; i < chunk_count; ++i)
             {
-                str = _fetch_chunk_entry(&(chunks[i]));
-                if (str == 0) continue;
-                alleofed = false;
-                // assume first line is minimal, then compare with other lines
-                if (min == 0)
+                _get_catalog_chunk_name(cat->dir, i, chunk_name, FF_LFN_BUF + 1);
+                r = _open_chunk(chunk_name, &(chunks[i]));
+                if (r != CAT_OK) break;
+            }
+            // catalog file header
+            f_printf(&(cat->fd), "%d\n%d\n", cat->checksum, cat->count);
+            int index = 0;
+            int page = 0;
+            for (;;)
+            {
+                bool alleofed = true;
+                const char *min = 0, *str;
+                int min_idx = 0;
+                for (int i = 0; i < chunk_count; ++i)
                 {
-                    min = str;
-                    min_idx = i;
-                }
-                else
-                {
-                    if (strncasecmp(min, str, FF_LFN_BUF + 1) > 0)
+                    str = _fetch_chunk_entry(&(chunks[i]));
+                    if (str == 0) continue;
+                    alleofed = false;
+                    // assume first line is minimal, then compare with other lines
+                    if (min == 0)
                     {
                         min = str;
                         min_idx = i;
                     }
+                    else
+                    {
+                        if (strncasecmp(min, str, FF_LFN_BUF + 1) > 0)
+                        {
+                            min = str;
+                            min_idx = i;
+                        }
+                    }
                 }
-            }
-            if (alleofed)
-                break;
-            if (0 == (index % cat->page_size))
-            {
-                cat->page_offset[page] = (uint32_t)f_tell(&(cat->fd));
-                if (page + 1 >= MAX_PAGES)
+                if (alleofed)
                     break;
-                ++page;
+                if (0 == (index % cat->page_size))
+                {
+                    cat->page_offset[page] = (uint32_t)f_tell(&(cat->fd));
+                    if (page + 1 >= MAX_PAGES)
+                        break;
+                    ++page;
+                }
+                ++index;
+                _fr = f_write(&(cat->fd), min, strlen(min), &wt);
+                if (_fr != FR_OK)
+                {
+                    r = CAT_ERR_FATFS;
+                    break;
+                }
+                _clean_chunk_line(&(chunks[min_idx]));
             }
-            ++index;
-            _fr = f_write(&(cat->fd), min, strlen(min), &wt);
-            if (_fr != FR_OK)
-            {
-                r = CAT_ERR_FATFS;
-                break;
-            }
-            _clean_chunk_line(&(chunks[min_idx]));
+            cat->pages = page;
         }
-        cat->pages = page;
+        else
+        {
+            // the directory contains no entry
+            // catalog file header
+            f_printf(&(cat->fd), "%d\n%d\n", cat->checksum, cat->count);
+            // set page 0 offset
+            cat->page_offset[0] = (uint32_t)f_tell(&(cat->fd));
+            cat->pages = 0;
+        }
         // reopen catalog file
         f_close(&(cat->fd));
         f_open(&(cat->fd), cat_name, FA_OPEN_EXISTING | FA_READ);
@@ -404,7 +414,6 @@ static int _merge_catalog_chunks(catalog_t* cat, int chunk_count)
         cat->cur_index = -1;
         r = catalog_move_cursor(cat, 0, 0);
     } while (0);
-
     if (r != CAT_OK)
     {
         // close catalog file object if failed

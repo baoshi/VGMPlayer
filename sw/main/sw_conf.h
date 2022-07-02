@@ -10,7 +10,7 @@
 
 
 // Maximun files listed per page.
-#define CATALOG_PAGER_SIZE              10
+#define CATALOG_PAGER_SIZE              32
 // Remember # levels of history in file navigation
 #define CATALOG_HISTORY_DEPTH           10
 
