@@ -23,8 +23,9 @@ typedef struct
 extern const lv_obj_class_t lv_barbox_class;
 
 lv_obj_t *lv_barbox_create(lv_obj_t *parent, int32_t min, int32_t max, int32_t value);
-void lv_barbox_close(lv_obj_t * bbox);
-void lv_barbox_close_async(lv_obj_t * bbox);
+void lv_barbox_set_value(lv_obj_t *obj, int32_t value);
+void lv_barbox_close(lv_obj_t *obj);
+void lv_barbox_close_async(lv_obj_t *bbox);
 
 
 #ifdef __cplusplus

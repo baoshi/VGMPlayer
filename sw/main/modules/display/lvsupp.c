@@ -69,13 +69,20 @@ lv_obj_t *lv_barbox_create(lv_obj_t *parent, int32_t min, int32_t max, int32_t v
 }
 
 
-void lv_barbox_close(lv_obj_t *bbox)
+void lv_barbox_set_value(lv_obj_t *obj, int32_t value)
 {
-    lv_obj_del(bbox);
+    lv_barbox_t *bbox = (lv_barbox_t *)obj;
+    lv_bar_set_value(bbox->bar, value, false);
 }
 
 
-void lv_barbox_close_async(lv_obj_t *bbox)
+void lv_barbox_close(lv_obj_t *obj)
 {
-    lv_obj_del_async(bbox);
+    lv_obj_del(obj);
+}
+
+
+void lv_barbox_close_async(lv_obj_t *obj)
+{
+    lv_obj_del_async(obj);
 }

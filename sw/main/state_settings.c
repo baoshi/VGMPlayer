@@ -7,6 +7,7 @@
 #include "lvsupp.h"
 #include "event_ids.h"
 #include "event_queue.h"
+#include "backlight.h"
 #include "app.h"
 
 
@@ -161,15 +162,23 @@ event_t const *settings_volume_handler(app_t *me, event_t const *evt)
 
 static void brightness_event_handler(lv_event_t* e)
 {
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
+    settings_t* ctx = (settings_t*)lv_event_get_user_data(e);
     int32_t c = *((int32_t *)lv_event_get_param(e));
     switch (c)
     {
         case 'U':
             ST_LOGD("Settings_Brightness: Up\n");
+            ++backlight_brigntness_normal;
+            if (backlight_brigntness_normal > 99) backlight_brigntness_normal = 99;
+            backlight_set_direct(backlight_brigntness_normal);
+            lv_barbox_set_value(ctx->popup, backlight_brigntness_normal);
             break;
         case 'D':
             ST_LOGD("Settings_Brigntness: Down\n");
+            --backlight_brigntness_normal;
+            if (backlight_brigntness_normal < 0) backlight_brigntness_normal = 0;
+            backlight_set_direct(backlight_brigntness_normal);
+            lv_barbox_set_value(ctx->popup, backlight_brigntness_normal);
             break;
         default:
             ST_LOGD("Settings_Brigntness: (%d)\n", c);
@@ -187,7 +196,7 @@ event_t const *settings_brightness_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
         {
             ST_LOGD("Settings_Brightness: entry\n");
-            ctx->popup = lv_barbox_create(lv_scr_act(), 0, 100, 50);
+            ctx->popup = lv_barbox_create(lv_scr_act(), 0, 99, backlight_brigntness_normal);
             lv_obj_add_event_cb(ctx->popup, brightness_event_handler, LV_EVENT_KEY, (void*)ctx);
             lv_group_remove_all_objs(lvi_keypad_group);
             lv_group_add_obj(lvi_keypad_group, ctx->popup);
