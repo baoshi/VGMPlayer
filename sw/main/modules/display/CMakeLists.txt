@@ -10,6 +10,7 @@ target_sources(display INTERFACE
     browser_icon_folder.c
     browser_icon_file.c
     browser_icon_nsf.c
+    settings_icon_brightness.c
     display.c
 )
 

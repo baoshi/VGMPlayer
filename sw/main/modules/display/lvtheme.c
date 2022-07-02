@@ -118,9 +118,12 @@ static void style_init(void)
     lv_style_set_border_color(&styles.popup, COLOR_BORDER);    // 2 pixel border
     lv_style_set_border_width(&styles.popup, 2);
     lv_style_set_border_post(&styles.popup, true);             // border shall draw after children
+    lv_style_set_outline_color(&styles.popup, COLOR_BACKGROUND);
+    lv_style_set_outline_opa(&styles.popup, LV_OPA_50);
+    lv_style_set_outline_width(&styles.popup, 3);
     lv_style_set_pad_all(&styles.popup, 10);                   // Leave some space from border
     lv_style_set_clip_corner(&styles.popup, true);             // clip the overflowed content on the rounded corner
-
+    
     style_init_reset(&styles.white);
     lv_style_set_bg_opa(&styles.white, LV_OPA_COVER);
     lv_style_set_bg_color(&styles.white, COLOR_WHITE);

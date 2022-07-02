@@ -16,13 +16,12 @@ void lv_list_btn_set_label_long_mode(lv_obj_t *btn, lv_label_long_mode_t mode);
 typedef struct 
 {
     lv_obj_t obj;
-    lv_obj_t *icon;
     lv_obj_t *bar;
 } lv_barbox_t;
 
 extern const lv_obj_class_t lv_barbox_class;
 
-lv_obj_t *lv_barbox_create(lv_obj_t *parent, int32_t min, int32_t max, int32_t value);
+lv_obj_t *lv_barbox_create(lv_obj_t *parent, const void *icon, int32_t min, int32_t max, int32_t value);
 void lv_barbox_set_value(lv_obj_t *obj, int32_t value);
 void lv_barbox_close(lv_obj_t *obj);
 void lv_barbox_close_async(lv_obj_t *bbox);
