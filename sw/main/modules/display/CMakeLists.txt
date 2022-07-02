@@ -7,8 +7,13 @@ target_sources(display INTERFACE
     lvinput.c
     lvsupp.c
     lvfont_helvr14.c
+    browser_icon_folder.c
+    browser_icon_file.c
+    browser_icon_nsf.c
     display.c
 )
+
+target_compile_definitions(display INTERFACE LV_LVGL_H_INCLUDE_SIMPLE)
 
 target_link_libraries(display INTERFACE
     pico_stdlib

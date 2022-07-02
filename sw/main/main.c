@@ -61,7 +61,7 @@ void app_ctor(app_t* me)
 
 
 int main()
- {
+{
     uint32_t now;
     app_t app;
 

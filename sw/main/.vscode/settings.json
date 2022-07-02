@@ -72,7 +72,8 @@
         "umm_malloc_cfg.h": "c",
         "my_debug.h": "c",
         "sem.h": "c",
-        "clocks.h": "c"
+        "clocks.h": "c",
+        "lvstyle.h": "c"
     },
     "cmake.configureOnOpen": true
 }

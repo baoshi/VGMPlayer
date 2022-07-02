@@ -5,13 +5,15 @@
 /*********************
  *      DEFINES
  *********************/
-#define COLOR_BACKGROUND            lv_color_hex(0x000000)
-#define COLOR_TEXT                  lv_color_hex(0xc8992c)
-#define COLOR_BORDER                lv_color_hex(0x80621c)
-#define COLOR_BUTTON_FACE_INACTIVE  lv_color_hex(0x80621c)
-#define COLOR_BUTTON_TEXT_INACTIVE  lv_color_hex(0x000000)
-#define COLOR_BUTTON_FACE_ACTIVE    lv_color_hex(0xc8992c)
-#define COLOR_BUTTON_TEXT_ACTIVE    lv_color_hex(0x000000)
+#define COLOR_BACKGROUND            lv_color_make(0, 0, 0)
+#define COLOR_TEXT                  lv_color_make(225, 217, 210)
+#define COLOR_BORDER                lv_color_make(60, 169, 227)
+#define COLOR_BUTTON_FACE_INACTIVE  lv_color_make(0, 0, 0)
+#define COLOR_BUTTON_TEXT_INACTIVE  lv_color_make(225, 217, 210)
+#define COLOR_BUTTON_FACE_FOCUSED   lv_color_make(44, 102, 132)
+#define COLOR_BUTTON_TEXT_FOCUSED   lv_color_make(225, 217, 210)
+#define COLOR_BUTTON_FACE_PRESSED   lv_color_make(61, 174, 233)
+#define COLOR_BUTTON_TEXT_PRESSED   lv_color_make(225, 217, 210)
 
 
 #define COLOR_SCR     lv_color_black()
@@ -68,9 +70,8 @@ static void style_init(void)
     
     // Scrollbar
     style_init_reset(&styles.scrollbar);
-    lv_style_set_bg_color(&styles.scrollbar, COLOR_BUTTON_FACE_INACTIVE);
+    lv_style_set_bg_color(&styles.scrollbar, COLOR_BUTTON_FACE_FOCUSED);
     lv_style_set_bg_opa(&styles.scrollbar, LV_OPA_COVER);
-    lv_style_set_radius(&styles.scrollbar, LV_RADIUS_CIRCLE);
     lv_style_set_pad_right(&styles.scrollbar, 4);
     lv_style_set_pad_top(&styles.scrollbar,  4);
     lv_style_set_pad_bottom(&styles.scrollbar,  4);
@@ -78,35 +79,35 @@ static void style_init(void)
     
     // Listbox
     style_init_reset(&styles.listbox);
-    lv_style_set_radius(&styles.listbox, RADIUS_DEFAULT); // Round rectangle
     lv_style_set_bg_opa(&styles.listbox, LV_OPA_COVER);   // Same opqaue background as screen
     lv_style_set_bg_color(&styles.listbox, COLOR_BACKGROUND);
     lv_style_set_border_color(&styles.listbox, COLOR_BORDER);  // 1 pixel border
+    lv_style_set_border_side(&styles.listbox, LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM);
     lv_style_set_border_width(&styles.listbox, 1);
     lv_style_set_border_post(&styles.listbox, true);      // border shall draw after children
-    lv_style_set_pad_right(&styles.listbox, 14);
-    lv_style_set_pad_top(&styles.listbox, 4);
-    lv_style_set_pad_bottom(&styles.listbox, 4);
+    lv_style_set_pad_right(&styles.listbox, 14);          // right with scrollbar
     lv_style_set_pad_left(&styles.listbox, 8);
-    lv_style_set_clip_corner(&styles.listbox, true);      // clip the overflowed content on the rounded corner
-    lv_style_set_pad_row(&styles.listbox, 4);             // 4 pixels gap between each row
+    lv_style_set_pad_top(&styles.listbox, 6);
+    lv_style_set_pad_bottom(&styles.listbox, 6);
+    lv_style_set_pad_row(&styles.listbox, 1);             // 1 pixels gap between each row
     // Default list button
     style_init_reset(&styles.list_btn);
     lv_style_set_pad_left(&styles.list_btn, 8);
     lv_style_set_pad_top(&styles.list_btn, 4);
     lv_style_set_pad_bottom(&styles.list_btn, 4);
-    lv_style_set_text_color(&styles.list_btn, COLOR_TEXT);
-    // List button when focused
-    style_init_reset(&styles.list_btn_focused);
-    lv_style_set_radius(&styles.list_btn_focused, RADIUS_DEFAULT);
     lv_style_set_bg_opa(&styles.list_btn_focused, LV_OPA_COVER);
     lv_style_set_bg_color(&styles.list_btn_focused, COLOR_BUTTON_FACE_INACTIVE);
     lv_style_set_text_color(&styles.list_btn_focused, COLOR_BUTTON_TEXT_INACTIVE);
+    // List button when focused
+    style_init_reset(&styles.list_btn_focused);
+    lv_style_set_bg_opa(&styles.list_btn_focused, LV_OPA_COVER);
+    lv_style_set_bg_color(&styles.list_btn_focused, COLOR_BUTTON_FACE_FOCUSED);
+    lv_style_set_text_color(&styles.list_btn_focused, COLOR_BUTTON_TEXT_FOCUSED);
     // List button when pressed
     style_init_reset(&styles.list_btn_pressed);
     lv_style_set_bg_opa(&styles.list_btn_pressed, LV_OPA_COVER);
-    lv_style_set_bg_color(&styles.list_btn_pressed, COLOR_BUTTON_FACE_ACTIVE);
-    lv_style_set_text_color(&styles.list_btn_pressed, COLOR_BUTTON_TEXT_ACTIVE);
+    lv_style_set_bg_color(&styles.list_btn_pressed, COLOR_BUTTON_FACE_PRESSED);
+    lv_style_set_text_color(&styles.list_btn_pressed, COLOR_BUTTON_TEXT_PRESSED);
 
     // Popup Box
     style_init_reset(&styles.popup);

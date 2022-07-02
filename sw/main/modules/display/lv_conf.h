@@ -39,7 +39,7 @@
 #define LV_COLOR_MIX_ROUND_OFS (LV_COLOR_DEPTH == 32 ? 0: 128)
 
 /*Images pixels with this color will not be drawn if they are chroma keyed)*/
-#define LV_COLOR_CHROMA_KEY lv_color_hex(0x00ff00)         /*pure green*/
+#define LV_COLOR_CHROMA_KEY lv_color_hex(0xff00ff)         /*magenta*/
 
 /*=========================
    MEMORY SETTINGS
@@ -305,7 +305,7 @@
 #define LV_FONT_MONTSERRAT_12 0
 #define LV_FONT_MONTSERRAT_14 0
 #define LV_FONT_MONTSERRAT_16 0
-#define LV_FONT_MONTSERRAT_18 0
+#define LV_FONT_MONTSERRAT_18 1
 #define LV_FONT_MONTSERRAT_20 0
 #define LV_FONT_MONTSERRAT_22 0
 #define LV_FONT_MONTSERRAT_24 0
@@ -338,7 +338,8 @@
 #define LV_FONT_CUSTOM_DECLARE  LV_FONT_DECLARE(lv_font_helvr14)
 
 /*Always set a default font*/
-#define LV_FONT_DEFAULT &lv_font_helvr14
+//#define LV_FONT_DEFAULT &lv_font_helvr14
+#define LV_FONT_DEFAULT &lv_font_montserrat_18
 
 /*More symbol font definition in addition to lv_symbol_def.h*/
 /*Use https://www.branah.com/unicode-converter for Unicode to UTF-8 conversion*/

@@ -455,7 +455,8 @@ static int _create_catalog(const char * const patterns[], catalog_t *cat)
     // delete unsorted catalog
     f_unlink(ucat);
     // delete chunks
-    if (chunk_count == 0) chunk_count = MAX_PAGES;
+    // if fail, chunk_count is unreliable. delete all possible unsorted chunks.
+    if ((chunk_count == 0) && (r != CAT_OK)) chunk_count = MAX_PAGES;
     for (int i = 0; i < chunk_count; ++i)
     {
         // unsorted catalog file name is nolong being used, reuse here

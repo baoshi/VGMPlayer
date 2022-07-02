@@ -3,6 +3,7 @@
 #include "sw_conf.h"
 #include "my_debug.h"
 #include "lvinput.h"
+#include "lvtheme.h"
 #include "lvstyle.h"
 #include "lvsupp.h"
 #include "tick.h"
@@ -197,7 +198,7 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
 
 
 // On-screen button callback for the buttons in file list
-static void filelist_button_handler(lv_event_t *e)
+static void file_list_button_handler(lv_event_t *e)
 {
     browser_t *ctx = (browser_t *)lv_event_get_user_data(e);
     lv_event_code_t code = lv_event_get_code(e);
@@ -300,14 +301,14 @@ static void populate_file_list(app_t *me, int mode)
     {
         btn = lv_list_add_btn_ex(ctx->lst_files, 0, "[..]", LV_LABEL_LONG_DOT);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PARENT);
-        lv_obj_add_event_cb(btn, filelist_button_handler, LV_EVENT_ALL, (void *)ctx);
+        lv_obj_add_event_cb(btn, file_list_button_handler, LV_EVENT_ALL, (void *)ctx);
     }
     // 2nd page onwards, add "PgUp" button
     if (page > 0)
     {
-        btn = lv_list_add_btn_ex(ctx->lst_files, 0, "[PgUp..]", LV_LABEL_LONG_DOT);
+        btn = lv_list_add_btn_ex(ctx->lst_files, 0, "[" LV_SYMBOL_UP "]", LV_LABEL_LONG_DOT);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEUP);
-        lv_obj_add_event_cb(btn, filelist_button_handler, LV_EVENT_ALL, (void *)ctx);
+        lv_obj_add_event_cb(btn, file_list_button_handler, LV_EVENT_ALL, (void *)ctx);
     }
     catalog_move_cursor(me->catalog, page, 0);
     uint8_t type;
@@ -318,24 +319,39 @@ static void populate_file_list(app_t *me, int mode)
         {
             name[0] = '[';
             strcat(name, "]");
-            btn = lv_list_add_btn_ex(ctx->lst_files, LV_SYMBOL_DIRECTORY " ", name, LV_LABEL_LONG_DOT);
+            btn = lv_list_add_btn_ex(ctx->lst_files, &browser_icon_folder, name, LV_LABEL_LONG_DOT);
             lv_obj_set_user_data(btn, (void *)(uint32_t)((btn_index << 16) | FILE_LIST_ENTRY_TYPE_DIR));
         }
         else if (type == CAT_TYPE_FILE)
         {
-            btn = lv_list_add_btn_ex(ctx->lst_files, LV_SYMBOL_FILE_O " ", name + 1, LV_LABEL_LONG_DOT);
+            char ext[4];
+            if (path_get_ext(name + 1, ext, 4))
+            {
+                if (0 == strcasecmp(ext, "nsf"))
+                {
+                    btn = lv_list_add_btn_ex(ctx->lst_files, &browser_icon_nsf, name + 1, LV_LABEL_LONG_DOT);    
+                }
+                else
+                {
+                    btn = lv_list_add_btn_ex(ctx->lst_files, &browser_icon_file, name + 1, LV_LABEL_LONG_DOT);
+                }
+            }
+            else
+            {
+                btn = lv_list_add_btn_ex(ctx->lst_files, &browser_icon_file, name + 1, LV_LABEL_LONG_DOT);
+            }
             lv_obj_set_user_data(btn, (void *)(uint32_t)((btn_index << 16) | FILE_LIST_ENTRY_TYPE_FILE));
         }
         if (btn_index == selection)
             focus = btn;
         ++btn_index;
-        lv_obj_add_event_cb(btn, filelist_button_handler, LV_EVENT_ALL, (void *)ctx);
+        lv_obj_add_event_cb(btn, file_list_button_handler, LV_EVENT_ALL, (void *)ctx);
     }
     if (page < me->catalog->pages - 1)
     {
-        btn = lv_list_add_btn_ex(ctx->lst_files, 0, "[PgDn..]", LV_LABEL_LONG_DOT);
+        btn = lv_list_add_btn_ex(ctx->lst_files, 0, "[" LV_SYMBOL_DOWN "]", LV_LABEL_LONG_DOT);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEDOWN);
-        lv_obj_add_event_cb(btn, filelist_button_handler, LV_EVENT_ALL, (void *)ctx);
+        lv_obj_add_event_cb(btn, file_list_button_handler, LV_EVENT_ALL, (void *)ctx);
     }
     if (-1 == selection) // select last
     {
@@ -475,7 +491,7 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
 
 static void browser_disk_on_play(app_t *me, browser_t *ctx, event_t const *evt)
 {
-    // EVT_BROWSER_PLAY_CLICKED is sent by file list button callback in filelist_button_handler()
+    // EVT_BROWSER_PLAY_CLICKED is sent by file list button callback in file_list_button_handler()
     // The firing button object is stored in event parameter
     lv_obj_t *btn = (lv_obj_t *)(evt->param);   
     const char *btn_text = lv_list_get_btn_text(ctx->lst_files, btn);   // name of the file
