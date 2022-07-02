@@ -1,19 +1,11 @@
-#include "lvsupp.h"
+#include "lvstyle.h"
 #include "lvtheme.h"
 
 
 /*********************
  *      DEFINES
  *********************/
-#define COLOR_BACKGROUND            lv_color_make(0, 0, 0)
-#define COLOR_TEXT                  lv_color_make(225, 217, 210)
-#define COLOR_BORDER                lv_color_make(60, 169, 227)
-#define COLOR_BUTTON_FACE_INACTIVE  lv_color_make(0, 0, 0)
-#define COLOR_BUTTON_TEXT_INACTIVE  lv_color_make(225, 217, 210)
-#define COLOR_BUTTON_FACE_FOCUSED   lv_color_make(44, 102, 132)
-#define COLOR_BUTTON_TEXT_FOCUSED   lv_color_make(225, 217, 210)
-#define COLOR_BUTTON_FACE_PRESSED   lv_color_make(61, 174, 233)
-#define COLOR_BUTTON_TEXT_PRESSED   lv_color_make(225, 217, 210)
+
 
 
 #define COLOR_SCR     lv_color_black()
@@ -39,7 +31,6 @@ typedef struct
     lv_style_t dim;
     lv_style_t scrollbar;
     lv_style_t listbox, list_btn, list_btn_focused, list_btn_pressed;
-    lv_style_t popup;
 } theme_styles_t;
 
 
@@ -109,20 +100,6 @@ static void style_init(void)
     lv_style_set_bg_color(&styles.list_btn_pressed, COLOR_BUTTON_FACE_PRESSED);
     lv_style_set_text_color(&styles.list_btn_pressed, COLOR_BUTTON_TEXT_PRESSED);
 
-    // Popup Box
-    style_init_reset(&styles.popup);
-    lv_style_set_radius(&styles.popup, RADIUS_DEFAULT);        // Round rectangle
-    lv_style_set_bg_opa(&styles.popup, LV_OPA_COVER);          // Same opqaue background as screen
-    lv_style_set_bg_color(&styles.popup, COLOR_BACKGROUND);    // Colors
-    lv_style_set_text_color(&styles.popup, COLOR_TEXT);
-    lv_style_set_border_color(&styles.popup, COLOR_BORDER);    // 2 pixel border
-    lv_style_set_border_width(&styles.popup, 2);
-    lv_style_set_border_post(&styles.popup, true);             // border shall draw after children
-    lv_style_set_outline_color(&styles.popup, COLOR_BACKGROUND);
-    lv_style_set_outline_opa(&styles.popup, LV_OPA_50);
-    lv_style_set_outline_width(&styles.popup, 3);
-    lv_style_set_pad_all(&styles.popup, 10);                   // Leave some space from border
-    lv_style_set_clip_corner(&styles.popup, true);             // clip the overflowed content on the rounded corner
     
     style_init_reset(&styles.white);
     lv_style_set_bg_opa(&styles.white, LV_OPA_COVER);
@@ -206,12 +183,7 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
     // Message box
     else if (lv_obj_check_type(obj, &lv_msgbox_class)) 
     {
-        lv_obj_add_style(obj, &styles.popup, 0);
-    }
-    // Bar box
-    else if (lv_obj_check_type(obj, &lv_barbox_class)) 
-    {
-        lv_obj_add_style(obj, &styles.popup, 0);
+        lv_obj_add_style(obj, &lvs_popup, 0);
     }
 #if LV_USE_BAR
     else if(lv_obj_check_type(obj, &lv_bar_class)) {

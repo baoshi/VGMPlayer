@@ -58,6 +58,7 @@ lv_obj_t *lv_barbox_create(lv_obj_t *parent, const void *icon, int32_t min, int3
     LV_ASSERT_MALLOC(obj);
     if (obj == NULL) return NULL;
     lv_obj_class_init_obj(obj);
+    lv_obj_add_style(obj, &lvs_popup, 0);
     lv_obj_set_size(obj, LV_PCT(80), LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(obj, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
