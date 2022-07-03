@@ -11,9 +11,6 @@
 #define COLOR_SCR     lv_color_black()
 
 #define COLOR_WHITE   lv_color_white()
-#define COLOR_LIGHT   lv_palette_lighten(LV_PALETTE_GREY, 1)
-#define COLOR_DARK    lv_palette_main(LV_PALETTE_GREY)
-#define COLOR_DIM     lv_palette_darken(LV_PALETTE_GREY, 2)
 #define SCROLLBAR_WIDTH     2
 
 #define RADIUS_DEFAULT 5
@@ -28,7 +25,6 @@ typedef struct
     lv_style_t light;
     lv_style_t dark;
     lv_style_t dim;
-    lv_style_t list_btn, list_btn_focused, list_btn_pressed;
 } theme_styles_t;
 
 
@@ -80,11 +76,11 @@ static void style_init(void)
 
     style_init_reset(&styles.dim);
     lv_style_set_bg_opa(&styles.dim, LV_OPA_COVER);
-    lv_style_set_bg_color(&styles.dim, COLOR_DIM);
+    lv_style_set_bg_color(&styles.dim, COLOR_DARK);
     lv_style_set_line_width(&styles.dim, 1);
-    lv_style_set_line_color(&styles.dim, COLOR_DIM);
+    lv_style_set_line_color(&styles.dim, COLOR_DARK);
     lv_style_set_arc_width(&styles.dim, 2);
-    lv_style_set_arc_color(&styles.dim, COLOR_DIM);
+    lv_style_set_arc_color(&styles.dim, COLOR_DARK);
 
 
 }
@@ -134,14 +130,11 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
     {
         lv_obj_add_style(obj, &lvs_msgbox, 0);
     }
-
-
-#if LV_USE_BAR
-    else if(lv_obj_check_type(obj, &lv_bar_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_INDICATOR);
+    else if(lv_obj_check_type(obj, &lv_bar_class)) 
+    {
+        lv_obj_add_style(obj, &lvs_bar_bg, 0);
+        lv_obj_add_style(obj, &lvs_bar_ind, LV_PART_INDICATOR);
     }
-#endif
 
 #if LV_USE_SLIDER
     else if(lv_obj_check_type(obj, &lv_slider_class)) {

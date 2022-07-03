@@ -168,21 +168,22 @@ static void brightness_event_handler(lv_event_t* e)
     switch (c)
     {
         case 'U':
-            ST_LOGD("Settings_Brightness: Up\n");
-            ++backlight_brigntness_normal;
+            backlight_brigntness_normal += 10;
             if (backlight_brigntness_normal > 99) backlight_brigntness_normal = 99;
+            ST_LOGI("Settings_Brightness: %d\n", backlight_brigntness_normal);
             backlight_set_direct(backlight_brigntness_normal);
             lv_barbox_set_value(ctx->popup, backlight_brigntness_normal);
             break;
         case 'D':
             ST_LOGD("Settings_Brigntness: Down\n");
-            --backlight_brigntness_normal;
+            backlight_brigntness_normal -= 10;
             if (backlight_brigntness_normal < 0) backlight_brigntness_normal = 0;
+            ST_LOGI("Settings_Brightness: %d\n", backlight_brigntness_normal);
             backlight_set_direct(backlight_brigntness_normal);
             lv_barbox_set_value(ctx->popup, backlight_brigntness_normal);
             break;
         default:
-            ST_LOGD("Settings_Brigntness: (%d)\n", c);
+            ST_LOGD("Settings_Brigntness: Unknown event (%d)\n", c);
             break;
     }
 }

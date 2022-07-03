@@ -1,16 +1,18 @@
 #include "lvstyle.h"
 
 
-lv_style_t lvs_invisible_btn;
-lv_style_t lvs_recolored_icon;
 
 lv_style_t lvs_default;
-lv_style_t lvs_msgbox;
 lv_style_t lvs_scrollbar;
 lv_style_t lvs_list;
 lv_style_t lvs_list_btn, lvs_list_btn_focused, lvs_list_btn_pressed;
+lv_style_t lvs_bar_bg, lvs_bar_ind;
+lv_style_t lvs_msgbox;
 
+lv_style_t lvs_invisible_btn;
+lv_style_t lvs_recolored_icon;
 lv_style_t lvs_browser_file_list;
+
 
 void lvs_init()
 {
@@ -64,17 +66,28 @@ void lvs_init()
     lv_style_set_radius(&lvs_list_btn, CORNER_RADIUS);
     lv_style_set_bg_opa(&lvs_list_btn_focused, LV_OPA_COVER);
     lv_style_set_bg_color(&lvs_list_btn_focused, COLOR_BUTTON_FACE_INACTIVE);
-    lv_style_set_text_color(&lvs_list_btn_focused, COLOR_BUTTON_TEXT_INACTIVE);
     // List button when focused
     lv_style_init(&lvs_list_btn_focused);
     lv_style_set_bg_opa(&lvs_list_btn_focused, LV_OPA_COVER);
     lv_style_set_bg_color(&lvs_list_btn_focused, COLOR_BUTTON_FACE_FOCUSED);
-    lv_style_set_text_color(&lvs_list_btn_focused, COLOR_BUTTON_TEXT_FOCUSED);
     // List button when pressed
     lv_style_init(&lvs_list_btn_pressed);
     lv_style_set_bg_opa(&lvs_list_btn_pressed, LV_OPA_COVER);
     lv_style_set_bg_color(&lvs_list_btn_pressed, COLOR_BUTTON_FACE_PRESSED);
-    lv_style_set_text_color(&lvs_list_btn_pressed, COLOR_BUTTON_TEXT_PRESSED);
+
+    // Bar
+    lv_style_init(&lvs_bar_bg);
+    lv_style_set_border_color(&lvs_bar_bg, COLOR_BORDER);
+    lv_style_set_border_width(&lvs_bar_bg, 1);
+    lv_style_set_bg_opa(&lvs_bar_bg, LV_OPA_COVER);
+    lv_style_set_bg_color(&lvs_bar_bg, COLOR_DARK);
+    lv_style_set_pad_all(&lvs_bar_bg, 2);
+    lv_style_set_radius(&lvs_bar_bg, 6);
+    lv_style_init(&lvs_bar_ind);
+    lv_style_set_bg_opa(&lvs_bar_ind, LV_OPA_COVER);
+    lv_style_set_bg_color(&lvs_bar_ind, COLOR_LIGHT);
+    lv_style_set_size(&lvs_bar_ind, 8);
+    lv_style_set_radius(&lvs_bar_ind, 3);
 
      // Popup Box / Msg box
     lv_style_init(&lvs_msgbox);
