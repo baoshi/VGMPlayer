@@ -23,9 +23,6 @@ void lvs_init()
     lv_style_set_outline_width(&lvs_invisible_btn, 0);
     lv_style_set_outline_opa(&lvs_invisible_btn, LV_OPA_TRANSP);
 
-    lv_style_init(&lvs_recolored_icon);
-    lv_style_set_img_recolor(&lvs_recolored_icon, lv_color_make(60, 169, 227));
-
     // Default style
     lv_style_init(&lvs_default);
     lv_style_set_bg_opa(&lvs_default, LV_OPA_COVER);
@@ -94,10 +91,15 @@ void lvs_init()
     lv_style_set_outline_width(&lvs_msgbox, 4);
     lv_style_set_pad_all(&lvs_msgbox, 15);                       // Leave some space from border
 
+    // Recolored ALPHA-only channel icon
+    lv_style_init(&lvs_recolored_icon);
+    lv_style_set_img_recolor(&lvs_recolored_icon, COLOR_BORDER);
+    lv_style_set_img_recolor_opa(&lvs_recolored_icon, LV_OPA_COVER);
 
     // Styles for file list in browser screen
     lv_style_init(&lvs_browser_file_list);
     lv_style_set_border_side(&lvs_browser_file_list, LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM);
     lv_style_set_pad_left(&lvs_browser_file_list, 2);
+
 }
 

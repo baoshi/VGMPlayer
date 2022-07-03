@@ -197,7 +197,7 @@ event_t const *settings_brightness_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
         {
             ST_LOGD("Settings_Brightness: entry\n");
-            ctx->popup = lv_barbox_create(lv_scr_act(), &settings_icon_brightness, 0, 99, backlight_brigntness_normal);
+            ctx->popup = lv_barbox_create(lv_scr_act(), &img_settings_brightness, 0, 99, backlight_brigntness_normal);
             lv_obj_add_event_cb(ctx->popup, brightness_event_handler, LV_EVENT_KEY, (void*)ctx);
             lv_group_remove_all_objs(lvi_keypad_group);
             lv_group_add_obj(lvi_keypad_group, ctx->popup);

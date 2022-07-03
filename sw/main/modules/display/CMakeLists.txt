@@ -9,7 +9,7 @@ target_sources(display INTERFACE
     img_browser_folder.c
     img_browser_file.c
     img_browser_nsf.c
-    settings_icon_brightness.c
+    img_settings_brightness.c
     display.c
 )
 

@@ -66,7 +66,7 @@ lv_obj_t *lv_barbox_create(lv_obj_t *parent, const void *icon, int32_t min, int3
     if (icon)
     {
         lv_obj_t *img = lv_img_create(obj);
-        //lv_obj_add_style(img, &lvs_recolored_icon, 0);
+        lv_obj_add_style(img, &lvs_recolored_icon, 0);
         lv_img_set_src(img, icon);
         lv_obj_set_flex_grow(img, 0);
     }

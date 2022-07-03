@@ -40,7 +40,7 @@ void lvs_init();
 LV_IMG_DECLARE(img_browser_folder);
 LV_IMG_DECLARE(img_browser_file);
 LV_IMG_DECLARE(img_browser_nsf);
-
+LV_IMG_DECLARE(img_settings_brightness);
 
 #ifdef __cplusplus
 }
