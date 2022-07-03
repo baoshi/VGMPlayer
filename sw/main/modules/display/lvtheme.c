@@ -24,13 +24,11 @@
  **********************/
 typedef struct
 {
-    lv_style_t scr;
     lv_style_t white;
     lv_style_t light;
     lv_style_t dark;
     lv_style_t dim;
-    lv_style_t scrollbar;
-    lv_style_t listbox, list_btn, list_btn_focused, list_btn_pressed;
+    lv_style_t list_btn, list_btn_focused, list_btn_pressed;
 } theme_styles_t;
 
 
@@ -51,54 +49,9 @@ static bool inited;
  **********************/
 
 static void style_init(void)
-{
-    // Default screen style
-    style_init_reset(&styles.scr);
-    lv_style_set_bg_opa(&styles.scr, LV_OPA_COVER);
-    lv_style_set_bg_color(&styles.scr, COLOR_BACKGROUND);
-    lv_style_set_text_color(&styles.scr, COLOR_TEXT);
-    lv_style_set_text_font(&styles.scr, LV_FONT_DEFAULT);
+{    
+ 
     
-    // Scrollbar
-    style_init_reset(&styles.scrollbar);
-    lv_style_set_bg_color(&styles.scrollbar, COLOR_BUTTON_FACE_FOCUSED);
-    lv_style_set_bg_opa(&styles.scrollbar, LV_OPA_COVER);
-    lv_style_set_pad_right(&styles.scrollbar, 4);
-    lv_style_set_pad_top(&styles.scrollbar,  4);
-    lv_style_set_pad_bottom(&styles.scrollbar,  4);
-    lv_style_set_size(&styles.scrollbar,  5);
-    
-    // Listbox
-    style_init_reset(&styles.listbox);
-    lv_style_set_bg_opa(&styles.listbox, LV_OPA_COVER);   // Same opqaue background as screen
-    lv_style_set_bg_color(&styles.listbox, COLOR_BACKGROUND);
-    lv_style_set_border_color(&styles.listbox, COLOR_BORDER);  // 1 pixel border
-    lv_style_set_border_side(&styles.listbox, LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM);
-    lv_style_set_border_width(&styles.listbox, 1);
-    lv_style_set_border_post(&styles.listbox, true);      // border shall draw after children
-    lv_style_set_pad_right(&styles.listbox, 14);          // right with scrollbar
-    lv_style_set_pad_left(&styles.listbox, 8);
-    lv_style_set_pad_top(&styles.listbox, 6);
-    lv_style_set_pad_bottom(&styles.listbox, 6);
-    lv_style_set_pad_row(&styles.listbox, 1);             // 1 pixels gap between each row
-    // Default list button
-    style_init_reset(&styles.list_btn);
-    lv_style_set_pad_left(&styles.list_btn, 8);
-    lv_style_set_pad_top(&styles.list_btn, 4);
-    lv_style_set_pad_bottom(&styles.list_btn, 4);
-    lv_style_set_bg_opa(&styles.list_btn_focused, LV_OPA_COVER);
-    lv_style_set_bg_color(&styles.list_btn_focused, COLOR_BUTTON_FACE_INACTIVE);
-    lv_style_set_text_color(&styles.list_btn_focused, COLOR_BUTTON_TEXT_INACTIVE);
-    // List button when focused
-    style_init_reset(&styles.list_btn_focused);
-    lv_style_set_bg_opa(&styles.list_btn_focused, LV_OPA_COVER);
-    lv_style_set_bg_color(&styles.list_btn_focused, COLOR_BUTTON_FACE_FOCUSED);
-    lv_style_set_text_color(&styles.list_btn_focused, COLOR_BUTTON_TEXT_FOCUSED);
-    // List button when pressed
-    style_init_reset(&styles.list_btn_pressed);
-    lv_style_set_bg_opa(&styles.list_btn_pressed, LV_OPA_COVER);
-    lv_style_set_bg_color(&styles.list_btn_pressed, COLOR_BUTTON_FACE_PRESSED);
-    lv_style_set_text_color(&styles.list_btn_pressed, COLOR_BUTTON_TEXT_PRESSED);
 
     
     style_init_reset(&styles.white);
@@ -155,36 +108,34 @@ lv_theme_t* lvt_init(lv_disp_t* disp)
 
 static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
 {
-    if (lv_obj_get_parent(obj) == NULL) // Apply to a screen
+    if (lv_obj_get_parent(obj) == NULL) // Apply to screen
     {
-        lv_obj_add_style(obj, &styles.scr, 0);
+        lv_obj_add_style(obj, &lvs_default, 0);
         return;
     }
+    // Class based styles
+    if (lv_obj_check_type(obj, &lv_obj_class))              // Root object
+    {
+        lv_obj_add_style(obj, &lvs_scrollbar, LV_PART_SCROLLBAR);
+    }
+    else if (lv_obj_check_type(obj, &lv_list_class))        // List box
+    {
+        lv_obj_add_style(obj, &lvs_list, 0);
+        lv_obj_add_style(obj, &lvs_scrollbar, LV_PART_SCROLLBAR);
+    }
+    else if (lv_obj_check_type(obj, &lv_list_btn_class))     // Buttons in list box
+    {
+        lv_obj_add_style(obj, &lvs_list_btn, 0);
+        lv_obj_add_style(obj, &lvs_list_btn_focused, LV_STATE_FOCUSED);
+        lv_obj_add_style(obj, &lvs_list_btn_focused, LV_STATE_FOCUS_KEY);
+        lv_obj_add_style(obj, &lvs_list_btn_pressed, LV_STATE_PRESSED);
+    }
+    else if (lv_obj_check_type(obj, &lv_msgbox_class))      // Message box
+    {
+        lv_obj_add_style(obj, &lvs_msgbox, 0);
+    }
 
-    if (lv_obj_check_type(obj, &lv_obj_class)) 
-    {
-        //lv_obj_add_style(obj, &styles.white, 0);
-        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-    }
-    // List box
-    else if (lv_obj_check_type(obj, &lv_list_class)) 
-    {
-        lv_obj_add_style(obj, &styles.listbox, 0);
-        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-    }
-    // Buttons in list box
-    else if (lv_obj_check_type(obj, &lv_list_btn_class)) 
-    {
-        lv_obj_add_style(obj, &styles.list_btn, 0);
-        lv_obj_add_style(obj, &styles.list_btn_focused, LV_STATE_FOCUSED);
-        lv_obj_add_style(obj, &styles.list_btn_focused, LV_STATE_FOCUS_KEY);
-        lv_obj_add_style(obj, &styles.list_btn_pressed, LV_STATE_PRESSED);
-    }
-    // Message box
-    else if (lv_obj_check_type(obj, &lv_msgbox_class)) 
-    {
-        lv_obj_add_style(obj, &lvs_popup, 0);
-    }
+
 #if LV_USE_BAR
     else if(lv_obj_check_type(obj, &lv_bar_class)) {
         lv_obj_add_style(obj, &styles.light, 0);
@@ -205,7 +156,7 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
 #if LV_USE_TEXTAREA
     else if(lv_obj_check_type(obj, &lv_textarea_class)) {
         lv_obj_add_style(obj, &styles.white, 0);
-        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
+        lv_obj_add_style(obj, &lvs_scrollbar, LV_PART_SCROLLBAR);
     }
 #endif
 

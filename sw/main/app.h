@@ -19,10 +19,10 @@ typedef struct app_s app_t;
 typedef struct browser_s
 {
     lv_obj_t *screen;
-    lv_obj_t *lbl_top;      // Top indicators
-    lv_obj_t *lbl_bottom;   // Bottom label
-    lv_obj_t *lst_files;    // List of files
-    lv_obj_t *focused;      // focused file in the list
+    lv_obj_t *lbl_top;          // Top indicators
+    lv_obj_t *lbl_bottom;       // Bottom label
+    lv_obj_t *lst_file_list;    // List of files
+    lv_obj_t *focused;          // focused file in the list
     int alarm_ui_update;
 } browser_t;
 

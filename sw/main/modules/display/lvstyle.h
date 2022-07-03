@@ -19,11 +19,21 @@ extern "C" {
 #define COLOR_BUTTON_FACE_PRESSED   lv_color_make(61, 174, 233)
 #define COLOR_BUTTON_TEXT_PRESSED   lv_color_make(225, 217, 210)
 
+#define CORNER_RADIUS               4
 
-extern lv_style_t lvs_invisible_button;
+
+
 extern lv_style_t lvs_recolored_icon;
 
-extern lv_style_t lvs_popup;
+extern lv_style_t lvs_default;
+extern lv_style_t lvs_scrollbar;
+extern lv_style_t lvs_list;
+extern lv_style_t lvs_list_btn, lvs_list_btn_focused, lvs_list_btn_pressed;
+extern lv_style_t lvs_msgbox;
+
+// Application specific styles
+extern lv_style_t lvs_browser_file_list;
+extern lv_style_t lvs_invisible_button;
 
 void lvs_init();
 

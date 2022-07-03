@@ -11,7 +11,6 @@
             "device": "RP2040_M0_0",
             "interface": "swd",
             "jlinkscript": "",
-            "runToEntryPoint": "main",
             "svdFile": "${env:PICO_SDK_PATH}/src/rp2040/hardware_regs/rp2040.svd"
         },
         {

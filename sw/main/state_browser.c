@@ -121,9 +121,10 @@ static void browser_on_entry(browser_t *ctx)
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
     // File list
-    ctx->lst_files = lv_list_create(ctx->screen);
-    lv_obj_set_size(ctx->lst_files, 240, 192);
-    lv_obj_set_pos(ctx->lst_files, 0, 24);
+    ctx->lst_file_list = lv_list_create(ctx->screen);
+    lv_obj_add_style(ctx->lst_file_list, &lvs_browser_file_list, 0);
+    lv_obj_set_size(ctx->lst_file_list, 240, 192);
+    lv_obj_set_pos(ctx->lst_file_list, 0, 24);
     // Other UI elements
     ctx->focused = 0;
     // Calculates all coordinates
@@ -295,18 +296,18 @@ static void populate_file_list(app_t *me, int mode)
         break;
     }
 
-    lv_obj_clean(ctx->lst_files);
+    lv_obj_clean(ctx->lst_file_list);
     // If we are on the fist page of a sub directory, add ".."
     if ((0 == page) && (!path_is_root_dir(me->catalog->dir)))
     {
-        btn = lv_list_add_btn_ex(ctx->lst_files, 0, "[..]", LV_LABEL_LONG_DOT);
+        btn = lv_list_add_btn_ex(ctx->lst_file_list, 0, "[..]", LV_LABEL_LONG_DOT);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PARENT);
         lv_obj_add_event_cb(btn, file_list_button_handler, LV_EVENT_ALL, (void *)ctx);
     }
     // 2nd page onwards, add "PgUp" button
     if (page > 0)
     {
-        btn = lv_list_add_btn_ex(ctx->lst_files, 0, "[" LV_SYMBOL_UP "]", LV_LABEL_LONG_DOT);
+        btn = lv_list_add_btn_ex(ctx->lst_file_list, 0, "[" LV_SYMBOL_UP "]", LV_LABEL_LONG_DOT);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEUP);
         lv_obj_add_event_cb(btn, file_list_button_handler, LV_EVENT_ALL, (void *)ctx);
     }
@@ -319,7 +320,7 @@ static void populate_file_list(app_t *me, int mode)
         {
             name[0] = '[';
             strcat(name, "]");
-            btn = lv_list_add_btn_ex(ctx->lst_files, &browser_icon_folder, name, LV_LABEL_LONG_DOT);
+            btn = lv_list_add_btn_ex(ctx->lst_file_list, &browser_icon_folder, name, LV_LABEL_LONG_DOT);
             lv_obj_set_user_data(btn, (void *)(uint32_t)((btn_index << 16) | FILE_LIST_ENTRY_TYPE_DIR));
         }
         else if (type == CAT_TYPE_FILE)
@@ -329,16 +330,16 @@ static void populate_file_list(app_t *me, int mode)
             {
                 if (0 == strcasecmp(ext, "nsf"))
                 {
-                    btn = lv_list_add_btn_ex(ctx->lst_files, &browser_icon_nsf, name + 1, LV_LABEL_LONG_DOT);    
+                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &browser_icon_nsf, name + 1, LV_LABEL_LONG_DOT);    
                 }
                 else
                 {
-                    btn = lv_list_add_btn_ex(ctx->lst_files, &browser_icon_file, name + 1, LV_LABEL_LONG_DOT);
+                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &browser_icon_file, name + 1, LV_LABEL_LONG_DOT);
                 }
             }
             else
             {
-                btn = lv_list_add_btn_ex(ctx->lst_files, &browser_icon_file, name + 1, LV_LABEL_LONG_DOT);
+                btn = lv_list_add_btn_ex(ctx->lst_file_list, &browser_icon_file, name + 1, LV_LABEL_LONG_DOT);
             }
             lv_obj_set_user_data(btn, (void *)(uint32_t)((btn_index << 16) | FILE_LIST_ENTRY_TYPE_FILE));
         }
@@ -349,7 +350,7 @@ static void populate_file_list(app_t *me, int mode)
     }
     if (page < me->catalog->pages - 1)
     {
-        btn = lv_list_add_btn_ex(ctx->lst_files, 0, "[" LV_SYMBOL_DOWN "]", LV_LABEL_LONG_DOT);
+        btn = lv_list_add_btn_ex(ctx->lst_file_list, 0, "[" LV_SYMBOL_DOWN "]", LV_LABEL_LONG_DOT);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEDOWN);
         lv_obj_add_event_cb(btn, file_list_button_handler, LV_EVENT_ALL, (void *)ctx);
     }
@@ -359,10 +360,10 @@ static void populate_file_list(app_t *me, int mode)
     }
     // Add all buttons to input group
     lv_group_remove_all_objs(lvi_keypad_group);
-    uint32_t cnt = lv_obj_get_child_cnt(ctx->lst_files);
+    uint32_t cnt = lv_obj_get_child_cnt(ctx->lst_file_list);
     for (uint32_t i = 0; i < cnt; ++i)
     {
-        lv_obj_t *obj = lv_obj_get_child(ctx->lst_files, i);
+        lv_obj_t *obj = lv_obj_get_child(ctx->lst_file_list, i);
         lv_group_add_obj(lvi_keypad_group, obj);
     }
     // Set focus if necessary
@@ -389,7 +390,7 @@ static void browser_disk_cleanup(app_t* me, browser_t *ctx)
 {
     // unmap keypad and input group
     lv_group_remove_all_objs(lvi_keypad_group);
-    lv_obj_clean(ctx->lst_files);
+    lv_obj_clean(ctx->lst_file_list);
     lvi_disable_keypad();
     // clear catalog
     catalog_close(me->catalog);
@@ -494,7 +495,7 @@ static void browser_disk_on_play(app_t *me, browser_t *ctx, event_t const *evt)
     // EVT_BROWSER_PLAY_CLICKED is sent by file list button callback in file_list_button_handler()
     // The firing button object is stored in event parameter
     lv_obj_t *btn = (lv_obj_t *)(evt->param);   
-    const char *btn_text = lv_list_get_btn_text(ctx->lst_files, btn);   // name of the file
+    const char *btn_text = lv_list_get_btn_text(ctx->lst_file_list, btn);   // name of the file
     int t = (int)lv_obj_get_user_data(btn);   
     int index = (int)((uint32_t)t >> 16);     // index of this file in catalog
     int type = (int)((uint32_t)t & 0xffff);   // type of this file (file or directory or special button (PageUp/PageDown/Parent))
@@ -606,9 +607,9 @@ static void browser_disk_on_setting(browser_t *ctx)
     lvi_disable_keypad();
     // Save current focused file
     ctx->focused = 0;
-    for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_files); ++i)
+    for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_file_list); ++i)
     {
-        lv_obj_t *obj = lv_obj_get_child(ctx->lst_files, i);
+        lv_obj_t *obj = lv_obj_get_child(ctx->lst_file_list, i);
         if (lv_obj_has_state(obj, LV_STATE_FOCUSED))
         {
             ctx->focused = obj;
@@ -626,9 +627,9 @@ static void browser_disk_on_setting_closed(browser_t *ctx)
     browser_disk_map_keypad();
     // attach input group to file list buttons
     lv_group_remove_all_objs(lvi_keypad_group);
-    for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_files); ++i)
+    for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_file_list); ++i)
     {
-        lv_obj_t *obj = lv_obj_get_child(ctx->lst_files, i);
+        lv_obj_t *obj = lv_obj_get_child(ctx->lst_file_list, i);
         lv_group_add_obj(lvi_keypad_group, obj);
     }
     // Set focus if necessary
