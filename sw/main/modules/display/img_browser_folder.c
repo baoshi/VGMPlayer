@@ -9,11 +9,11 @@
 #define LV_ATTRIBUTE_MEM_ALIGN
 #endif
 
-#ifndef LV_ATTRIBUTE_IMG_BROWSER_ICON_FOLDER
-#define LV_ATTRIBUTE_IMG_BROWSER_ICON_FOLDER
+#ifndef LV_ATTRIBUTE_IMG_IMG_BROWSER_FOLDER
+#define LV_ATTRIBUTE_IMG_IMG_BROWSER_FOLDER
 #endif
 
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_BROWSER_ICON_FOLDER uint8_t browser_icon_folder_map[] = {
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_IMG_BROWSER_FOLDER uint8_t img_browser_folder_map[] = {
 #if LV_COLOR_DEPTH == 1 || LV_COLOR_DEPTH == 8
   /*Pixel format: Red: 3 bit, Green: 3 bit, Blue: 2 bit*/
   0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 0xe3, 
@@ -104,12 +104,12 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_BROWSER_I
 #endif
 };
 
-const lv_img_dsc_t browser_icon_folder = {
+const lv_img_dsc_t img_browser_folder = {
   .header.cf = LV_IMG_CF_TRUE_COLOR_CHROMA_KEYED,
   .header.always_zero = 0,
   .header.reserved = 0,
   .header.w = 26,
   .header.h = 19,
   .data_size = 494 * LV_COLOR_SIZE / 8,
-  .data = browser_icon_folder_map,
+  .data = img_browser_folder_map,
 };

@@ -3,7 +3,6 @@
 #include "sw_conf.h"
 #include "my_debug.h"
 #include "lvinput.h"
-#include "lvtheme.h"
 #include "lvstyle.h"
 #include "lvsupp.h"
 #include "tick.h"
@@ -87,16 +86,16 @@ static void browser_on_entry(browser_t *ctx)
     lv_obj_t *btn;
     // (0, 0)
     btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_button, 0);
-    lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
+    lv_obj_add_style(btn, &lvs_invisible_btn, 0);
+    lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 0, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_BACK_CLICKED);
     // (1, 0)
     btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_button, 0);
-    lv_obj_add_style(btn, &lvs_invisible_button, LV_STATE_PRESSED);
+    lv_obj_add_style(btn, &lvs_invisible_btn, 0);
+    lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
     lv_obj_set_pos(btn, 1, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
@@ -320,7 +319,7 @@ static void populate_file_list(app_t *me, int mode)
         {
             name[0] = '[';
             strcat(name, "]");
-            btn = lv_list_add_btn_ex(ctx->lst_file_list, &browser_icon_folder, name, LV_LABEL_LONG_DOT);
+            btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_browser_folder, name, LV_LABEL_LONG_DOT);
             lv_obj_set_user_data(btn, (void *)(uint32_t)((btn_index << 16) | FILE_LIST_ENTRY_TYPE_DIR));
         }
         else if (type == CAT_TYPE_FILE)
@@ -330,16 +329,16 @@ static void populate_file_list(app_t *me, int mode)
             {
                 if (0 == strcasecmp(ext, "nsf"))
                 {
-                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &browser_icon_nsf, name + 1, LV_LABEL_LONG_DOT);    
+                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_browser_nsf, name + 1, LV_LABEL_LONG_DOT);    
                 }
                 else
                 {
-                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &browser_icon_file, name + 1, LV_LABEL_LONG_DOT);
+                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_browser_file, name + 1, LV_LABEL_LONG_DOT);
                 }
             }
             else
             {
-                btn = lv_list_add_btn_ex(ctx->lst_file_list, &browser_icon_file, name + 1, LV_LABEL_LONG_DOT);
+                btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_browser_file, name + 1, LV_LABEL_LONG_DOT);
             }
             lv_obj_set_user_data(btn, (void *)(uint32_t)((btn_index << 16) | FILE_LIST_ENTRY_TYPE_FILE));
         }

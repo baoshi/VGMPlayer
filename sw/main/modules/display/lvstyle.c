@@ -1,7 +1,7 @@
 #include "lvstyle.h"
 
 
-lv_style_t lvs_invisible_button;
+lv_style_t lvs_invisible_btn;
 lv_style_t lvs_recolored_icon;
 
 lv_style_t lvs_default;
@@ -15,13 +15,13 @@ lv_style_t lvs_browser_file_list;
 void lvs_init()
 {
     // Invisible button
-    lv_style_init(&lvs_invisible_button);
-    lv_style_set_text_opa(&lvs_invisible_button, LV_OPA_TRANSP);
-    lv_style_set_bg_opa(&lvs_invisible_button, LV_OPA_TRANSP);
-    lv_style_set_border_width(&lvs_invisible_button, 0);
-    lv_style_set_shadow_width(&lvs_invisible_button, 0);
-    lv_style_set_outline_width(&lvs_invisible_button, 0);
-    lv_style_set_outline_opa(&lvs_invisible_button, LV_OPA_TRANSP);
+    lv_style_init(&lvs_invisible_btn);
+    lv_style_set_text_opa(&lvs_invisible_btn, LV_OPA_TRANSP);
+    lv_style_set_bg_opa(&lvs_invisible_btn, LV_OPA_TRANSP);
+    lv_style_set_border_width(&lvs_invisible_btn, 0);
+    lv_style_set_shadow_width(&lvs_invisible_btn, 0);
+    lv_style_set_outline_width(&lvs_invisible_btn, 0);
+    lv_style_set_outline_opa(&lvs_invisible_btn, LV_OPA_TRANSP);
 
     lv_style_init(&lvs_recolored_icon);
     lv_style_set_img_recolor(&lvs_recolored_icon, lv_color_make(60, 169, 227));
@@ -37,9 +37,10 @@ void lvs_init()
     lv_style_init(&lvs_scrollbar);
     lv_style_set_bg_color(&lvs_scrollbar, COLOR_BUTTON_FACE_FOCUSED);
     lv_style_set_bg_opa(&lvs_scrollbar, LV_OPA_COVER);
-    lv_style_set_pad_right(&lvs_scrollbar, 4);
-    lv_style_set_pad_top(&lvs_scrollbar, 4);
-    lv_style_set_pad_bottom(&lvs_scrollbar, 4);
+    lv_style_set_pad_left(&lvs_scrollbar, 4);
+    lv_style_set_pad_right(&lvs_scrollbar, 6);
+    lv_style_set_pad_top(&lvs_scrollbar, 6);
+    lv_style_set_pad_bottom(&lvs_scrollbar, 6);
     lv_style_set_size(&lvs_scrollbar, 5);
     lv_style_set_radius(&lvs_scrollbar, CORNER_RADIUS);     // Rounded corner
 
@@ -60,8 +61,10 @@ void lvs_init()
     // List button
     lv_style_init(&lvs_list_btn);
     lv_style_set_pad_left(&lvs_list_btn, 4);
+    lv_style_set_pad_right(&lvs_list_btn, 4);
     lv_style_set_pad_top(&lvs_list_btn, 4);
     lv_style_set_pad_bottom(&lvs_list_btn, 4);
+    lv_style_set_radius(&lvs_list_btn, CORNER_RADIUS);
     lv_style_set_bg_opa(&lvs_list_btn_focused, LV_OPA_COVER);
     lv_style_set_bg_color(&lvs_list_btn_focused, COLOR_BUTTON_FACE_INACTIVE);
     lv_style_set_text_color(&lvs_list_btn_focused, COLOR_BUTTON_TEXT_INACTIVE);
@@ -96,6 +99,5 @@ void lvs_init()
     lv_style_init(&lvs_browser_file_list);
     lv_style_set_border_side(&lvs_browser_file_list, LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM);
     lv_style_set_pad_left(&lvs_browser_file_list, 2);
-    lv_style_set_pad_right(&lvs_browser_file_list, 12);
 }
 

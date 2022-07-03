@@ -6,10 +6,9 @@ target_sources(display INTERFACE
     lvstyle.c
     lvinput.c
     lvsupp.c
-    lvfont_helvr14.c
-    browser_icon_folder.c
-    browser_icon_file.c
-    browser_icon_nsf.c
+    img_browser_folder.c
+    img_browser_file.c
+    img_browser_nsf.c
     settings_icon_brightness.c
     display.c
 )

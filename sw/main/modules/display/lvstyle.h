@@ -33,9 +33,14 @@ extern lv_style_t lvs_msgbox;
 
 // Application specific styles
 extern lv_style_t lvs_browser_file_list;
-extern lv_style_t lvs_invisible_button;
+extern lv_style_t lvs_invisible_btn;
 
 void lvs_init();
+
+LV_IMG_DECLARE(img_browser_folder);
+LV_IMG_DECLARE(img_browser_file);
+LV_IMG_DECLARE(img_browser_nsf);
+
 
 #ifdef __cplusplus
 }
