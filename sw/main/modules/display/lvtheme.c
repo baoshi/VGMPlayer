@@ -46,10 +46,6 @@ static bool inited;
 
 static void style_init(void)
 {    
- 
-    
-
-    
     style_init_reset(&styles.white);
     lv_style_set_bg_opa(&styles.white, LV_OPA_COVER);
     lv_style_set_bg_color(&styles.white, COLOR_WHITE);
