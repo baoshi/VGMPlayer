@@ -110,7 +110,6 @@ static void wmc_write_masked(uint8_t reg, uint16_t bits, uint16_t mask)
 
 void wm8978_preinit()
 {
-    wmc_write(WMC_SOFTWARE_RESET, 0x00);    // For pop debugger, not needed if only does once after power up
     // Mute all analog outputs
     wmc_set(WMC_LOUT1_HP_VOLUME_CTRL, WMC_MUTE);
     wmc_set(WMC_ROUT1_HP_VOLUME_CTRL, WMC_MUTE);
@@ -167,7 +166,6 @@ void wm8978_preinit()
     wmc_write_masked(WMC_ROUT1_HP_VOLUME_CTRL, 20, WMC_AVOL);
     wmc_write_masked(WMC_LOUT2_SPK_VOLUME_CTRL, 50, WMC_AVOL);
     wmc_write_masked(WMC_ROUT2_SPK_VOLUME_CTRL, 50, WMC_AVOL);
-
 }
 
 
@@ -220,3 +218,16 @@ void wm8978_mute(bool mute)
 }
 
 
+void wm8978_set_volume(wm8978_output_t out, uint8_t vol)
+{
+    if (WM8978_OUTPUT_SPEAKER == out)
+    {
+        wmc_write_masked(WMC_LOUT2_SPK_VOLUME_CTRL, vol, WMC_AVOL);
+        wmc_write_masked(WMC_ROUT2_SPK_VOLUME_CTRL, vol, WMC_AVOL);
+    } 
+    else if (WM8978_OUTPUT_EARPIECE == out)
+    {
+        wmc_write_masked(WMC_LOUT1_HP_VOLUME_CTRL, vol, WMC_AVOL);
+        wmc_write_masked(WMC_ROUT1_HP_VOLUME_CTRL, vol, WMC_AVOL);
+    }
+}
