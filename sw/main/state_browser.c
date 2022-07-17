@@ -656,13 +656,15 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         EVT_BACK_CLICKED:
             Pop history and navigate to parent directory
         EVT_SETTING_CLICKED:
-            Clean keypad map
-            Save current focused file
-            Create settings state and transit to it
+            call browser_disk_on_setting()
+              - Clean keypad mapping
+              - Save current focused file
+            Let browser state handle further
         EVT_SETTING_CLOSED:
-            Restore keypad map
-            Bind input group to file list
-            Restore file list focused item
+            call browser_disk_on_setting_closed()
+              -  restore keypad mapping
+              -  Restore fcoused file
+            Let browser state to handle further
         EVT_DISK_ERROR:
             Cleanup
             Transit to browser_baddisk state
