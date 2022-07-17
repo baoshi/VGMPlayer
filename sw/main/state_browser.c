@@ -176,8 +176,8 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         STATE_START(me, &me->browser_nodisk); // default to nodisk state and wait card insertion
         break;
     case EVT_SETTING_CLICKED:
-        settings_create(me);
-        STATE_TRAN((hsm_t *)me, &me->settings);
+        setting_create(me);
+        STATE_TRAN((hsm_t *)me, &me->setting);
         break;
     case EVT_SETTING_CLOSED:
         break;

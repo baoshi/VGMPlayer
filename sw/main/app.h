@@ -62,14 +62,14 @@ typedef struct settings_s
 {
     state_t *creator;
     lv_obj_t* popup;
-} settings_t;
+} setting_t;
 
-event_t const *settings_handler(app_t *me, event_t const *evt);
-event_t const *settings_brightness_handler(app_t *me, event_t const *evt);
-event_t const *settings_volume_handler(app_t *me, event_t const *evt);
+event_t const *setting_handler(app_t *me, event_t const *evt);
+event_t const *setting_brightness_handler(app_t *me, event_t const *evt);
+event_t const *setting_volume_handler(app_t *me, event_t const *evt);
 
 
-void settings_create(app_t *me);
+void setting_create(app_t *me);
 
 
 // Application level state machine
@@ -80,8 +80,8 @@ struct app_s
     browser_t browser_ctx;
     state_t player, player_exp;
     player_t player_ctx;
-    state_t settings, settings_volume, settings_brightness;
-    settings_t settings_ctx;
+    state_t setting, setting_volume, setting_brightness;
+    setting_t setting_ctx;
     // data shared by all states
     catalog_t *catalog;
     int catalog_history_page[CATALOG_HISTORY_DEPTH];

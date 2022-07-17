@@ -315,8 +315,8 @@ event_t const *player_handler(app_t *me, event_t const *evt)
             lvi_pos_button(LVI_BUTTON_NW, 1, 0);
             lvi_pos_button(LVI_BUTTON_SW, 2, 0);
             lvi_disable_keypad();
-            settings_create(me);
-            STATE_TRAN((hsm_t*)me, &me->settings);
+            setting_create(me);
+            STATE_TRAN((hsm_t*)me, &me->setting);
             break;
         }
         case EVT_SETTING_CLOSED:

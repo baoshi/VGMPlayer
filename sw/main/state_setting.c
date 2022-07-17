@@ -14,7 +14,7 @@
 
 // State "settings"
 // State "settings" contains 2 sub-states: "settings-volume", "settings-brightness", 
-// State "settings" is not initialzed at program start. Caller use settings_create() to append it to the current state
+// State "settings" is not initialzed at program start. Caller use setting_create() to append it to the current state
 // State "settings" does not transit to other states except for when exit, it transit to the creator's state and emit EVT_SETTING_CLOSED event
 
 
@@ -39,31 +39,28 @@
 #endif
 
 
-
-
-
 // When called, append "settings" sub-state to the current state
-void settings_create(app_t *me)
+void setting_create(app_t *me)
 {
     state_t *curr = ((hsm_t *)me)->curr;
-    settings_t *ctx = &(me->settings_ctx);
+    setting_t *ctx = &(me->setting_ctx);
     ctx->creator = curr;  // save 
     ST_LOGD("Settings: creation, append to %s state\n", ctx->creator->name);
-    state_ctor(&(me->settings), "settings", curr, (event_handler_t)settings_handler);
+    state_ctor(&(me->setting), "settings", curr, (event_handler_t)setting_handler);
 }
 
 
+// Transit to the creator state
 static void settings_close(app_t *me)
 {
-    // Transit to the creator's state
-    settings_t *ctx = &(me->settings_ctx);
+    setting_t *ctx = &(me->setting_ctx);
     ST_LOGD("Settings: close and transit to %s state\n", ctx->creator->name);
     STATE_TRAN((hsm_t *)me, ctx->creator);
     EQ_QUICK_PUSH(EVT_SETTING_CLOSED);
 }
 
 
-event_t const *settings_handler(app_t *me, event_t const *evt)
+event_t const *setting_handler(app_t *me, event_t const *evt)
 {
     event_t const *r = 0;
     switch (evt->code)
@@ -86,7 +83,7 @@ event_t const *settings_handler(app_t *me, event_t const *evt)
         case EVT_START:
         {
             ST_LOGD("Settings: start\n");
-            STATE_START(me, &(me->settings_volume));
+            STATE_START(me, &(me->setting_volume));
             break;
         }
         case EVT_BACK_CLICKED:
@@ -124,10 +121,10 @@ static void volume_event_handler(lv_event_t* e)
 }
 
 
-event_t const *settings_volume_handler(app_t *me, event_t const *evt)
+event_t const *setting_volume_handler(app_t *me, event_t const *evt)
 {
     event_t const *r = 0;
-    settings_t *ctx = &(me->settings_ctx);
+    setting_t *ctx = &(me->setting_ctx);
     switch (evt->code)
     {
         case EVT_ENTRY:
@@ -148,7 +145,7 @@ event_t const *settings_volume_handler(app_t *me, event_t const *evt)
         }
         case EVT_SETTING_CLICKED:
         {
-            STATE_TRAN(me, &(me->settings_brightness));
+            STATE_TRAN(me, &(me->setting_brightness));
             break;
         }
         default:
@@ -163,7 +160,7 @@ event_t const *settings_volume_handler(app_t *me, event_t const *evt)
 
 static void brightness_event_handler(lv_event_t* e)
 {
-    settings_t* ctx = (settings_t*)lv_event_get_user_data(e);
+    setting_t* ctx = (setting_t*)lv_event_get_user_data(e);
     int32_t c = *((int32_t *)lv_event_get_param(e));
     switch (c)
     {
@@ -189,10 +186,10 @@ static void brightness_event_handler(lv_event_t* e)
 }
 
 
-event_t const *settings_brightness_handler(app_t *me, event_t const *evt)
+event_t const *setting_brightness_handler(app_t *me, event_t const *evt)
 {
     event_t const *r = 0;
-    settings_t *ctx = &(me->settings_ctx);
+    setting_t *ctx = &(me->setting_ctx);
     switch (evt->code)
     {
         case EVT_ENTRY:
@@ -213,7 +210,7 @@ event_t const *settings_brightness_handler(app_t *me, event_t const *evt)
         }
         case EVT_SETTING_CLICKED:
         {
-            EQ_QUICK_PUSH(EVT_BACK_CLICKED);    // this exit settings
+            EQ_QUICK_PUSH(EVT_BACK_CLICKED);    // settings state will handle this and close popup
             break;
         }
         default:
@@ -223,6 +220,5 @@ event_t const *settings_brightness_handler(app_t *me, event_t const *evt)
         }
     }
     return r;
-
 }
 

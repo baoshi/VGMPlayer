@@ -53,9 +53,9 @@ void app_ctor(app_t* me)
         state_ctor(&(me->browser_baddisk), "browser_baddisk", &(me->browser), (event_handler_t)browser_baddisk_handler);
     state_ctor(&(me->player), "player", &((hsm_t*)me)->top, (event_handler_t)player_handler);
         state_ctor(&(me->player_exp), "player_exp", &(me->player), (event_handler_t)player_exp_handler);
-    // settings_xxx is substates of settings. settings state will be dynamically attached using settings_popup() call
-    state_ctor(&(me->settings_volume), "settings_volume", &(me->settings), (event_handler_t)settings_volume_handler);
-    state_ctor(&(me->settings_brightness), "settings_brightness", &(me->settings), (event_handler_t)settings_brightness_handler);
+    // settings_xxx is substates of setting. setting state will be dynamically attached using settings_popup() call
+    state_ctor(&(me->setting_volume), "setting_volume", &(me->setting), (event_handler_t)setting_volume_handler);
+    state_ctor(&(me->setting_brightness), "setting_brightness", &(me->setting), (event_handler_t)setting_brightness_handler);
     
 }
 
