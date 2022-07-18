@@ -156,7 +156,7 @@ int main()
             if (ret > 0)
                 backlight_keepalive(now);
             // Audio update
-            ret = audio_update(now); // return earpiece plugged (1) / unplugged (2)
+            ret = audio_jack_detection(now); // return earpiece plugged (1) / unplugged (2)
             if (ret > 0)
                 backlight_keepalive(now);
             // Backlight update

@@ -48,7 +48,7 @@ static enum
 
 // Jack detection fsm
 #define JACK_DEBOUNCE_MS 100
-static uint32_t _jd_timestamp = 0;
+static uint32_t _jack_timestamp = 0;
 static enum 
 {
     JACK_NONE,
@@ -56,14 +56,14 @@ static enum
     JACK_BOUNCING_IN,
     JACK_INSERTED,
     JACK_BOUNCING_OUT
-} _jd_state;
+} _jack_state;
 
 
 void audio_preinit()
 {
     i2s_init();
     wm8978_preinit();
-    // Jack detection GPIO pin
+    // Jack detection GPIO
     gpio_init(JACK_DETECTION_PIN);
     gpio_disable_pulls(JACK_DETECTION_PIN);
     gpio_set_dir(JACK_DETECTION_PIN, GPIO_IN);
@@ -72,10 +72,10 @@ void audio_preinit()
     gpio_set_dir(JACK_DETECTION_ADC_PIN, GPIO_IN);
     // Jack enable pin
     gpio_init(JACK_EN_PIN);
-    gpio_put(JACK_EN_PIN, false);    // disable output
+    gpio_put(JACK_EN_PIN, false);    // disable jack output
     gpio_set_dir(JACK_EN_PIN, GPIO_OUT);
-    _jd_state = JACK_EMPTY;
-    _jd_timestamp = 0;
+    _jack_state = JACK_EMPTY;
+    _jack_timestamp = 0;
 }
 
 
@@ -90,7 +90,7 @@ void audio_close()
 {
     wm8978_powerdown();
     i2s_deinit();
-    _jd_state = JACK_NONE;
+    _jack_state = JACK_NONE;
 }
 
 
@@ -319,55 +319,53 @@ void audio_unpause_playback()
  * @brief Call this function repeatedly to receive jack detection notification
  * 
  * @param now       Timestamp
- * @return * int    1 if earpiece plugged
- *                  2 if earpiece unplugged
- *                  0 if no change
+ * @return 0 if no change; 1 if earpiece plugged; 2 if earpiece unplugged;
  */
-int audio_update(uint32_t now)
+int audio_jack_detection(uint32_t now)
 {
     int ret = 0;
     bool detected = gpio_get(JACK_DETECTION_PIN);   // JACK_DETECTION_PIN is high if inserted
-    switch (_jd_state)
+    switch (_jack_state)
     {
     case JACK_EMPTY:
         if (detected)
         {
-            _jd_timestamp = now;
-            _jd_state = JACK_BOUNCING_IN;
+            _jack_timestamp = now;
+            _jack_state = JACK_BOUNCING_IN;
         }
         break;
     case JACK_BOUNCING_IN:
         if (!detected)
         {
-            _jd_state = JACK_EMPTY;
+            _jack_state = JACK_EMPTY;
         }
-        else if (now - _jd_timestamp >= JACK_DEBOUNCE_MS)
+        else if (now - _jack_timestamp >= JACK_DEBOUNCE_MS)
         {
             // jack plugged
             AUD_LOGI("Audio: Earpiece plugged @%d\n", now);
             ret = 1;
-            _jd_state = JACK_INSERTED;
+            _jack_state = JACK_INSERTED;
             EQ_QUICK_PUSH(EVT_EARPIECE_PLUGGED);
         }
         break;
     case JACK_INSERTED:
         if (!detected)
         {
-            _jd_timestamp = now;
-            _jd_state = JACK_BOUNCING_OUT;
+            _jack_timestamp = now;
+            _jack_state = JACK_BOUNCING_OUT;
         }
         break;
     case JACK_BOUNCING_OUT:
         if (detected)
         {
-            _jd_state= JACK_INSERTED;
+            _jack_state= JACK_INSERTED;
         }
-        else if (now - _jd_timestamp >= JACK_DEBOUNCE_MS)
+        else if (now - _jack_timestamp >= JACK_DEBOUNCE_MS)
         {
             // jack unplugged
             AUD_LOGI("Audio: Earpiece unplugged @%d\n", now);
             ret = 2;
-            _jd_state = JACK_EMPTY;
+            _jack_state = JACK_EMPTY;
             EQ_QUICK_PUSH(EVT_EARPIECE_UNPLUGGED);
         }
         break;
@@ -377,4 +375,31 @@ int audio_update(uint32_t now)
         break;
     }
     return ret;
+}
+
+
+/**
+ * @brief Get jack status
+ * @return true if earpiece plugged, false if earpiece unplugged
+ */
+bool audio_get_jack_state()
+{
+    bool r = false;
+    switch (_jack_state)
+    {
+    case JACK_INSERTED:
+        // no break
+    case JACK_BOUNCING_OUT:
+        r = true;
+        break;
+    case JACK_EMPTY:
+        // no break
+    case JACK_BOUNCING_IN:
+        // no break
+    case JACK_NONE:
+        // no break
+    default:
+        break;
+    }
+    return r;
 }
