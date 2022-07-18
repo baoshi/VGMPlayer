@@ -67,8 +67,8 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
     switch (evt->code)
     {
         case EVT_ENTRY:
-            ST_LOGD("Settings: entry\n");
-            // All settings popup are using the same keypad map
+            ST_LOGD("Setting: entry\n");
+            // All setting popup are using the same keypad map
             lvi_disable_keypad();
             lvi_map_keypad(LVI_BUTTON_NE, 'U');  // Remap NE -> LV_EVENT_KEY 'U'
             lvi_map_keypad(LVI_BUTTON_SE, 'D');  // Remap SE -> LV_EVENT_KEY 'D'
@@ -92,7 +92,6 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
     }
     return r;
 }
-
 
 
 static void volume_event_handler(lv_event_t* e)
