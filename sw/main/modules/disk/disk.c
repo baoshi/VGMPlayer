@@ -10,7 +10,7 @@
 static FATFS _sdfatfs;
 
 
-static void sdcard_cd_handler(bool inserted, void* param)
+static void card_detect_cb(bool inserted, void* param)
 {
     if (inserted)
     {
@@ -26,7 +26,7 @@ static void sdcard_cd_handler(bool inserted, void* param)
 void disk_init()
 {
     // SDCard H/W initialization
-    sdcard_ll_init(sdcard_cd_handler, 0);
+    sdcard_ll_init(card_detect_cb, 0);
 }
 
 
@@ -54,13 +54,12 @@ int disk_check_dir(const char* dir)
  * @brief Call this function repeatedly to receive card insert/eject notification
  * 
  * @param now       Timestamp
- * @return * int    1 if card inserted
- *                  2 if card ejected
- *                  0 if no change to card
+ * @return int  0 if no change to card; 1 if card inserted; 2 if card ejected
+ *
  */
-int disk_update(uint32_t now)
+int disk_card_detect(uint32_t now)
 {
-    return sdcard_ll_task(now);
+    return sdcard_ll_card_detect(now);
 }
 
 

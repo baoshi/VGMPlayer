@@ -1264,21 +1264,21 @@ int64_t sdcard_get_sectors()
 
 // SD card low level driver interface
 // Initailly, we assume no card present, only card detection pin is initialized.
-// Caller will repeatedly call sdcard_ll_task().
-// Inside sdcard_ll_task, we check card detect pin (with debounce).
+// Caller will repeatedly call sdcard_ll_card_detect().
+// Inside sdcard_ll_card_detect, we check card detect pin (with debounce).
 // Once card detected, SPI bus is initailized, and card_detect_cb is called.
 // The callback is where caller can initailize FATFS.
 // When card ejected, card_detect_cb is called again then SPI bus deinitialized.
 
 // Card detection fsm
 #define CARD_INSERTION_DELAY_MS 100
-static uint32_t _cd_timestamp = 0;
+static uint32_t _card_timestamp = 0;
 static enum 
 {
     CARD_EMPTY,
     CARD_BOUNCING,
     CARD_INSERTED
-} _cd_state;
+} _card_state;
 
 
 void sdcard_ll_init(card_detect_cb_t callback, void* param)
@@ -1298,40 +1298,38 @@ void sdcard_ll_init(card_detect_cb_t callback, void* param)
     _spi_initialized = false;
     _card_detect_cb = callback;
     _card_detect_cb_param = param;
-    _cd_state = CARD_EMPTY;
-    _cd_timestamp = 0;
+    _card_state = CARD_EMPTY;
+    _card_timestamp = 0;
 
 }
-
 
 
 /**
  * @brief Call this function repeatedly to receive card insert/eject notification
  * 
  * @param now       Timestamp
- * @return * int    1 if card inserted
- *                  2 if card ejected
- *                  0 if no change to card
+ * @return 0 if no change to card; 1 if card inserted; 2 if card ejected
+ *
  */
-int sdcard_ll_task(uint32_t now)
+int sdcard_ll_card_detect(uint32_t now)
 {
     int ret = 0;
     bool detected = !gpio_get(SD_CD_PIN);   // SD_CD_PIN low is card detected
-    switch (_cd_state)
+    switch (_card_state)
     {
     case CARD_EMPTY:
         if (detected)
         {
-            _cd_timestamp = now;
-            _cd_state = CARD_BOUNCING;
+            _card_timestamp = now;
+            _card_state = CARD_BOUNCING;
         }
         break;
     case CARD_BOUNCING:
         if (!detected)
         {
-            _cd_state = CARD_EMPTY;
+            _card_state = CARD_EMPTY;
         }
-        else if (now - _cd_timestamp >= CARD_INSERTION_DELAY_MS)
+        else if (now - _card_timestamp >= CARD_INSERTION_DELAY_MS)
         {
             // card inserted
             SD_LOGI("SD card inserted\n");
@@ -1339,7 +1337,7 @@ int sdcard_ll_task(uint32_t now)
             _spi_init();
             _sd_dstatus &= ~STA_NODISK;
             if (_card_detect_cb) _card_detect_cb(true, _card_detect_cb_param);
-            _cd_state = CARD_INSERTED;
+            _card_state = CARD_INSERTED;
         }
         break;
     case CARD_INSERTED:
@@ -1353,7 +1351,7 @@ int sdcard_ll_task(uint32_t now)
             _sd_dstatus |= (STA_NODISK | STA_NOINIT);
             _sd_type = SDCARD_NONE;
             gpio_put(SD_SPI_CS_PIN, true);  // Put CS high
-            _cd_state = CARD_EMPTY;
+            _card_state = CARD_EMPTY;
         }
         break;
     default:
@@ -1365,8 +1363,18 @@ int sdcard_ll_task(uint32_t now)
 
 bool sdcard_ll_card_detected()
 {
-    // CD pin low means card detected
-    return !gpio_get(SD_CD_PIN);
+    bool r = false;
+    switch (_card_state)
+    {
+    case CARD_INSERTED:
+        r = true;
+        break;
+    case CARD_EMPTY:
+        // no break
+    case CARD_BOUNCING:
+        // no break
+    default:
+        break;
+    }
+    return r;
 }
-
-

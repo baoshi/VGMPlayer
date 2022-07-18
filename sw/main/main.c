@@ -151,14 +151,16 @@ int main()
             {
                 EQ_QUICK_PUSH(EVT_EC_FAILED);
             }
-            // Disk update
-            ret = disk_update(now); // return card inserted (1) / ejected (2)
-            if (ret > 0)
+            // Card detection
+            if (disk_card_detect(now) > 0)  
+            {
                 backlight_keepalive(now);
-            // Audio update
-            ret = audio_jack_detection(now); // return earpiece plugged (1) / unplugged (2)
-            if (ret > 0)
+            }
+            // Jack detection
+            if (audio_jack_detection(now) > 0)
+            {
                 backlight_keepalive(now);
+            }
             // Backlight update
             backlight_update(now);
             // LVGL update
