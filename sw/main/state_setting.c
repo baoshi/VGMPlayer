@@ -159,19 +159,21 @@ static void brightness_event_handler(lv_event_t* e)
     switch (c)
     {
         case 'U':
-            backlight_brigntness_normal += 10;
-            if (backlight_brigntness_normal > 99) backlight_brigntness_normal = 99;
-            ST_LOGI("Setting_Brightness: %d\n", backlight_brigntness_normal);
-            backlight_set_direct(backlight_brigntness_normal);
-            lv_barbox_set_value(ctx->popup, backlight_brigntness_normal);
+            config.backlight_brigntness_normal += 10;
+            if (config.backlight_brigntness_normal > 99) config.backlight_brigntness_normal = 99;
+            config_set_dirty();
+            ST_LOGI("Setting_Brightness: %d\n", config.backlight_brigntness_normal);
+            backlight_set_direct(config.backlight_brigntness_normal);
+            lv_barbox_set_value(ctx->popup, config.backlight_brigntness_normal);
             break;
         case 'D':
             ST_LOGD("Setting_Brigntness: Down\n");
-            backlight_brigntness_normal -= 10;
-            if (backlight_brigntness_normal < 0) backlight_brigntness_normal = 0;
-            ST_LOGI("Setting_Brightness: %d\n", backlight_brigntness_normal);
-            backlight_set_direct(backlight_brigntness_normal);
-            lv_barbox_set_value(ctx->popup, backlight_brigntness_normal);
+            config.backlight_brigntness_normal -= 10;
+            if (config.backlight_brigntness_normal < 0) config.backlight_brigntness_normal = 0;
+            config_set_dirty();
+            ST_LOGI("Setting_Brightness: %d\n", config.backlight_brigntness_normal);
+            backlight_set_direct(config.backlight_brigntness_normal);
+            lv_barbox_set_value(ctx->popup, config.backlight_brigntness_normal);
             break;
         default:
             ST_LOGD("Setting_Brigntness: Unknown event (%d)\n", c);
@@ -197,7 +199,7 @@ event_t const *setting_brightness_handler(app_t *me, event_t const *evt)
     {
     case EVT_ENTRY:
         ST_LOGD("Setting_Brightness: entry\n");
-        ctx->popup = lv_barbox_create(lv_scr_act(), &img_setting_brightness, 0, 99, backlight_brigntness_normal);
+        ctx->popup = lv_barbox_create(lv_scr_act(), &img_setting_brightness, 0, 99, config.backlight_brigntness_normal);
         lv_obj_add_event_cb(ctx->popup, brightness_event_handler, LV_EVENT_KEY, (void*)ctx);
         lv_group_remove_all_objs(lvi_keypad_group);
         lv_group_add_obj(lvi_keypad_group, ctx->popup);

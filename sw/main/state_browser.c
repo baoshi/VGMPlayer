@@ -155,7 +155,7 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         EVT_SETTING_CLICKED:
             Create settings state and transit to it
         EVT_SETTING_CLOSED:
-            No action
+            Save settings
         EVT_BROWSER_UI_UPDATE:
             Update top bar
     */
@@ -180,6 +180,8 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         STATE_TRAN((hsm_t *)me, &me->setting);
         break;
     case EVT_SETTING_CLOSED:
+        if (config_is_dirty())
+            config_save();
         break;
     case EVT_BROWSER_UI_UPDATE:
         browser_on_ui_update(ctx);

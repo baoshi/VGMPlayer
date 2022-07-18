@@ -76,6 +76,8 @@ int main()
     stdio_init_all();
     printf("\033[2J\033[H"); // clear terminal
     stdio_flush();
+    // load config
+    config_load();
     // share bus initialization (i2c)
     hw_shared_resource_init();
     // audio powerup stage 1
@@ -90,39 +92,15 @@ int main()
     ec_pause_watchdog();
     disk_init();
     // Turn on backlight
-    backlight_init(backlight_brigntness_normal, backlight_brignthess_dimmed, BACKLIGHT_IDLE_DIM_MS);
+    backlight_init(config.backlight_brigntness_normal, config.backlight_brignthess_dimmed, BACKLIGHT_IDLE_DIM_MS);
     // Manual turn on backlight
-    for (int i = 0; i <= backlight_brigntness_normal; ++i)    
+    for (int i = 0; i <= config.backlight_brigntness_normal; ++i)    
     {
         backlight_set_direct(i);
         sleep_ms(1);
     }
     // audio powerup stage 2
     audio_postinit();
-
-    //eeprom_erase_all();
-    if (0) {
-        uint8_t data[EEPROM_SIZE];
-        memset(data, 0, EEPROM_SIZE);
-        int r = eeprom_read(data);
-        if (r == EEPROM_NOT_INITIALIZED)
-        {
-            data[0] = 1;
-            eeprom_write(data);
-        }
-        else
-        {
-            for (int i = 0; i < EEPROM_SIZE; ++i)
-            {
-                if (data[i] == 0)
-                {
-                    data[i] = i + 1;
-                    break;
-                }
-            }
-            eeprom_write(data);
-        }
-    }
 
     // initialize state machine
     app_ctor(&app);
