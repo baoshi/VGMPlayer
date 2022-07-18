@@ -102,11 +102,10 @@ static void pio_i2s_start()
 
 static void pio_i2s_flush()
 {
-    // No IRQ
+    // Execute PIO state machine until FIFO is empty
+    static const uint32_t SM_STALL_MASK = 1u << (PIO_FDEBUG_TXSTALL_LSB + I2S_PIO_SM);
+    // Disable IRQ
     i2s_dma_channel_irq_disable();
-    // Let PIO execute until stalled
-    pio_sm_set_enabled(I2S_PIO, I2S_PIO_SM, true);
-    static uint32_t SM_STALL_MASK = 1u << (PIO_FDEBUG_TXSTALL_LSB + I2S_PIO_SM);
     // Clear the sticky stall status
     I2S_PIO->fdebug = SM_STALL_MASK;
     // Wait until the stall flag is up again.
@@ -186,19 +185,6 @@ void i2s_deinit()
 }
 
 
-void i2s_send_buffer_blocking(uint32_t *buf, uint32_t len)
-{
-    i2s_dma_channel_irq_disable();
-    pio_i2s_start();
-    for (uint32_t i = 0; i < len; ++i)
-    {
-         pio_sm_put_blocking(I2S_PIO, I2S_PIO_SM, buf[i]);
-    }
-    pio_i2s_flush();
-    pio_sm_set_enabled(I2S_PIO, I2S_PIO_SM, false);
-}
-
-
 void i2s_start_playback(i2s_notify_cb_t notify, void *param)
 {
     nofity_cb = notify;
@@ -224,6 +210,19 @@ void i2s_stop_playback()
 #else
     dma_channel_acknowledge_irq1(DMA_CHANNEL_I2S_TX);
 #endif
+    pio_i2s_flush();
+    pio_sm_set_enabled(I2S_PIO, I2S_PIO_SM, false);
+}
+
+
+void i2s_send_buffer_blocking(uint32_t *buf, uint32_t len)
+{
+    i2s_dma_channel_irq_disable();
+    pio_i2s_start();
+    for (uint32_t i = 0; i < len; ++i)
+    {
+         pio_sm_put_blocking(I2S_PIO, I2S_PIO_SM, buf[i]);
+    }
     pio_i2s_flush();
     pio_sm_set_enabled(I2S_PIO, I2S_PIO_SM, false);
 }
