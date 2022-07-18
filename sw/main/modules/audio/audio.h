@@ -22,6 +22,7 @@ void audio_unpause_playback();
 
 int  audio_jack_detection(uint32_t now);
 bool audio_get_jack_state();
+void audio_jack_enable(bool enable);
 
 #ifdef __cplusplus
 }

@@ -4,6 +4,7 @@
 #include "hw_conf.h"
 #include "my_debug.h"
 #include "my_mem.h"
+#include "tick.h"
 #include "event_ids.h"
 #include "event_queue.h"
 #include "wm8978.h"
@@ -61,6 +62,7 @@ static enum
 
 void audio_preinit()
 {
+    AUD_LOGD("Audio: PreInit @ %d\n", tick_millis());
     i2s_init();
     wm8978_preinit();
     // Jack detection GPIO
@@ -81,8 +83,9 @@ void audio_preinit()
 
 void audio_postinit()
 {
+    AUD_LOGD("Audio: PostInit @ %d\n", tick_millis());
     wm8978_postinit();
-    gpio_put(JACK_EN_PIN, true);
+    audio_jack_enable(true);
 }
 
 
@@ -402,4 +405,10 @@ bool audio_get_jack_state()
         break;
     }
     return r;
+}
+
+
+void audio_jack_enable(bool enable)
+{
+    gpio_put(JACK_EN_PIN, enable);
 }

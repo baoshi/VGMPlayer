@@ -79,7 +79,7 @@ int main()
     // share bus initialization (i2c)
     hw_shared_resource_init();
     // audio powerup stage 1
-    //audio_preinit();
+    audio_preinit();
     // initialize display
     display_init();     // 323ms
     // draw splash screen without backlight
@@ -97,11 +97,11 @@ int main()
         backlight_set_direct(i);
         sleep_ms(1);
     }
-    // audio powerup stage 2 to be postponed before start play
-    //audio_postinit();
+    // audio powerup stage 2
+    audio_postinit();
 
     //eeprom_erase_all();
-    {
+    if (0) {
         uint8_t data[EEPROM_SIZE];
         memset(data, 0, EEPROM_SIZE);
         int r = eeprom_read(data);
