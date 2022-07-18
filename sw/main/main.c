@@ -157,7 +157,7 @@ int main()
                 backlight_keepalive(now);
             }
             // Jack detection
-            if (audio_jack_detection(now) > 0)
+            if (audio_jack_detect(now) > 0)
             {
                 backlight_keepalive(now);
             }

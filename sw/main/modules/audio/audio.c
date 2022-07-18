@@ -63,19 +63,20 @@ static enum
 void audio_preinit()
 {
     AUD_LOGD("Audio: PreInit @ %d\n", tick_millis());
+    // Disable jack output at beginning
+    gpio_init(JACK_OUTEN_PIN);
+    gpio_put(JACK_OUTEN_PIN, false);
+    gpio_set_dir(JACK_OUTEN_PIN, GPIO_OUT);
+    // Initailize I2S and WM8978
     i2s_init();
     wm8978_preinit();
-    // Jack detection GPIO
+    // Enable jack detection GPIO
     gpio_init(JACK_DETECTION_PIN);
     gpio_disable_pulls(JACK_DETECTION_PIN);
     gpio_set_dir(JACK_DETECTION_PIN, GPIO_IN);
     gpio_init(JACK_DETECTION_ADC_PIN);
     gpio_disable_pulls(JACK_DETECTION_ADC_PIN);
     gpio_set_dir(JACK_DETECTION_ADC_PIN, GPIO_IN);
-    // Jack enable pin
-    gpio_init(JACK_EN_PIN);
-    gpio_put(JACK_EN_PIN, false);    // disable jack output
-    gpio_set_dir(JACK_EN_PIN, GPIO_OUT);
     _jack_state = JACK_EMPTY;
     _jack_timestamp = 0;
 }
@@ -324,7 +325,7 @@ void audio_unpause_playback()
  * @param now       Timestamp
  * @return 0 if no change; 1 if earpiece plugged; 2 if earpiece unplugged;
  */
-int audio_jack_detection(uint32_t now)
+int audio_jack_detect(uint32_t now)
 {
     int ret = 0;
     bool detected = gpio_get(JACK_DETECTION_PIN);   // JACK_DETECTION_PIN is high if inserted
@@ -410,5 +411,5 @@ bool audio_get_jack_state()
 
 void audio_jack_enable(bool enable)
 {
-    gpio_put(JACK_EN_PIN, enable);
+    gpio_put(JACK_OUTEN_PIN, enable);
 }

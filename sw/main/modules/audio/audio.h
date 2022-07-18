@@ -20,7 +20,7 @@ void audio_stop_playback();
 void audio_pause_playback();
 void audio_unpause_playback();
 
-int  audio_jack_detection(uint32_t now);
+int  audio_jack_detect(uint32_t now);
 bool audio_get_jack_state();
 void audio_jack_enable(bool enable);
 

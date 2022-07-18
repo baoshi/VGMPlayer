@@ -52,7 +52,7 @@
 #define I2S_PIO_SM              0               // Use statement machine 0
 #define I2S_DMA_IRQ             DMA_IRQ_1
 #define I2S_DMA_INTS            ints1
-#define JACK_EN_PIN             20              // Audio jack output enable (active high), controls MAX9090B
+#define JACK_OUTEN_PIN          20              // Audio jack output enable (active high), controls MAX9090B
 #define JACK_DETECTION_PIN      25              // Jack detection, high when jack inserted
 #define JACK_DETECTION_ADC_PIN  26              // Backup jack detection using ADC
 
