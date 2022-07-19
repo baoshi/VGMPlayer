@@ -47,6 +47,7 @@ void setting_create(app_t *me)
     ctx->creator = curr;  // save 
     ST_LOGD("Setting: creation, append to %s state\n", ctx->creator->name);
     state_ctor(&(me->setting), "setting", curr, (event_handler_t)setting_handler);
+    STATE_TRAN((hsm_t *)me, &me->setting);
 }
 
 
@@ -97,7 +98,7 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
 static void volume_event_handler(lv_event_t* e)
 {
     browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
-    int32_t c = *((int32_t *)lv_event_get_param(e));
+    uint32_t c = lv_indev_get_key(lv_indev_get_act());
     switch (c)
     {
         case 'U':
@@ -155,7 +156,7 @@ event_t const *setting_volume_handler(app_t *me, event_t const *evt)
 static void brightness_event_handler(lv_event_t* e)
 {
     setting_t* ctx = (setting_t*)lv_event_get_user_data(e);
-    int32_t c = *((int32_t *)lv_event_get_param(e));
+    uint32_t c = lv_indev_get_key(lv_indev_get_act());
     switch (c)
     {
         case 'U':

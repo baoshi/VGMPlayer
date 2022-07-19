@@ -2,10 +2,12 @@
 #include <string.h>
 #include "sw_conf.h"
 #include "my_debug.h"
+#include "my_mem.h"
 #include "lvinput.h"
 #include "lvstyle.h"
 #include "lvtheme.h"
 #include "lvsupp.h"
+#include "tick.h"
 #include "event_ids.h"
 #include "event_queue.h"
 #include "backlight.h"
@@ -35,115 +37,79 @@
 #endif
 
 
-// When called, append "exception" sub-state to the current state
-void alert_create(app_t *me, const void *icon, const char *text)
-{
-    // Append state
-    state_t *curr = ((hsm_t *)me)->curr;
-    alert_t *ctx = &(me->message_ctx);
-    ctx->creator = curr;  // save 
-    ST_LOGD("Alert: creation, append to %s state\n", ctx->creator->name);
-    state_ctor(&(me->setting), "alert", curr, (event_handler_t)alert_handler);
-    // Create alert popup
-    ctx->popup = lv_alert_create(v_scr_act(), icon, text);
-    // Auto close timeout
-    ctx->timer_auto_close = tick_arm_timer_event(2000, false, EVT_ALERT_AUTO_CLOSE, true);        
-}
 
-
-event_t const *alert_handler(app_t *me, event_t const *evt)
-{
-    /* Events
-        EVT_ENTRY:
-            Map keypad to U/D keycode
-        EVT_EXIT:
-            Disable keypad
-        EVT_START:
-            Start setting_volume
-        EVT_BACK_CLICKED:
-            Transit to creator state and send EVT_SETTING_CLOSED
-    */
-    setting_t *ctx = &(me->setting_ctx);
-    event_t const *r = 0;
-    switch (evt->code)
-    {
-        case EVT_ENTRY:
-            ST_LOGD("Setting: entry\n");
-            // All setting popup are using the same keypad map
-            lvi_disable_keypad();
-            lvi_map_keypad(LVI_BUTTON_NE, 'U');  // Remap NE -> LV_EVENT_KEY 'U'
-            lvi_map_keypad(LVI_BUTTON_SE, 'D');  // Remap SE -> LV_EVENT_KEY 'D'
-            break;
-        case EVT_EXIT:
-            ST_LOGD("Setting: exit\n");
-            lvi_disable_keypad();
-            break;
-        case EVT_START:
-            ST_LOGD("Setting: start\n");
-            STATE_START(me, &(me->setting_volume));
-            break;
-        case EVT_BACK_CLICKED:
-            ST_LOGD("Setting: close and transit to %s state\n", ctx->creator->name);
-            STATE_TRAN((hsm_t *)me, ctx->creator);
-            EQ_QUICK_PUSH(EVT_SETTING_CLOSED);
-            break;
-        default:
-            r = evt;
-            break;
-    }
-    return r;
-}
-
-
-static void volume_event_handler(lv_event_t* e)
+static void alert_keypad_handler(lv_event_t* e)
 {
     browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
-    int32_t c = *((int32_t *)lv_event_get_param(e));
-    switch (c)
+    uint32_t c = lv_indev_get_key(lv_indev_get_act());
+    if ('P' == c)
     {
-        case 'U':
-            ST_LOGD("Settings_Volume: Up\n");
-            break;
-        case 'D':
-            ST_LOGD("Settings_Volume: Down\n");
-            break;
-        default:
-            ST_LOGD("Settings_Volume: (%d)\n", c);
-            break;
+        EQ_QUICK_PUSH(EVT_ALERT_MANUAL_CLOSE);
     }
 }
 
 
-event_t const *setting_volume_handler(app_t *me, event_t const *evt)
+event_t const *alert_handler(app_t *app, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
-            Create volume box
-            Wire LV_EVENT_KEY handler to process U/D key
+            Create alert popup
+            Map keypad
+            Arm autoclose
         EVT_EXIT:
-            Close volume box
-        EVT_SETTING_CLICKED:
-            Transit to setting_brightness
+            Close popup, disable keypad
+        EVT_ALERT_MANUAL_CLOSE
+            Disarm auto close and do AUTO_CLOSE
+        EVT_ALERT_AUTO_CLOSE:
+            Close alert and and send EVT_ALERT_CLOSED
     */
+    alert_t *ctx = &(app->alert_ctx);
     event_t const *r = 0;
-    setting_t *ctx = &(me->setting_ctx);
     switch (evt->code)
     {
     case EVT_ENTRY:
-        ST_LOGD("Setting_Volume: entry\n");
-        ctx->popup = lv_barbox_create(lv_scr_act(), 0, 0, 100, 20);
-        lv_obj_add_event_cb(ctx->popup, volume_event_handler, LV_EVENT_KEY, (void *)ctx);
+        ALT_LOGD("Alert: entry\n");
+        // Create alert popup
+        ctx->popup = lv_alert_create(lv_scr_act(), ctx->icon, ctx->text);
+        // Setup keypad
+        lvi_disable_keypad();
+        lvi_map_keypad(LVI_BUTTON_PLAY, 'P');  // Remap PLAY -> LV_EVENT_KEY 'P'
+        lv_obj_add_event_cb(ctx->popup, alert_keypad_handler, LV_EVENT_KEY, (void *)ctx);
         lv_group_remove_all_objs(lvi_keypad_group);
         lv_group_add_obj(lvi_keypad_group, ctx->popup);
+        // Auto close timeout
+        ctx->timer_auto_close = tick_arm_timer_event(2000, false, EVT_ALERT_AUTO_CLOSE, true);
         break;
     case EVT_EXIT:
-        ST_LOGD("Setting_Volume: exit\n");
+        ALT_LOGD("Alert: exit\n");
         lv_group_remove_all_objs(lvi_keypad_group);
-        lv_barbox_close(ctx->popup);
-        ctx->popup = 0;
+        lv_alert_close(ctx->popup);
+        lvi_disable_keypad();
+        if (ctx->text)
+        {
+            MY_FREE(ctx->text);
+            ctx->text = 0;
+        }
         break;
-    case EVT_SETTING_CLICKED:
-        STATE_TRAN(me, &(me->setting_brightness));
+    case EVT_ALERT_MANUAL_CLOSE:
+        ALT_LOGD("Alert: manual close\n");
+        if (ctx->timer_auto_close != 0)
+        {
+            tick_disarm_timer_event(ctx->timer_auto_close);
+        }
+        // no break
+    case EVT_ALERT_AUTO_CLOSE:
+        ctx->timer_auto_close = 0;
+        ALT_LOGD("Alert: close and transit to %s state\n", ctx->creator->name);
+        STATE_TRAN((hsm_t *)app, ctx->creator);
+        if (ctx->exit_event.code != 0)
+        {
+            event_queue_push_back(&(ctx->exit_event), true);
+        }
+        else
+        {
+            EQ_QUICK_PUSH(EVT_ALERT_CLOSED);
+        }
         break;
     default:
         r = evt;
@@ -153,71 +119,39 @@ event_t const *setting_volume_handler(app_t *me, event_t const *evt)
 }
 
 
-static void brightness_event_handler(lv_event_t* e)
+/**
+ * @brief Append "exception" sub-state to the current state and display alert popup
+ * 
+ * @param app   Top level state machine
+ * @param icon  Icon displayed besides alert message
+ * @param text  Alert message
+ * @param exit  Event to post into event queue upon close, if null, will post EVT_ALERT_CLOSED
+ */
+void alert_create(app_t *app, const void *icon, const char *text, const event_t *exit)
 {
-    setting_t* ctx = (setting_t*)lv_event_get_user_data(e);
-    int32_t c = *((int32_t *)lv_event_get_param(e));
-    switch (c)
+    alert_t *ctx = &(app->alert_ctx);
+    memset(ctx, 0, sizeof(alert_t));
+    // Save current state as alert creator
+    ctx->creator = STATE_CURR(app);
+    // members
+    ctx->icon = icon;
+    if (text)
     {
-        case 'U':
-            config.backlight_brigntness_normal += 10;
-            if (config.backlight_brigntness_normal > 99) config.backlight_brigntness_normal = 99;
-            config_set_dirty();
-            ST_LOGI("Setting_Brightness: %d\n", config.backlight_brigntness_normal);
-            backlight_set_direct(config.backlight_brigntness_normal);
-            lv_barbox_set_value(ctx->popup, config.backlight_brigntness_normal);
-            break;
-        case 'D':
-            ST_LOGD("Setting_Brigntness: Down\n");
-            config.backlight_brigntness_normal -= 10;
-            if (config.backlight_brigntness_normal < 0) config.backlight_brigntness_normal = 0;
-            config_set_dirty();
-            ST_LOGI("Setting_Brightness: %d\n", config.backlight_brigntness_normal);
-            backlight_set_direct(config.backlight_brigntness_normal);
-            lv_barbox_set_value(ctx->popup, config.backlight_brigntness_normal);
-            break;
-        default:
-            ST_LOGD("Setting_Brigntness: Unknown event (%d)\n", c);
-            break;
+        int len = strlen(text);
+        ctx->text = MY_MALLOC(len + 1);
+        if (ctx->text)
+        {
+            memcpy(ctx->text, text, len);
+            ctx->text[len] = '\0';
+        }
     }
-}
-
-
-event_t const *setting_brightness_handler(app_t *me, event_t const *evt)
-{
-    /* Events
-        EVT_ENTRY:
-            Create brightnes box
-            Wire LV_EVENT_KEY handler to process U/D key
-        EVT_EXIT:
-            Close volume box
-        EVT_SETTING_CLICKED:
-            Send EVT_BACK_CLICKED for setting state to handle (exit)
-    */
-    event_t const *r = 0;
-    setting_t *ctx = &(me->setting_ctx);
-    switch (evt->code)
+    if (exit)
     {
-    case EVT_ENTRY:
-        ST_LOGD("Setting_Brightness: entry\n");
-        ctx->popup = lv_barbox_create(lv_scr_act(), &img_setting_brightness, 0, 99, config.backlight_brigntness_normal);
-        lv_obj_add_event_cb(ctx->popup, brightness_event_handler, LV_EVENT_KEY, (void*)ctx);
-        lv_group_remove_all_objs(lvi_keypad_group);
-        lv_group_add_obj(lvi_keypad_group, ctx->popup);
-        break;
-    case EVT_EXIT:
-        ST_LOGD("Setting_Brightness: exit\n");
-        lv_group_remove_all_objs(lvi_keypad_group);
-        lv_barbox_close(ctx->popup);
-        ctx->popup = 0;
-        break;
-    case EVT_SETTING_CLICKED:
-        EQ_QUICK_PUSH(EVT_BACK_CLICKED);    // setting state will handle this and close popup
-        break;
-    default:
-        r = evt;
-        break;
+        ctx->exit_event.code = exit->code;
+        ctx->exit_event.param = exit->param;
     }
-    return r;
+    // Append alert state to current state and transit to it
+    ALT_LOGD("Alert: creation, append to %s state\n", ctx->creator->name);
+    state_ctor(&(app->alert), "alert", ctx->creator, (event_handler_t)alert_handler);
+    STATE_TRAN((hsm_t *)app, &(app->alert));
 }
-

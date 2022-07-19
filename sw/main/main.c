@@ -43,20 +43,21 @@ event_t const *top_handler(app_t *me, event_t const *evt)
 }
 
 
-void app_ctor(app_t* me)
+void app_ctor(app_t* app)
 {
-    memset(me, 0, sizeof(app_t));
-    hsm_ctor((hsm_t*)me, "app", (event_handler_t)top_handler);
-    state_ctor(&(me->browser), "browser", &((hsm_t*)me)->top, (event_handler_t)browser_handler);
-        state_ctor(&(me->browser_disk), "browser_disk", &(me->browser), (event_handler_t)browser_disk_handler);
-        state_ctor(&(me->browser_nodisk), "browser_nodisk", &(me->browser), (event_handler_t)browser_nodisk_handler);
-        state_ctor(&(me->browser_baddisk), "browser_baddisk", &(me->browser), (event_handler_t)browser_baddisk_handler);
-    state_ctor(&(me->player), "player", &((hsm_t*)me)->top, (event_handler_t)player_handler);
-        state_ctor(&(me->player_exp), "player_exp", &(me->player), (event_handler_t)player_exp_handler);
-    // settings_xxx is substates of setting. setting state will be dynamically attached using settings_popup() call
-    state_ctor(&(me->setting_volume), "setting_volume", &(me->setting), (event_handler_t)setting_volume_handler);
-    state_ctor(&(me->setting_brightness), "setting_brightness", &(me->setting), (event_handler_t)setting_brightness_handler);
-    
+    memset(app, 0, sizeof(app_t));
+    hsm_ctor((hsm_t*)app, "app", (event_handler_t)top_handler);
+    state_ctor(&(app->browser), "browser", &((hsm_t*)app)->top, (event_handler_t)browser_handler);
+        state_ctor(&(app->browser_disk), "browser_disk", &(app->browser), (event_handler_t)browser_disk_handler);
+        state_ctor(&(app->browser_nodisk), "browser_nodisk", &(app->browser), (event_handler_t)browser_nodisk_handler);
+        state_ctor(&(app->browser_baddisk), "browser_baddisk", &(app->browser), (event_handler_t)browser_baddisk_handler);
+    state_ctor(&(app->player), "player", &((hsm_t*)app)->top, (event_handler_t)player_handler);
+    // settings is created on demand using setting_create()
+    // state_ctor(&(app->setting), "setting", &(app->setting), (event_handler_t)setting_handler);
+        state_ctor(&(app->setting_volume), "setting_volume", &(app->setting), (event_handler_t)setting_volume_handler);
+        state_ctor(&(app->setting_brightness), "setting_brightness", &(app->setting), (event_handler_t)setting_brightness_handler);
+    // alert is created on demand using alert_create()
+    // state_ctor(&(app->alert), "alert", &(app->alert), (event_handler_t)alert_handler);
 }
 
 

@@ -14,6 +14,7 @@ enum
 
     EVT_SETTING_CLOSED,     // Setting popup closed
 
+    EVT_ALERT_MANUAL_CLOSE, // Alert popup manual close
     EVT_ALERT_AUTO_CLOSE,   // Alert popup autoclose
     EVT_ALERT_CLOSED,       // Alert popup closed
 
@@ -25,11 +26,9 @@ enum
     EVT_BROWSER_SETTING_CLOSED,
 
     EVT_PLAYER_UI_UPDATE,
-    EVT_PLAYER_GENERAL_TIMER,
     EVT_PLAYER_PLAY_CLICKED,
     EVT_PLAYER_UP_CLICKED,
     EVT_PLAYER_DOWN_CLICKED,
-    EVT_PLAYER_PLAY_SONG,
     EVT_PLAYER_PLAY_NEXT,
     EVT_PLAYER_SONG_ENDED,
 };

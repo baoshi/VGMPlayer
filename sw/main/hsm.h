@@ -63,7 +63,7 @@ void hsm_on_event(hsm_t *me, event_t const *evt);
 uint8_t hsm_to_lca_(hsm_t *me, state_t *target);
 void hsm_exit_(hsm_t *me, uint8_t levels);
 
-    /* get current state */
+/* get current state */
 #define STATE_CURR(me_) (((hsm_t *)me_)->curr)
 
 

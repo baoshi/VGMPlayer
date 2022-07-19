@@ -22,7 +22,9 @@ extern lv_group_t* lvi_keypad_group;
 void lvi_init();
 
 void lvi_disable_button();
+void lvi_enable_button();
 void lvi_disable_keypad();
+void lvi_enable_keypad();
 void lvi_pos_button(uint8_t button, lv_coord_t x, lv_coord_t y);
 void lvi_map_keypad(uint8_t button, uint32_t lvkey);
 

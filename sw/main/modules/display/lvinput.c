@@ -183,12 +183,20 @@ void lvi_pos_button(uint8_t button, lv_coord_t x, lv_coord_t y)
 
 void lvi_disable_button()
 {
+    lv_indev_enable(lvi_button, false);
     _button_mask = 0;
+}
+
+
+void lvi_enable_button()
+{
+    lv_indev_enable(lvi_button, true);
 }
 
 
 void lvi_disable_keypad()
 {
+    lv_indev_enable(lvi_keypad, false);
     _keypad_mapping[0] = 0;
     _keypad_mapping[1] = 0;
     _keypad_mapping[2] = 0;
@@ -196,3 +204,8 @@ void lvi_disable_keypad()
     _keypad_mapping[4] = 0;
 }
 
+
+void lvi_enable_keypad()
+{
+    lv_indev_enable(lvi_keypad, true);
+}

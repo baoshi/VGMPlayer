@@ -104,6 +104,7 @@ static void browser_on_entry(browser_t *ctx)
     lvi_disable_button();
     lvi_pos_button(LVI_BUTTON_NW, 0, 0); // NW -> SETTING (0, 0)
     lvi_pos_button(LVI_BUTTON_SW, 1, 0); // SW -> BACK (1, 0)
+    lvi_enable_button();
     //
     // UI Elements
     //
@@ -177,7 +178,6 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         break;
     case EVT_SETTING_CLICKED:
         setting_create(me);
-        STATE_TRAN((hsm_t *)me, &me->setting);
         break;
     case EVT_SETTING_CLOSED:
         if (config_is_dirty())
@@ -384,6 +384,7 @@ static void browser_disk_map_keypad()
     lvi_map_keypad(LVI_BUTTON_PLAY, LV_KEY_ENTER); // PLAY -> Enter, triggers list button's callback action
     lvi_map_keypad(LVI_BUTTON_NE, LV_KEY_PREV);    // NE -> Prev, used in file list navigation
     lvi_map_keypad(LVI_BUTTON_SE, LV_KEY_NEXT);    // SE -> Next, used in file list navigation
+    lvi_enable_keypad();
 }
 
 
