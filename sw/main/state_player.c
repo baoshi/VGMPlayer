@@ -4,6 +4,7 @@
 #include "my_debug.h"
 #include "lvinput.h"
 #include "lvstyle.h"
+#include "lvsupp.h"
 #include "tick.h"
 #include "event_ids.h"
 #include "event_queue.h"
@@ -106,7 +107,7 @@ static void button_clicked_handler(lv_event_t *e)
 }
 
 
-static void create_screen(player_t* ctx)
+static void player_on_entry(player_t *ctx)
 {
     // Create screen
     ctx->screen = lv_obj_create(NULL);
@@ -115,15 +116,15 @@ static void create_screen(player_t* ctx)
     // All buttons used as "Button" device
     lvi_disable_keypad();
     lv_group_remove_all_objs(lvi_keypad_group);
-    lvi_disable_button();
-    lvi_pos_button(LVI_BUTTON_PLAY, 0, 0);
-    lvi_pos_button(LVI_BUTTON_NW, 1, 0);
-    lvi_pos_button(LVI_BUTTON_SW, 2, 0);
-    lvi_pos_button(LVI_BUTTON_NE, 3, 0);
-    lvi_pos_button(LVI_BUTTON_SE, 4, 0);
     // 5 invisible buttons
+    // Cord     Button
+    // (0, 0)   [PLAY]
+    // (1, 0)   [BACK]
+    // (2, 0)   [SETTING]
+    // (3, 0)   [UP]
+    // (4, 0)   [DOWN]
     lv_obj_t* btn;
-    // Play
+    // Play (0, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_btn, 0);
     lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
@@ -131,7 +132,7 @@ static void create_screen(player_t* ctx)
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_PLAYER_PLAY_CLICKED);
-    // NW / Back
+    // Back (1, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_btn, 0);
     lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
@@ -139,7 +140,7 @@ static void create_screen(player_t* ctx)
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_BACK_CLICKED);
-    // SW / Setting
+    // Setting (2, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_btn, 0);
     lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
@@ -147,7 +148,7 @@ static void create_screen(player_t* ctx)
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_SETTING_CLICKED);
-    // NE / Up
+    // Up (3, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_btn, 0);
     lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
@@ -155,7 +156,7 @@ static void create_screen(player_t* ctx)
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_PLAYER_UP_CLICKED);
-    // SE / Down
+    // Down (4, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_btn, 0);
     lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
@@ -163,7 +164,17 @@ static void create_screen(player_t* ctx)
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_PLAYER_DOWN_CLICKED);
-    // Create top label
+    // Map buttons
+    lvi_disable_button();
+    lvi_pos_button(LVI_BUTTON_PLAY, 0, 0);  // PLAY -> PLAY (0, 0)
+    lvi_pos_button(LVI_BUTTON_SW, 1, 0);    // SW   -> BACK (1, 0)
+    lvi_pos_button(LVI_BUTTON_NW, 2, 0);    // NW   -> SETTING (2, 0)
+    lvi_pos_button(LVI_BUTTON_NE, 3, 0);    // NE   -> UP (3, 0)
+    lvi_pos_button(LVI_BUTTON_SE, 4, 0);    // SE   -> DOWN (4, 0)
+    //
+    // UI Elements
+    //
+    // Top label
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_top, 200);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
@@ -181,11 +192,35 @@ static void create_screen(player_t* ctx)
     lv_obj_update_layout(ctx->screen);
     // Load screen
     lv_scr_load(ctx->screen);
+    // Arm update timer    
+    ctx->timer_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
+}
+
+
+static void player_on_ui_update(player_t *ctx)
+{
+    char buf[32];
+    sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
+    lv_label_set_text(ctx->lbl_top, buf);
 }
 
 
 event_t const *player_handler(app_t *me, event_t const *evt)
 {
+    /* Events
+        EVT_ENTRY:
+            Create screen, arm UI update timer
+        EVT_EXIT:
+            Disarm UI update timer
+        EVT_START:
+            Start browser_nodisk
+        EVT_SETTING_CLICKED:
+            Create settings state and transit to it
+        EVT_SETTING_CLOSED:
+            Save settings
+        EVT_BROWSER_UI_UPDATE:
+            Update top bar
+    */
     event_t const *r = 0;
     player_t *ctx = &(me->player_ctx);
     switch (evt->code)
@@ -193,8 +228,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
         {
             PL_LOGD("Player: entry\n");
-            create_screen(ctx);
-            ctx->timer_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
+            player_on_entry(ctx);
             ctx->exception = PLAYER_OK;
             ctx->first_song = true;
             ctx->next_dir = 0;  // default to play next
@@ -212,9 +246,7 @@ event_t const *player_handler(app_t *me, event_t const *evt)
         }
         case EVT_PLAYER_UI_UPDATE:
         {
-            char buf[32];
-            sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
-            lv_label_set_text(ctx->lbl_top, buf);
+            player_on_ui_update(ctx);
             break;
         }
         case EVT_PLAYER_PLAY_SONG:

@@ -13,13 +13,16 @@ enum
     EVT_BACK_CLICKED,       // Back button event
 
     EVT_SETTING_CLOSED,     // Setting popup closed
+
+    EVT_ALERT_AUTO_CLOSE,   // Alert popup autoclose
+    EVT_ALERT_CLOSED,       // Alert popup closed
+
+    EVT_EARPIECE_PLUGGED,
+    EVT_EARPIECE_UNPLUGGED,
     
     EVT_BROWSER_UI_UPDATE,
     EVT_BROWSER_PLAY_CLICKED,
     EVT_BROWSER_SETTING_CLOSED,
-
-    EVT_EARPIECE_PLUGGED,
-    EVT_EARPIECE_UNPLUGGED,
 
     EVT_PLAYER_UI_UPDATE,
     EVT_PLAYER_GENERAL_TIMER,

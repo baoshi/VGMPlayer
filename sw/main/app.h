@@ -61,7 +61,7 @@ event_t const *player_visual_handler(app_t *me, event_t const *evt);
 typedef struct settings_s
 {
     state_t *creator;
-    lv_obj_t* popup;
+    lv_obj_t *popup;
 } setting_t;
 
 event_t const *setting_handler(app_t *me, event_t const *evt);
@@ -70,6 +70,22 @@ event_t const *setting_volume_handler(app_t *me, event_t const *evt);
 
 
 void setting_create(app_t *me);
+
+
+//
+// Alert
+//
+typedef struct alert_s
+{
+    state_t *creator;
+    lv_obj_t *popup;
+    int timer_auto_close;
+} alert_t;
+
+event_t const *alert_handler(app_t *me, event_t const *evt);
+
+void alert_create(app_t *me, const void *icon, const char *text);
+
 
 
 // Application level state machine
@@ -82,6 +98,7 @@ struct app_s
     player_t player_ctx;
     state_t setting, setting_volume, setting_brightness;
     setting_t setting_ctx;
+    alert_t message_ctx;
     // data shared by all states
     catalog_t *catalog;
     int catalog_history_page[CATALOG_HISTORY_DEPTH];

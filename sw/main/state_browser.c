@@ -80,8 +80,8 @@ static void browser_on_entry(browser_t *ctx)
     //
     // Invisible on-screen buttons
     // Cord     Button
-    // (0, 0)   [BACK]
-    // (1, 0)   [SETTING]
+    // (0, 0)   [SETTING]
+    // (1, 0)   [BACK]
     //
     lv_obj_t *btn;
     // (0, 0)
@@ -91,7 +91,7 @@ static void browser_on_entry(browser_t *ctx)
     lv_obj_set_pos(btn, 0, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_BACK_CLICKED);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_SETTING_CLICKED);
     // (1, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_btn, 0);
@@ -99,11 +99,11 @@ static void browser_on_entry(browser_t *ctx)
     lv_obj_set_pos(btn, 1, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_SETTING_CLICKED);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_BACK_CLICKED);
     // NW, SW used as LVGL button input device
     lvi_disable_button();
-    lvi_pos_button(LVI_BUTTON_NW, 0, 0); // NW -> BACK (0, 0)
-    lvi_pos_button(LVI_BUTTON_SW, 1, 0); // SW -> SETTINGS (1, 0)
+    lvi_pos_button(LVI_BUTTON_NW, 0, 0); // NW -> SETTING (0, 0)
+    lvi_pos_button(LVI_BUTTON_SW, 1, 0); // SW -> BACK (1, 0)
     //
     // UI Elements
     //
@@ -130,7 +130,7 @@ static void browser_on_entry(browser_t *ctx)
     lv_obj_update_layout(ctx->screen);
     // Load screen
     lv_scr_load(ctx->screen);
-    // arm update timer
+    // Arm update timer
     ctx->alarm_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
 }
 

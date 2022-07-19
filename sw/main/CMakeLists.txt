@@ -47,6 +47,7 @@ add_executable(${PROJ_NAME}
     state_browser.c
     state_player.c
     state_setting.c
+    state_alert.c
     decoder_s16.c
     main.c
 )
