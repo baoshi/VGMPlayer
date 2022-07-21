@@ -131,15 +131,12 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
         lv_obj_add_style(obj, &lvs_bar_bg, 0);
         lv_obj_add_style(obj, &lvs_bar_ind, LV_PART_INDICATOR);
     }
-
-#if LV_USE_SLIDER
-    else if(lv_obj_check_type(obj, &lv_slider_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_INDICATOR);
-        lv_obj_add_style(obj, &styles.dim, LV_PART_KNOB);
+    else if(lv_obj_check_type(obj, &lv_slider_class)) 
+    {
+        lv_obj_add_style(obj, &lvs_bar_bg, 0);
+        lv_obj_add_style(obj, &lvs_bar_ind, LV_PART_INDICATOR);
+        lv_obj_add_style(obj, &lvs_slider_knob, LV_PART_KNOB);
     }
-#endif
-
 
 
 #if LV_USE_TEXTAREA

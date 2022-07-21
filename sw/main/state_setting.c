@@ -55,9 +55,7 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
-            Map keypad to U/D keycode
         EVT_EXIT:
-            Disable keypad
         EVT_START:
             Start setting_volume
         EVT_BUTTON_BACK_CLICKED:
@@ -69,16 +67,10 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
     {
         case EVT_ENTRY:
             ST_LOGD("Setting: entry\n");
-            // All setting popup are using the same keypad map
-            input_map_keypad(-1, false);
-            input_map_keypad(INPUT_KEY_UP, 'U');
-            input_map_keypad(INPUT_KEY_DOWN, 'D');
-            input_enable_keypad_dev(true);
             break;
         case EVT_EXIT:
             ST_LOGD("Setting: exit\n");
-            input_map_keypad(-1, false);
-            input_enable_keypad_dev(false);
+            
             break;
         case EVT_START:
             ST_LOGD("Setting: start\n");
@@ -140,7 +132,6 @@ event_t const *setting_volume_handler(app_t *me, event_t const *evt)
         break;
     case EVT_EXIT:
         ST_LOGD("Setting_Volume: exit\n");
-        lv_group_remove_all_objs(input_keypad_group);
         lv_barbox_close(ctx->popup);
         ctx->popup = 0;
         break;
@@ -155,33 +146,47 @@ event_t const *setting_volume_handler(app_t *me, event_t const *evt)
 }
 
 
-static void brightness_event_handler(lv_event_t* e)
+static void brightness_on_value_changed(lv_event_t *e)
 {
-    setting_t* ctx = (setting_t*)lv_event_get_user_data(e);
-    uint32_t c = lv_indev_get_key(lv_indev_get_act());
-    switch (c)
-    {
-        case 'U':
-            config.backlight_brigntness_normal += 10;
-            if (config.backlight_brigntness_normal > 99) config.backlight_brigntness_normal = 99;
-            config_set_dirty();
-            ST_LOGI("Setting_Brightness: %d\n", config.backlight_brigntness_normal);
-            backlight_set_direct(config.backlight_brigntness_normal);
-            lv_barbox_set_value(ctx->popup, config.backlight_brigntness_normal);
-            break;
-        case 'D':
-            ST_LOGD("Setting_Brigntness: Down\n");
-            config.backlight_brigntness_normal -= 10;
-            if (config.backlight_brigntness_normal < 0) config.backlight_brigntness_normal = 0;
-            config_set_dirty();
-            ST_LOGI("Setting_Brightness: %d\n", config.backlight_brigntness_normal);
-            backlight_set_direct(config.backlight_brigntness_normal);
-            lv_barbox_set_value(ctx->popup, config.backlight_brigntness_normal);
-            break;
-        default:
-            ST_LOGD("Setting_Brigntness: Unknown event (%d)\n", c);
-            break;
-    }
+    lv_obj_t *slider = lv_event_get_target(e);
+    int32_t s = lv_slider_get_value(slider);
+    s = s * 5 - 1;
+    if (s < 9) s = 9;
+    if (s > 99) s = 99;
+    config.backlight_brigntness_normal = s;
+    config_set_dirty();
+    ST_LOGI("Setting_Brightness: %d\n", config.backlight_brigntness_normal);
+    backlight_set_direct(config.backlight_brigntness_normal);
+}
+
+
+static void brightness_on_entry(setting_t *ctx)
+{
+    input_map_keypad(-1, false);
+    input_map_keypad(INPUT_KEY_UP, LV_KEY_UP);
+    input_map_keypad(INPUT_KEY_DOWN, LV_KEY_DOWN);
+    input_enable_keypad_dev(true);
+    // Brightness range is [9..99]
+    // Maps to Slider [2-20] -> brightness = slider * 5 - 1
+    // slider = (brightness + 1) / 5
+    int32_t s = (config.backlight_brigntness_normal + 1) / 5;
+    if (s < 2) s = 2;
+    if (s > 20) s = 20;
+    ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_setting_brightness, 2, 20, s);
+    lv_obj_t *slider = lv_sliderbox_get_slider(ctx->popup);
+    lv_group_remove_all_objs(input_keypad_group);
+    lv_group_add_obj(input_keypad_group, slider);
+    lv_obj_add_event_cb(slider, brightness_on_value_changed, LV_EVENT_VALUE_CHANGED, NULL);
+}
+
+
+static void brightness_on_exit(setting_t *ctx)
+{
+    lv_sliderbox_close(ctx->popup);
+    ctx->popup = 0;
+    lv_group_remove_all_objs(input_keypad_group);
+    input_map_keypad(-1, false);
+    input_enable_keypad_dev(false);
 }
 
 
@@ -189,10 +194,12 @@ event_t const *setting_brightness_handler(app_t *me, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
-            Create brightnes box
+            Map keypad up/down
+            Create brightness box
             Wire LV_EVENT_KEY handler to process U/D key
         EVT_EXIT:
             Close volume box
+            Unmap keypad
         EVT_BUTTON_SETTING_CLICKED:
             Send EVT_BUTTON_BACK_CLICKED for setting state to handle (exit)
     */
@@ -202,16 +209,11 @@ event_t const *setting_brightness_handler(app_t *me, event_t const *evt)
     {
     case EVT_ENTRY:
         ST_LOGD("Setting_Brightness: entry\n");
-        ctx->popup = lv_barbox_create(lv_scr_act(), &img_setting_brightness, 0, 99, config.backlight_brigntness_normal);
-        lv_obj_add_event_cb(ctx->popup, brightness_event_handler, LV_EVENT_KEY, (void*)ctx);
-        lv_group_remove_all_objs(input_keypad_group);
-        lv_group_add_obj(input_keypad_group, ctx->popup);
+        brightness_on_entry(ctx);
         break;
     case EVT_EXIT:
         ST_LOGD("Setting_Brightness: exit\n");
-        lv_group_remove_all_objs(input_keypad_group);
-        lv_barbox_close(ctx->popup);
-        ctx->popup = 0;
+        brightness_on_exit(ctx);
         break;
     case EVT_BUTTON_SETTING_CLICKED:
         EQ_QUICK_PUSH(EVT_BUTTON_BACK_CLICKED);    // setting state will handle this and close popup

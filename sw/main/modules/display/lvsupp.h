@@ -32,6 +32,25 @@ void lv_barbox_close_async(lv_obj_t *obj);
 
 
 //
+// Slider box
+//
+
+typedef struct lv_sliderbox_s
+{
+    lv_obj_t obj;
+    lv_obj_t *slider;
+} lv_sliderbox_t;
+
+extern const lv_obj_class_t lv_sliderbox_class;
+
+lv_obj_t *lv_sliderbox_create(lv_obj_t *parent, const void *icon, int32_t min, int32_t max, int32_t value);
+lv_obj_t *lv_sliderbox_get_slider(lv_obj_t *obj);
+void lv_sliderbox_set_value(lv_obj_t *obj, int32_t value);
+void lv_sliderbox_close(lv_obj_t *obj);
+void lv_sliderbox_close_async(lv_obj_t *obj);
+
+
+ //
 // Alert box
 //
 

@@ -26,6 +26,7 @@ extern lv_style_t lvs_scrollbar;
 extern lv_style_t lvs_list;
 extern lv_style_t lvs_list_btn, lvs_list_btn_focused, lvs_list_btn_pressed;
 extern lv_style_t lvs_bar_bg, lvs_bar_ind;
+extern lv_style_t lvs_slider_knob;
 extern lv_style_t lvs_msgbox;
 
 // Application specific styles

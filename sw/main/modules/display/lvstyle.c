@@ -7,6 +7,7 @@ lv_style_t lvs_scrollbar;
 lv_style_t lvs_list;
 lv_style_t lvs_list_btn, lvs_list_btn_focused, lvs_list_btn_pressed;
 lv_style_t lvs_bar_bg, lvs_bar_ind;
+lv_style_t lvs_slider_knob;
 lv_style_t lvs_msgbox;
 
 lv_style_t lvs_invisible_btn;
@@ -81,13 +82,22 @@ void lvs_init()
     lv_style_set_border_width(&lvs_bar_bg, 1);
     lv_style_set_bg_opa(&lvs_bar_bg, LV_OPA_COVER);
     lv_style_set_bg_color(&lvs_bar_bg, COLOR_DARK);
-    lv_style_set_pad_all(&lvs_bar_bg, 2);
-    lv_style_set_radius(&lvs_bar_bg, 6);
+    lv_style_set_height(&lvs_bar_bg, 10);   // bar background height
+    lv_style_set_pad_all(&lvs_bar_bg, 2);   // indicator is 2 pixels within background height
+    lv_style_set_radius(&lvs_bar_bg, LV_RADIUS_CIRCLE);
     lv_style_init(&lvs_bar_ind);
     lv_style_set_bg_opa(&lvs_bar_ind, LV_OPA_COVER);
     lv_style_set_bg_color(&lvs_bar_ind, COLOR_LIGHT);
-    lv_style_set_size(&lvs_bar_ind, 8);
-    lv_style_set_radius(&lvs_bar_ind, 3);
+    lv_style_set_radius(&lvs_bar_ind, LV_RADIUS_CIRCLE);
+
+    // Slider Knob
+    lv_style_init(&lvs_slider_knob);
+    lv_style_set_bg_opa(&lvs_slider_knob, LV_OPA_COVER);
+    lv_style_set_bg_color(&lvs_slider_knob, COLOR_LIGHT);
+    lv_style_set_border_color(&lvs_slider_knob, COLOR_DARK);
+    lv_style_set_border_width(&lvs_slider_knob, 1);
+    lv_style_set_pad_all(&lvs_slider_knob, 3);  // make knob larger
+    lv_style_set_radius(&lvs_slider_knob, LV_RADIUS_CIRCLE);
 
      // Popup Box / Msg box
     lv_style_init(&lvs_msgbox);
