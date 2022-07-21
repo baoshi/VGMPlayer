@@ -2,16 +2,16 @@
 #include <string.h>
 #include "sw_conf.h"
 #include "my_debug.h"
-#include "lvinput.h"
 #include "lvstyle.h"
 #include "lvsupp.h"
 #include "tick.h"
 #include "event_ids.h"
 #include "event_queue.h"
 #include "disk.h"
-#include "path_utils.h"
 #include "ec.h"
+#include "input.h"
 #include "catalog.h"
+#include "path_utils.h"
 #include "app.h"
 
 #define UI_UPDATE_INTERVAL_MS 200
@@ -60,51 +60,17 @@ static void screen_event_handler(lv_event_t *e)
 }
 
 
-// Callback for on-screen button event
-static void button_clicked_handler(lv_event_t *e)
-{
-    int event_id = (int)lv_event_get_user_data(e);
-    EQ_QUICK_PUSH(event_id);
-}
-
-
 static void browser_on_entry(browser_t *ctx)
 {
     // Create screen
     ctx->screen = lv_obj_create(NULL);
     // Self-destruction callback
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void *)ctx);
-    // Keypad input device not used initially
-    lvi_disable_keypad();
-    lv_group_remove_all_objs(lvi_keypad_group);
-    //
-    // Invisible on-screen buttons
-    // Cord     Button
-    // (0, 0)   [SETTING]
-    // (1, 0)   [BACK]
-    //
-    lv_obj_t *btn;
-    // (0, 0)
-    btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_btn, 0);
-    lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
-    lv_obj_set_pos(btn, 0, 0);
-    lv_obj_set_size(btn, 1, 1);
-    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_BUTTON_SETTING_CLICKED);
-    // (1, 0)
-    btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_btn, 0);
-    lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
-    lv_obj_set_pos(btn, 1, 0);
-    lv_obj_set_size(btn, 1, 1);
-    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_BUTTON_BACK_CLICKED);
-    // NW, SW used as LVGL button input device
-    lvi_disable_button();
-    lvi_pos_button(LVI_BUTTON_NW, 0, 0); // NW -> SETTING (0, 0)
-    lvi_pos_button(LVI_BUTTON_SW, 1, 0); // SW -> BACK (1, 0)
-    lvi_enable_button();
+    // Setup button for SETTING and BACK
+    input_create_virtual_buttons(ctx->screen);
+    input_enable_virtual_button(INPUT_KEY_SETTING, true);
+    input_enable_virtual_button(INPUT_KEY_BACK, true);
+    input_enable_button_dev(true);
     //
     // UI Elements
     //
@@ -136,6 +102,16 @@ static void browser_on_entry(browser_t *ctx)
 }
 
 
+static void browser_on_exit(browser_t *ctx)
+{
+    tick_disarm_timer_event(ctx->alarm_ui_update);
+    ctx->alarm_ui_update = 0;
+    input_enable_virtual_button(-1, false);
+    input_enable_button_dev(false);
+    input_delete_virtual_buttons();
+}
+
+
 static void browser_on_ui_update(browser_t *ctx)
 {
     char buf[32];
@@ -148,9 +124,9 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
-            Create screen, arm UI update timer
+            Create screen, buttons, arm UI update timer
         EVT_EXIT:
-            Disarm UI update timer
+            Delete buttons, disarm UI update timer
         EVT_START:
             Start browser_nodisk
         EVT_BUTTON_SETTING_CLICKED:
@@ -170,8 +146,7 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         break;
     case EVT_EXIT:
         BR_LOGD("Browser: exit\n");
-        tick_disarm_timer_event(ctx->alarm_ui_update);
-        ctx->alarm_ui_update = 0;
+        browser_on_exit(ctx);
         break;
     case EVT_START:
         STATE_START(me, &me->browser_nodisk); // default to nodisk state and wait card insertion
@@ -360,12 +335,12 @@ static void populate_file_list(app_t *me, int mode)
         focus = btn; // btn points to the last button added
     }
     // Add all buttons to input group
-    lv_group_remove_all_objs(lvi_keypad_group);
+    lv_group_remove_all_objs(input_keypad_group);
     uint32_t cnt = lv_obj_get_child_cnt(ctx->lst_file_list);
     for (uint32_t i = 0; i < cnt; ++i)
     {
         lv_obj_t *obj = lv_obj_get_child(ctx->lst_file_list, i);
-        lv_group_add_obj(lvi_keypad_group, obj);
+        lv_group_add_obj(input_keypad_group, obj);
     }
     // Set focus if necessary
     if (focus != NULL)
@@ -377,29 +352,27 @@ static void populate_file_list(app_t *me, int mode)
 }
 
 
-static void browser_disk_map_keypad()
+static void clean_file_list(app_t* me, browser_t *ctx)
 {
-    // PLAY, NE, SE used as keypad input device
-    lvi_disable_keypad();
-    lvi_map_keypad(LVI_BUTTON_PLAY, LV_KEY_ENTER); // PLAY -> Enter, triggers list button's callback action
-    lvi_map_keypad(LVI_BUTTON_NE, LV_KEY_PREV);    // NE -> Prev, used in file list navigation
-    lvi_map_keypad(LVI_BUTTON_SE, LV_KEY_NEXT);    // SE -> Next, used in file list navigation
-    lvi_enable_keypad();
-}
-
-
-static void browser_disk_cleanup(app_t* me, browser_t *ctx)
-{
-    // unmap keypad and input group
-    lv_group_remove_all_objs(lvi_keypad_group);
+    // Clean file list
     lv_obj_clean(ctx->lst_file_list);
-    lvi_disable_keypad();
-    // clear catalog
+    // Clear catalog
     catalog_close(me->catalog);
     me->catalog = 0;
     me->catalog_history_page[0] = 0;
     me->catalog_history_selection[0] = 0;
     me->catalog_history_index = 0;
+}
+
+
+static void browser_disk_map_keypad()
+{
+    input_enable_keypad_dev(false);
+    input_map_keypad(-1, false);
+    input_map_keypad(INPUT_KEY_PLAY, LV_KEY_ENTER);
+    input_map_keypad(INPUT_KEY_UP, LV_KEY_PREV);
+    input_map_keypad(INPUT_KEY_DOWN, LV_KEY_NEXT);
+    input_enable_keypad_dev(true);
 }
 
 
@@ -489,6 +462,15 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
             break;
         }
     }
+}
+
+
+static void browser_disk_on_exit()
+{
+    // Unmap keypad and input group
+    lv_group_remove_all_objs(input_keypad_group);
+    input_enable_keypad_dev(false);
+    input_map_keypad(-1, false);
 }
 
 
@@ -605,8 +587,9 @@ static void browser_disk_on_back(app_t *me, browser_t *ctx)
 
 static void browser_disk_on_setting(browser_t *ctx)
 {
-    // State setting uses button on NW/SW and keypad on NE/SE, disable keypad used in browser_disk
-    lvi_disable_keypad();
+    // State setting will uses UP/DOWN as keypad, disable keypad used here
+    input_enable_keypad_dev(false);
+    input_map_keypad(-1, false);
     // Save current focused file
     ctx->focused = 0;
     for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_file_list); ++i)
@@ -619,7 +602,7 @@ static void browser_disk_on_setting(browser_t *ctx)
         }
     }
     // keypads nolonger controls file list
-    lv_group_remove_all_objs(lvi_keypad_group);
+    lv_group_remove_all_objs(input_keypad_group);
 }
 
 
@@ -628,11 +611,11 @@ static void browser_disk_on_setting_closed(browser_t *ctx)
     // restore keypad mapping
     browser_disk_map_keypad();
     // attach input group to file list buttons
-    lv_group_remove_all_objs(lvi_keypad_group);
+    lv_group_remove_all_objs(input_keypad_group);
     for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_file_list); ++i)
     {
         lv_obj_t *obj = lv_obj_get_child(ctx->lst_file_list, i);
-        lv_group_add_obj(lvi_keypad_group, obj);
+        lv_group_add_obj(input_keypad_group, obj);
     }
     // Set focus if necessary
     if (ctx->focused != 0)
@@ -650,7 +633,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             Create catalog from root directory or restore catalog history
             Populate file list
         EVT_EXIT:
-            Do nothing. Cleanup is done on EVT_DISK_ERROR or EVT_DISK_EJECTED
+           Unmap keypad. Cleanup is only done on EVT_DISK_ERROR or EVT_DISK_EJECTED
         EVT_BROWSER_PLAY_CLICKED:
             If clicked on a directory, push history and navigate to that directory
             If clicked on file, transit to player state
@@ -685,6 +668,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         break;
     case EVT_EXIT:
         BR_LOGD("Browser_Disk: exit\n");
+        browser_disk_on_exit();
         break;
     case EVT_BROWSER_PLAY_CLICKED:
         browser_disk_on_play(me, ctx, evt);
@@ -701,11 +685,11 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         r = evt; // super state browser will process EVT_SETTING_CLICKED further
         break;
     case EVT_DISK_ERROR:
-        browser_disk_cleanup(me, ctx);
+        clean_file_list(me, ctx);
         STATE_TRAN((hsm_t *)me, &me->browser_baddisk);
         break;
     case EVT_DISK_EJECTED:
-        browser_disk_cleanup(me, ctx);
+        clean_file_list(me, ctx);
         STATE_TRAN((hsm_t *)me, &me->browser_nodisk);
         break;
     default:

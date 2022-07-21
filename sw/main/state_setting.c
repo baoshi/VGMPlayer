@@ -2,12 +2,12 @@
 #include <string.h>
 #include "sw_conf.h"
 #include "my_debug.h"
-#include "lvinput.h"
 #include "lvstyle.h"
 #include "lvtheme.h"
 #include "lvsupp.h"
 #include "event_ids.h"
 #include "event_queue.h"
+#include "input.h"
 #include "backlight.h"
 #include "app.h"
 
@@ -70,13 +70,15 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
             ST_LOGD("Setting: entry\n");
             // All setting popup are using the same keypad map
-            lvi_disable_keypad();
-            lvi_map_keypad(LVI_BUTTON_NE, 'U');  // Remap NE -> LV_EVENT_KEY 'U'
-            lvi_map_keypad(LVI_BUTTON_SE, 'D');  // Remap SE -> LV_EVENT_KEY 'D'
+            input_map_keypad(-1, false);
+            input_map_keypad(INPUT_KEY_UP, 'U');
+            input_map_keypad(INPUT_KEY_DOWN, 'D');
+            input_enable_keypad_dev(true);
             break;
         case EVT_EXIT:
             ST_LOGD("Setting: exit\n");
-            lvi_disable_keypad();
+            input_map_keypad(-1, false);
+            input_enable_keypad_dev(false);
             break;
         case EVT_START:
             ST_LOGD("Setting: start\n");
@@ -133,12 +135,12 @@ event_t const *setting_volume_handler(app_t *me, event_t const *evt)
         ST_LOGD("Setting_Volume: entry\n");
         ctx->popup = lv_barbox_create(lv_scr_act(), 0, 0, 100, 20);
         lv_obj_add_event_cb(ctx->popup, volume_event_handler, LV_EVENT_KEY, (void *)ctx);
-        lv_group_remove_all_objs(lvi_keypad_group);
-        lv_group_add_obj(lvi_keypad_group, ctx->popup);
+        lv_group_remove_all_objs(input_keypad_group);
+        lv_group_add_obj(input_keypad_group, ctx->popup);
         break;
     case EVT_EXIT:
         ST_LOGD("Setting_Volume: exit\n");
-        lv_group_remove_all_objs(lvi_keypad_group);
+        lv_group_remove_all_objs(input_keypad_group);
         lv_barbox_close(ctx->popup);
         ctx->popup = 0;
         break;
@@ -202,12 +204,12 @@ event_t const *setting_brightness_handler(app_t *me, event_t const *evt)
         ST_LOGD("Setting_Brightness: entry\n");
         ctx->popup = lv_barbox_create(lv_scr_act(), &img_setting_brightness, 0, 99, config.backlight_brigntness_normal);
         lv_obj_add_event_cb(ctx->popup, brightness_event_handler, LV_EVENT_KEY, (void*)ctx);
-        lv_group_remove_all_objs(lvi_keypad_group);
-        lv_group_add_obj(lvi_keypad_group, ctx->popup);
+        lv_group_remove_all_objs(input_keypad_group);
+        lv_group_add_obj(input_keypad_group, ctx->popup);
         break;
     case EVT_EXIT:
         ST_LOGD("Setting_Brightness: exit\n");
-        lv_group_remove_all_objs(lvi_keypad_group);
+        lv_group_remove_all_objs(input_keypad_group);
         lv_barbox_close(ctx->popup);
         ctx->popup = 0;
         break;

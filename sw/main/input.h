@@ -26,8 +26,12 @@ void input_enable_button_dev(bool enable);
 void input_create_virtual_buttons(lv_obj_t *screen);
 void input_delete_virtual_buttons();
 void input_enable_virtual_button(int id, bool enable);
+void input_restore_default_virtual_button_event(int id);
+void input_add_virtual_button_event(int id, lv_event_code_t filter, int event);
 
 
+extern lv_indev_t* indev_keypad;
+extern lv_group_t* input_keypad_group;
 void input_enable_keypad_dev(bool enable);
 void input_map_keypad(int id, uint32_t keycode);
 

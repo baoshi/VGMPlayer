@@ -18,6 +18,7 @@
 #include "display.h"
 #include "disk.h"
 #include "audio.h"
+#include "input.h"
 #include "splash.h"
 #include "path_utils.h"
 #include "app.h"
@@ -84,7 +85,9 @@ int main()
     // audio powerup stage 1
     audio_preinit();
     // initialize display
-    display_init();     // 323ms
+    display_init();
+    // initailize input devices
+    input_init();
     // draw splash screen without backlight
     splash();
     // Other H/W initialiation interleave with lvgl update to finish the drawing

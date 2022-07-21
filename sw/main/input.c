@@ -76,6 +76,7 @@ static void button_init()
     _button_drv.read_cb = _button_read;
     indev_button = lv_indev_drv_register(&_button_drv);
     lv_indev_set_button_points(indev_button, _vbutton_coord);
+    
 }
 
 
@@ -112,6 +113,7 @@ static lv_obj_t * button_create_virtual_button(lv_obj_t *screen, int btn_id, int
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)event);
+    lv_indev_enable(indev_button, false);
 }
 
 
@@ -231,11 +233,13 @@ static void keypad_init()
     input_keypad_group = lv_group_create();
     lv_group_set_wrap(input_keypad_group, false);
     lv_indev_set_group(indev_keypad, input_keypad_group);
+    lv_indev_enable(indev_keypad, false);
 }
 
 
 void input_enable_keypad_dev(bool enable)
 {
+    if (!enable) lv_group_remove_all_objs(input_keypad_group);
     lv_indev_enable(indev_keypad, enable);
 }
 
