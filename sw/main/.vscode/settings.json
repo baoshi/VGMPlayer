@@ -75,7 +75,9 @@
         "clocks.h": "c",
         "lvstyle.h": "c",
         "lvsupp.h": "c",
-        "sw_conf.h": "c"
+        "sw_conf.h": "c",
+        "stdio.h": "c",
+        "event_ids.h": "c"
     },
     "cmake.configureOnOpen": true
 }

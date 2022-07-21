@@ -37,7 +37,7 @@
 
 bool ec_charge;      // true if charging
 float ec_battery;    // battery voltage
-uint8_t ec_buttons;   
+uint8_t ec_keys;   
 
 static uint8_t _data[2] = { 0, 0 };
 static int _failure_count;
@@ -64,7 +64,7 @@ static void _decode(void)
 {
     // Status  [ X X CHG SE NE PLAY SW NW]
     ec_charge = (_data[0] & 0x20) ? true : false;
-    ec_buttons = _data[0] & 0x1F;
+    ec_keys = _data[0] & 0x1F;
     ec_battery = (float)(_data[1]) / 30.0f;
 }
 
@@ -108,7 +108,7 @@ int ec_update(uint32_t now)
     {
         _failure_count = 0;
         _decode();
-        EC_LOGD("Charger=%d, Button=0x%02x, Batt=%.1fv\n", ec_usb, ec_charge, ec_buttons, ec_battery);
+        EC_LOGD("Charger=%d, Button=0x%02x, Batt=%.1fv\n", ec_usb, ec_charge, ec_keys, ec_battery);
         if (old == _data[0])
             ret = 0;
         else

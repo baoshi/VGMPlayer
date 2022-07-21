@@ -10,11 +10,11 @@ static lv_indev_drv_t _button_drv;
 static uint8_t _button_mask;
 static lv_point_t _button_coord[5] = 
 {
-    {0, 0}, // EC_BUTTON_MASK_NW
-    {1, 0}, // EC_BUTTON_MASK_SW
-    {2, 0}, // EC_BUTTON_MASK_PLAY
-    {3, 0}, // EC_BUTTON_MASK_NE
-    {4, 0}  // EC_BUTTON_MASK_SE
+    {0, 0}, // EC_KEY_MASK_NW
+    {1, 0}, // EC_KEY_MASK_SW
+    {2, 0}, // EC_KEY_MASK_PLAY
+    {3, 0}, // EC_KEY_MASK_NE
+    {4, 0}  // EC_KEY_MASK_SE
 };
 static lv_indev_drv_t _keypad_drv;
 static uint32_t _keypad_mapping[5] = {0, 0, 0, 0, 0};
@@ -24,7 +24,7 @@ static void _keypad_read(lv_indev_drv_t* indev_drv, lv_indev_data_t* data)
 {
     static uint32_t last_key = 0;
     data->state = LV_INDEV_STATE_REL;           // Default state
-    if (ec_buttons & EC_BUTTON_MASK_NW)
+    if (ec_keys & EC_KEY_MASK_NW)
     {
         if (_keypad_mapping[0] != 0)
         {
@@ -32,7 +32,7 @@ static void _keypad_read(lv_indev_drv_t* indev_drv, lv_indev_data_t* data)
             last_key = _keypad_mapping[0];
         }
     }
-    else if (ec_buttons & EC_BUTTON_MASK_SW)
+    else if (ec_keys & EC_KEY_MASK_SW)
     {
         if (_keypad_mapping[1] != 0)
         {
@@ -40,7 +40,7 @@ static void _keypad_read(lv_indev_drv_t* indev_drv, lv_indev_data_t* data)
             last_key = _keypad_mapping[1];
         }
     }
-    else if (ec_buttons & EC_BUTTON_MASK_PLAY)
+    else if (ec_keys & EC_KEY_MASK_PLAY)
     {
         if (_keypad_mapping[2] != 0)
         {
@@ -48,7 +48,7 @@ static void _keypad_read(lv_indev_drv_t* indev_drv, lv_indev_data_t* data)
             last_key = _keypad_mapping[2];
         }
     }
-    else if (ec_buttons & EC_BUTTON_MASK_NE)
+    else if (ec_keys & EC_KEY_MASK_NE)
     {
         if (_keypad_mapping[3] != 0)
         {
@@ -56,7 +56,7 @@ static void _keypad_read(lv_indev_drv_t* indev_drv, lv_indev_data_t* data)
             last_key = _keypad_mapping[3];
         }
     }
-    else if (ec_buttons & EC_BUTTON_MASK_SE)    // 5
+    else if (ec_keys & EC_KEY_MASK_SE)    // 5
     {
         if (_keypad_mapping[4] != 0)
         {
@@ -72,27 +72,27 @@ static void _button_read(lv_indev_drv_t* indev_drv, lv_indev_data_t* data)
 {
     static uint32_t last_btn = 0;
     data->state = LV_INDEV_STATE_REL;    // Default state
-    if ((ec_buttons & EC_BUTTON_MASK_NW) && (_button_mask & 0x01))
+    if ((ec_keys & EC_KEY_MASK_NW) && (_button_mask & 0x01))
     {
         data->state = LV_INDEV_STATE_PR;
         last_btn = LVI_BUTTON_NW;
     }
-    else if ((ec_buttons & EC_BUTTON_MASK_SW) && (_button_mask & 0x02))
+    else if ((ec_keys & EC_KEY_MASK_SW) && (_button_mask & 0x02))
     {
         data->state = LV_INDEV_STATE_PR;
         last_btn = LVI_BUTTON_SW;
     }
-    else if ((ec_buttons & EC_BUTTON_MASK_PLAY) && (_button_mask & 0x04))
+    else if ((ec_keys & EC_KEY_MASK_PLAY) && (_button_mask & 0x04))
     {
         data->state = LV_INDEV_STATE_PR;
         last_btn = LVI_BUTTON_PLAY;
     }
-    else if ((ec_buttons & EC_BUTTON_MASK_NE) && (_button_mask & 0x08))
+    else if ((ec_keys & EC_KEY_MASK_NE) && (_button_mask & 0x08))
     {
         data->state = LV_INDEV_STATE_PR;
         last_btn = LVI_BUTTON_NE;
     }
-    else if ((ec_buttons & EC_BUTTON_MASK_SE) && (_button_mask & 0x10))
+    else if ((ec_keys & EC_KEY_MASK_SE) && (_button_mask & 0x10))
     {
         data->state = LV_INDEV_STATE_PR;
         last_btn = LVI_BUTTON_SE;
@@ -191,6 +191,7 @@ void lvi_disable_button()
 void lvi_enable_button()
 {
     lv_indev_enable(lvi_button, true);
+    lv_indev_wait_release(lvi_button);
 }
 
 
@@ -208,4 +209,5 @@ void lvi_disable_keypad()
 void lvi_enable_keypad()
 {
     lv_indev_enable(lvi_keypad, true);
+    lv_indev_wait_release(lvi_keypad);
 }

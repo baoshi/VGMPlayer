@@ -60,7 +60,7 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
             Disable keypad
         EVT_START:
             Start setting_volume
-        EVT_BACK_CLICKED:
+        EVT_BUTTON_BACK_CLICKED:
             Transit to creator state and send EVT_SETTING_CLOSED
     */
     setting_t *ctx = &(me->setting_ctx);
@@ -82,7 +82,7 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
             ST_LOGD("Setting: start\n");
             STATE_START(me, &(me->setting_volume));
             break;
-        case EVT_BACK_CLICKED:
+        case EVT_BUTTON_BACK_CLICKED:
             ST_LOGD("Setting: close and transit to %s state\n", ctx->creator->name);
             STATE_TRAN((hsm_t *)me, ctx->creator);
             EQ_QUICK_PUSH(EVT_SETTING_CLOSED);
@@ -122,7 +122,7 @@ event_t const *setting_volume_handler(app_t *me, event_t const *evt)
             Wire LV_EVENT_KEY handler to process U/D key
         EVT_EXIT:
             Close volume box
-        EVT_SETTING_CLICKED:
+        EVT_BUTTON_SETTING_CLICKED:
             Transit to setting_brightness
     */
     event_t const *r = 0;
@@ -142,7 +142,7 @@ event_t const *setting_volume_handler(app_t *me, event_t const *evt)
         lv_barbox_close(ctx->popup);
         ctx->popup = 0;
         break;
-    case EVT_SETTING_CLICKED:
+    case EVT_BUTTON_SETTING_CLICKED:
         STATE_TRAN(me, &(me->setting_brightness));
         break;
     default:
@@ -191,8 +191,8 @@ event_t const *setting_brightness_handler(app_t *me, event_t const *evt)
             Wire LV_EVENT_KEY handler to process U/D key
         EVT_EXIT:
             Close volume box
-        EVT_SETTING_CLICKED:
-            Send EVT_BACK_CLICKED for setting state to handle (exit)
+        EVT_BUTTON_SETTING_CLICKED:
+            Send EVT_BUTTON_BACK_CLICKED for setting state to handle (exit)
     */
     event_t const *r = 0;
     setting_t *ctx = &(me->setting_ctx);
@@ -211,8 +211,8 @@ event_t const *setting_brightness_handler(app_t *me, event_t const *evt)
         lv_barbox_close(ctx->popup);
         ctx->popup = 0;
         break;
-    case EVT_SETTING_CLICKED:
-        EQ_QUICK_PUSH(EVT_BACK_CLICKED);    // setting state will handle this and close popup
+    case EVT_BUTTON_SETTING_CLICKED:
+        EQ_QUICK_PUSH(EVT_BUTTON_BACK_CLICKED);    // setting state will handle this and close popup
         break;
     default:
         r = evt;

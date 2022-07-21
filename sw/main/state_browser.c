@@ -91,7 +91,7 @@ static void browser_on_entry(browser_t *ctx)
     lv_obj_set_pos(btn, 0, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_SETTING_CLICKED);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_BUTTON_SETTING_CLICKED);
     // (1, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_btn, 0);
@@ -99,7 +99,7 @@ static void browser_on_entry(browser_t *ctx)
     lv_obj_set_pos(btn, 1, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_BACK_CLICKED);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void *)EVT_BUTTON_BACK_CLICKED);
     // NW, SW used as LVGL button input device
     lvi_disable_button();
     lvi_pos_button(LVI_BUTTON_NW, 0, 0); // NW -> SETTING (0, 0)
@@ -153,7 +153,7 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
             Disarm UI update timer
         EVT_START:
             Start browser_nodisk
-        EVT_SETTING_CLICKED:
+        EVT_BUTTON_SETTING_CLICKED:
             Create settings state and transit to it
         EVT_SETTING_CLOSED:
             Save settings
@@ -176,7 +176,7 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
     case EVT_START:
         STATE_START(me, &me->browser_nodisk); // default to nodisk state and wait card insertion
         break;
-    case EVT_SETTING_CLICKED:
+    case EVT_BUTTON_SETTING_CLICKED:
         setting_create(me);
         break;
     case EVT_SETTING_CLOSED:
@@ -554,7 +554,7 @@ static void browser_disk_on_play(app_t *me, browser_t *ctx, event_t const *evt)
         break;
     case FILE_LIST_ENTRY_TYPE_PARENT:
         // Same as back button
-        EQ_QUICK_PUSH(EVT_BACK_CLICKED);
+        EQ_QUICK_PUSH(EVT_BUTTON_BACK_CLICKED);
         break;
     case FILE_LIST_ENTRY_TYPE_PAGEUP:
         // populate previous page
@@ -605,7 +605,7 @@ static void browser_disk_on_back(app_t *me, browser_t *ctx)
 
 static void browser_disk_on_setting(browser_t *ctx)
 {
-    // Disable keypads. They will be remapped in settings
+    // State setting uses button on NW/SW and keypad on NE/SE, disable keypad used in browser_disk
     lvi_disable_keypad();
     // Save current focused file
     ctx->focused = 0;
@@ -656,9 +656,9 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             If clicked on file, transit to player state
             If clilck on [..], enqueue EVT_BROWSER_CLICKED event
             If click on Page Up/Down, navigate page
-        EVT_BACK_CLICKED:
+        EVT_BUTTON_BACK_CLICKED:
             Pop history and navigate to parent directory
-        EVT_SETTING_CLICKED:
+        EVT_BUTTON_SETTING_CLICKED:
             call browser_disk_on_setting()
               - Clean keypad mapping
               - Save current focused file
@@ -689,12 +689,12 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
     case EVT_BROWSER_PLAY_CLICKED:
         browser_disk_on_play(me, ctx, evt);
         break;
-    case EVT_BACK_CLICKED:
+    case EVT_BUTTON_BACK_CLICKED:
         browser_disk_on_back(me, ctx);
         break;
-    case EVT_SETTING_CLICKED:
+    case EVT_BUTTON_SETTING_CLICKED:
         browser_disk_on_setting(ctx);
-        r = evt; // super state browser will process EVT_SETTING_CLICKED further
+        r = evt; // super state browser will process EVT_BUTTON_SETTING_CLICKED further
         break;
     case EVT_SETTING_CLOSED:
         browser_disk_on_setting_closed(ctx);

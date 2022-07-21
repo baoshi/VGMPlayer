@@ -44,6 +44,7 @@ add_executable(${PROJ_NAME}
     splash.c
     path_utils.c
     catalog.c
+    input.c
     state_browser.c
     state_player.c
     state_setting.c

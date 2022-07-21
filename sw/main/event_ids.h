@@ -9,8 +9,11 @@ enum
     EVT_DISK_EJECTED,
     EVT_DISK_ERROR,
 
-    EVT_SETTING_CLICKED,    // Setting button event
-    EVT_BACK_CLICKED,       // Back button event
+    EVT_BUTTON_SETTING_CLICKED, // Button events
+    EVT_BUTTON_PLAY_CLICKED,       
+    EVT_BUTTON_UP_CLICKED,
+    EVT_BUTTON_DOWN_CLICKED,
+    EVT_BUTTON_BACK_CLICKED,
 
     EVT_SETTING_CLOSED,     // Setting popup closed
 

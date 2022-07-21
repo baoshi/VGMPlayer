@@ -74,6 +74,7 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
         // Setup keypad
         lvi_disable_keypad();
         lvi_map_keypad(LVI_BUTTON_PLAY, 'P');  // Remap PLAY -> LV_EVENT_KEY 'P'
+        lvi_enable_keypad();
         lv_obj_add_event_cb(ctx->popup, alert_keypad_handler, LV_EVENT_KEY, (void *)ctx);
         lv_group_remove_all_objs(lvi_keypad_group);
         lv_group_add_obj(lvi_keypad_group, ctx->popup);

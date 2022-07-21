@@ -149,7 +149,7 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_pos(btn, 1, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_BACK_CLICKED);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_BUTTON_BACK_CLICKED);
     // Setting (2, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_btn, 0);
@@ -157,7 +157,7 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_pos(btn, 2, 0);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_SETTING_CLICKED);
+    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_BUTTON_SETTING_CLICKED);
     // Up (3, 0)
     btn = lv_btn_create(ctx->screen);
     lv_obj_add_style(btn, &lvs_invisible_btn, 0);
@@ -313,7 +313,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
             Set navigation direction to up (prev) and play next
         EVT_PLAYER_DOWN_CLICKED:
             Set navigation direction to down (next) and play next
-        EVT_SETTING_CLICKED:
+        EVT_BUTTON_SETTING_CLICKED:
             Create settings state and transit to it
         EVT_SETTING_CLOSED:
             Save settings
@@ -360,21 +360,23 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         ctx->nav_dir = 0;
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         break;
-    case EVT_SETTING_CLICKED:
-        // Remove PLAY/UP/DOWN mapping, preserve BACK, SETTING
+    case EVT_BUTTON_SETTING_CLICKED:
+        // State setting uses button on SW/NW and keypad on NE/SE, disable other buttons.
         lvi_disable_button();
         lvi_pos_button(LVI_BUTTON_SW, 1, 0);    // SW   -> BACK (1, 0)
         lvi_pos_button(LVI_BUTTON_NW, 2, 0);    // NW   -> SETTING (2, 0)
+        lvi_enable_button();
         setting_create(app);
         break;
     case EVT_SETTING_CLOSED:
         // reenable buttons
         player_map_buttons();
         break;
-    case EVT_BACK_CLICKED:
+    case EVT_BUTTON_BACK_CLICKED:
         STATE_TRAN(app, &(app->browser_disk));
         break;
     case EVT_ALERT_CLOSED:
+        PL_LOGD("Player: alert closed\n");
         player_map_buttons();
         break;
     case EVT_DISK_ERROR:
