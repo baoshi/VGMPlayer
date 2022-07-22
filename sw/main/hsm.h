@@ -1,5 +1,23 @@
 /*
- * https://github.com/MadsAndreasen/HierarchicalStateMachine
+ * Most of the code is from https://github.com/MadsAndreasen/HierarchicalStateMachine
+ * In the original repo author has mentioned corrections on inherited transitions. However,
+ * I choose to revert it because of the scenario needed in this project. Consider this example:
+ * 
+ *    S1        S1 is the parent state and S11, S111 are sub states.
+ *     |        S1 has a handler for event e1. S11 does not handle e1.
+ *     |        When e1 arrives, we shall transit from current state to S111.
+ *    S11
+ *     |        Assume we are currently at S11, e1 will be handled by higher S1 handler.
+ *     |
+ *    S111      In the original implementation, LCA calculation is done from handler's state to the 
+ *              desitnation state (S1 to S111), and these steps will happen during transition:
+ *              (S11 Exit) -> (S11 Entry) -> (S111 Entry). S11 Exit/Entry seems redundant.
+ *
+ *              In my version, LCA calculation is done from the current state to the destination state
+ *              (S11 to S111), only (S111 Entry) will happen.
+ * 
+ * I also removed the static LCA calculation. This allows dynamic states attachment. See settings and alert state
+ * for example.
  */ 
 
 #ifndef HSM_H
