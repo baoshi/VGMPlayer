@@ -113,7 +113,7 @@ static void player_map_buttons()
     input_enable_virtual_button(INPUT_KEY_PLAY);
     input_enable_virtual_button(INPUT_KEY_UP);
     input_enable_virtual_button(INPUT_KEY_DOWN);
-    input_enable_button_dev(true);
+    input_enable_button_dev();
 }
 
 
@@ -177,7 +177,7 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
         {
             // Remove button mapping, alert will setup its own
             PL_LOGD("Player: Unable to load entry from catalog\n");
-            lvi_disable_button();
+            input_disable_button_dev();
             alert_create(app, 0, "File not accessible", 0);
             break;
         }
@@ -191,7 +191,7 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
         {
             PL_LOGD("Player: Setup song return %d\n", r);
             // Remove button mapping, alert will setup its own
-            lvi_disable_button();
+            input_disable_button_dev();
             alert_create(app, 0, "Cannot play file", 0);
             break;
         }
@@ -227,7 +227,7 @@ static void player_on_play_next(app_t *app, player_t *ctx)
     switch (r)
     {
     case CAT_OK:
-        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_CLICKED);
+        EQ_QUICK_PUSH(EVT_BUTTON_PLAY_CLICKED);
         break;
     case CAT_ERR_EOF:
         PL_LOGD("Player: no more files\n");
@@ -266,7 +266,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
             Disarm UI update timer, disable buttons
         EVT_PLAYER_UI_UPDATE:
             Update top bar
-        EVT_PLAYER_PLAY_CLICKED:
+        EVT_PLAY_CLICKED:
             Play song
         EVT_PLAYER_PLAY_NEXT:
             Find next file (can be next or previous depend on direction) and play
@@ -296,7 +296,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         player_on_entry(ctx);
         ctx->nav_dir = 0;  // default to play next
         ctx->decoder = 0;
-        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_CLICKED);
+        EQ_QUICK_PUSH(EVT_BUTTON_PLAY_CLICKED);
         break;
     case EVT_EXIT:
         PL_LOGD("Player: exit\n");
@@ -305,18 +305,18 @@ event_t const *player_handler(app_t *app, event_t const *evt)
     case EVT_PLAYER_UI_UPDATE:
         player_on_ui_update(ctx);
         break;
-    case EVT_PLAYER_PLAY_CLICKED:
+    case EVT_BUTTON_PLAY_CLICKED:
         PL_LOGD("Player: PLAY clicked\n");
         player_on_play_clicked(app, ctx);
         break;
     case EVT_PLAYER_PLAY_NEXT:
         player_on_play_next(app, ctx);
         break;
-    case EVT_PLAYER_UP_CLICKED:
+    case EVT_BUTTON_UP_CLICKED:
         ctx->nav_dir = 1;
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         break;
-    case EVT_PLAYER_DOWN_CLICKED:
+    case EVT_BUTTON_DOWN_CLICKED:
         ctx->nav_dir = 0;
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         break;

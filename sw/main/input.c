@@ -76,7 +76,7 @@ static void button_init()
     _button_drv.read_cb = _button_read;
     indev_button = lv_indev_drv_register(&_button_drv);
     lv_indev_set_button_points(indev_button, _vbutton_coord);
-    
+    lv_indev_enable(indev_button, false);
 }
 
 
@@ -113,7 +113,7 @@ static lv_obj_t * button_create_virtual_button(lv_obj_t *screen, int btn_id, int
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
     lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)event);
-    lv_indev_enable(indev_button, false);
+    return btn;
 }
 
 
@@ -125,7 +125,7 @@ void input_enable_button_dev()
 
 void input_disable_button_dev()
 {
-    lv_indev_enable(indev_button, true);
+    lv_indev_enable(indev_button, false);
 }
 
 

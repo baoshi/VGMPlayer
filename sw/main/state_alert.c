@@ -3,11 +3,11 @@
 #include "sw_conf.h"
 #include "my_debug.h"
 #include "my_mem.h"
-#include "lvinput.h"
 #include "lvstyle.h"
 #include "lvtheme.h"
 #include "lvsupp.h"
 #include "tick.h"
+#include "input.h"
 #include "event_ids.h"
 #include "event_queue.h"
 #include "backlight.h"
@@ -38,14 +38,10 @@
 
 
 
-static void alert_keypad_handler(lv_event_t* e)
+static void alert_enter_released(lv_event_t* e)
 {
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
-    uint32_t c = lv_indev_get_key(lv_indev_get_act());
-    if ('P' == c)
-    {
-        EQ_QUICK_PUSH(EVT_ALERT_MANUAL_CLOSE);
-    }
+    ALT_LOGD("Alert: ENTER clicked\n");
+    EQ_QUICK_PUSH(EVT_ALERT_MANUAL_CLOSE);
 }
 
 
@@ -72,20 +68,20 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
         // Create alert popup
         ctx->popup = lv_alert_create(lv_scr_act(), ctx->icon, ctx->text);
         // Setup keypad
-        lvi_disable_keypad();
-        lvi_map_keypad(LVI_BUTTON_PLAY, 'P');  // Remap PLAY -> LV_EVENT_KEY 'P'
-        lvi_enable_keypad();
-        lv_obj_add_event_cb(ctx->popup, alert_keypad_handler, LV_EVENT_KEY, (void *)ctx);
-        lv_group_remove_all_objs(lvi_keypad_group);
-        lv_group_add_obj(lvi_keypad_group, ctx->popup);
+        input_disable_keypad_dev();
+        input_map_keypad(-1, 0);
+        input_map_keypad(INPUT_KEY_PLAY, LV_KEY_ENTER); // for keypad indev, only LV_KEY_ENTER emits RELEASED event
+        input_enable_keypad_dev();
+        lv_obj_add_event_cb(ctx->popup, alert_enter_released, LV_EVENT_RELEASED, (void *)ctx);
+        lv_group_add_obj(input_keypad_group, ctx->popup);
         // Auto close timeout
         ctx->timer_auto_close = tick_arm_timer_event(2000, false, EVT_ALERT_AUTO_CLOSE, true);
         break;
     case EVT_EXIT:
         ALT_LOGD("Alert: exit\n");
-        lv_group_remove_all_objs(lvi_keypad_group);
+        input_disable_keypad_dev();
+        input_map_keypad(-1, 0);
         lv_alert_close(ctx->popup);
-        lvi_disable_keypad();
         if (ctx->text)
         {
             MY_FREE(ctx->text);
