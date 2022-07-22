@@ -68,8 +68,8 @@ static void browser_on_entry(browser_t *ctx)
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void *)ctx);
     // Setup button for SETTING and BACK
     input_create_virtual_buttons(ctx->screen);
-    input_enable_virtual_button(INPUT_KEY_SETTING, true);
-    input_enable_virtual_button(INPUT_KEY_BACK, true);
+    input_enable_virtual_button(INPUT_KEY_SETTING);
+    input_enable_virtual_button(INPUT_KEY_BACK);
     input_enable_button_dev(true);
     //
     // UI Elements
@@ -98,16 +98,16 @@ static void browser_on_entry(browser_t *ctx)
     // Load screen
     lv_scr_load(ctx->screen);
     // Arm update timer
-    ctx->alarm_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
+    ctx->timer_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
 }
 
 
 static void browser_on_exit(browser_t *ctx)
 {
-    tick_disarm_timer_event(ctx->alarm_ui_update);
-    ctx->alarm_ui_update = 0;
-    input_enable_virtual_button(-1, false);
-    input_enable_button_dev(false);
+    tick_disarm_timer_event(ctx->timer_ui_update);
+    ctx->timer_ui_update = 0;
+    input_disable_virtual_button(-1);
+    input_disable_button_dev();
     input_delete_virtual_buttons();
 }
 
@@ -367,12 +367,12 @@ static void clean_file_list(app_t* me, browser_t *ctx)
 
 static void browser_disk_map_keypad()
 {
-    input_enable_keypad_dev(false);
-    input_map_keypad(-1, false);
+    input_disable_keypad_dev();
+    input_map_keypad(-1, 0);
     input_map_keypad(INPUT_KEY_PLAY, LV_KEY_ENTER);
     input_map_keypad(INPUT_KEY_UP, LV_KEY_PREV);
     input_map_keypad(INPUT_KEY_DOWN, LV_KEY_NEXT);
-    input_enable_keypad_dev(true);
+    input_enable_keypad_dev();
 }
 
 
@@ -468,9 +468,8 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
 static void browser_disk_on_exit()
 {
     // Unmap keypad and input group
-    lv_group_remove_all_objs(input_keypad_group);
-    input_enable_keypad_dev(false);
-    input_map_keypad(-1, false);
+    input_disable_keypad_dev();
+    input_map_keypad(-1, 0);
 }
 
 
@@ -588,8 +587,8 @@ static void browser_disk_on_back(app_t *me, browser_t *ctx)
 static void browser_disk_on_setting(browser_t *ctx)
 {
     // State setting will uses UP/DOWN as keypad, disable keypad used here
-    input_enable_keypad_dev(false);
-    input_map_keypad(-1, false);
+    input_disable_keypad_dev();
+    input_map_keypad(-1, 0);
     // Save current focused file
     ctx->focused = 0;
     for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_file_list); ++i)

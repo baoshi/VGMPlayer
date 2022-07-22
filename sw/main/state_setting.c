@@ -162,10 +162,15 @@ static void brightness_on_value_changed(lv_event_t *e)
 
 static void brightness_on_entry(setting_t *ctx)
 {
-    input_map_keypad(-1, false);
+    /* 
+        Map keypad up/down
+        Create brightness box
+        Wire LV_EVENT_VALUE_CHANGED handler to process brightness change
+    */
+    input_map_keypad(-1, 0);
     input_map_keypad(INPUT_KEY_UP, LV_KEY_UP);
     input_map_keypad(INPUT_KEY_DOWN, LV_KEY_DOWN);
-    input_enable_keypad_dev(true);
+    input_enable_keypad_dev();
     // Brightness range is [9..99]
     // Maps to Slider [2-20] -> brightness = slider * 5 - 1
     // slider = (brightness + 1) / 5
@@ -182,11 +187,14 @@ static void brightness_on_entry(setting_t *ctx)
 
 static void brightness_on_exit(setting_t *ctx)
 {
+    /*
+        Close popup
+        Unmap keypad
+    */
     lv_sliderbox_close(ctx->popup);
     ctx->popup = 0;
-    lv_group_remove_all_objs(input_keypad_group);
-    input_map_keypad(-1, false);
-    input_enable_keypad_dev(false);
+    input_map_keypad(-1, 0);
+    input_disable_keypad_dev();
 }
 
 
@@ -196,9 +204,9 @@ event_t const *setting_brightness_handler(app_t *me, event_t const *evt)
         EVT_ENTRY:
             Map keypad up/down
             Create brightness box
-            Wire LV_EVENT_KEY handler to process U/D key
+            Wire LV_EVENT_VALUE_CHANGED handler to process brightness change
         EVT_EXIT:
-            Close volume box
+            Close popup
             Unmap keypad
         EVT_BUTTON_SETTING_CLICKED:
             Send EVT_BUTTON_BACK_CLICKED for setting state to handle (exit)

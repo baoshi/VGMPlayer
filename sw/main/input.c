@@ -117,9 +117,15 @@ static lv_obj_t * button_create_virtual_button(lv_obj_t *screen, int btn_id, int
 }
 
 
-void input_enable_button_dev(bool enable)
+void input_enable_button_dev()
 {
-    lv_indev_enable(indev_button, enable);
+    lv_indev_enable(indev_button, true);
+}
+
+
+void input_disable_button_dev()
+{
+    lv_indev_enable(indev_button, true);
 }
 
 
@@ -145,25 +151,26 @@ void input_delete_virtual_buttons()
 }
 
 
-void input_enable_virtual_button(int id, bool enable)
+void input_enable_virtual_button(int id)
 {
-    if ((id < 0) && (!enable))
+    if ((id >= KEY_INDEX_MIN) && (id <= KEY_INDEX_MAX))
     {
-        _button_mask = 0;
-    }
-    else if ((id >= KEY_INDEX_NW) && (id <= KEY_INDEX_SE))
-    {
-        if (enable)
-        {
-            _button_mask |= (0x01 << id);
-        }
-        else
-        {
-            _button_mask &= ~(0x01 << id);
-        }
+        _button_mask |= (0x01 << id);
     }
 }
 
+
+void input_disable_virtual_button(int id)
+{
+    if ((id < KEY_INDEX_MIN) || (id > KEY_INDEX_MAX))
+    {
+        _button_mask = 0;
+    }
+    else
+    {
+        _button_mask &= ~(0x01 << id);
+    }
+}
 
 //
 // LVGL Keypad device
@@ -237,10 +244,16 @@ static void keypad_init()
 }
 
 
-void input_enable_keypad_dev(bool enable)
+void input_enable_keypad_dev()
 {
-    if (!enable) lv_group_remove_all_objs(input_keypad_group);
-    lv_indev_enable(indev_keypad, enable);
+    lv_indev_enable(indev_keypad, true);
+}
+
+
+void input_disable_keypad_dev()
+{
+    lv_group_remove_all_objs(input_keypad_group);
+    lv_indev_enable(indev_keypad, false);
 }
 
 
@@ -254,7 +267,7 @@ void input_map_keypad(int id, uint32_t keycode)
         _keypad_mapping[3] = 0;
         _keypad_mapping[4] = 0;
     }
-    else if ((id >= KEY_INDEX_NW) && (id <= KEY_INDEX_SE))
+    else if ((id >= KEY_INDEX_MIN) && (id <= KEY_INDEX_MAX))
     {
         _keypad_mapping[id] = keycode;
     }

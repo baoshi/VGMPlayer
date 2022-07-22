@@ -2,13 +2,13 @@
 #include <string.h>
 #include "sw_conf.h"
 #include "my_debug.h"
-#include "lvinput.h"
 #include "lvstyle.h"
 #include "lvsupp.h"
 #include "tick.h"
 #include "event_ids.h"
 #include "event_queue.h"
 #include "ec.h"
+#include "input.h"
 #include "disk.h"
 #include "path_utils.h"
 #include "audio.h"
@@ -107,13 +107,13 @@ static void button_clicked_handler(lv_event_t *e)
 static void player_map_buttons()
 {
     // Map buttons
-    lvi_disable_button();
-    lvi_pos_button(LVI_BUTTON_PLAY, 0, 0);  // PLAY -> PLAY (0, 0)
-    lvi_pos_button(LVI_BUTTON_SW, 1, 0);    // SW   -> BACK (1, 0)
-    lvi_pos_button(LVI_BUTTON_NW, 2, 0);    // NW   -> SETTING (2, 0)
-    lvi_pos_button(LVI_BUTTON_NE, 3, 0);    // NE   -> UP (3, 0)
-    lvi_pos_button(LVI_BUTTON_SE, 4, 0);    // SE   -> DOWN (4, 0)
-    lvi_enable_button();
+    input_disable_button_dev();
+    input_enable_virtual_button(INPUT_KEY_SETTING);
+    input_enable_virtual_button(INPUT_KEY_BACK);
+    input_enable_virtual_button(INPUT_KEY_PLAY);
+    input_enable_virtual_button(INPUT_KEY_UP);
+    input_enable_virtual_button(INPUT_KEY_DOWN);
+    input_enable_button_dev(true);
 }
 
 
@@ -123,57 +123,8 @@ static void player_on_entry(player_t *ctx)
     ctx->screen = lv_obj_create(NULL);
     // Self-destruction callback
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void*)ctx);
-    // All buttons used as "Button" device
-    lvi_disable_keypad();
-    lv_group_remove_all_objs(lvi_keypad_group);
-    // 5 invisible buttons
-    // Cord     Button
-    // (0, 0)   [PLAY]
-    // (1, 0)   [BACK]
-    // (2, 0)   [SETTING]
-    // (3, 0)   [UP]
-    // (4, 0)   [DOWN]
-    lv_obj_t* btn;
-    // Play (0, 0)
-    btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_btn, 0);
-    lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
-    lv_obj_set_pos(btn, 0, 0);
-    lv_obj_set_size(btn, 1, 1);
-    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_PLAYER_PLAY_CLICKED);
-    // Back (1, 0)
-    btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_btn, 0);
-    lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
-    lv_obj_set_pos(btn, 1, 0);
-    lv_obj_set_size(btn, 1, 1);
-    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_BUTTON_BACK_CLICKED);
-    // Setting (2, 0)
-    btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_btn, 0);
-    lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
-    lv_obj_set_pos(btn, 2, 0);
-    lv_obj_set_size(btn, 1, 1);
-    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_BUTTON_SETTING_CLICKED);
-    // Up (3, 0)
-    btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_btn, 0);
-    lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
-    lv_obj_set_pos(btn, 3, 0);
-    lv_obj_set_size(btn, 1, 1);
-    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_PLAYER_UP_CLICKED);
-    // Down (4, 0)
-    btn = lv_btn_create(ctx->screen);
-    lv_obj_add_style(btn, &lvs_invisible_btn, 0);
-    lv_obj_add_style(btn, &lvs_invisible_btn, LV_STATE_PRESSED);
-    lv_obj_set_pos(btn, 4, 0);
-    lv_obj_set_size(btn, 1, 1);
-    lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)EVT_PLAYER_DOWN_CLICKED);
+    // Create virtual buttons
+    input_create_virtual_buttons(ctx->screen);
     // Map buttons
     player_map_buttons();
     //
@@ -197,6 +148,16 @@ static void player_on_entry(player_t *ctx)
     lv_scr_load(ctx->screen);
     // Arm update timer    
     ctx->timer_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
+}
+
+
+static void player_on_exit(player_t *ctx)
+{
+    tick_disarm_timer_event(ctx->timer_ui_update);
+    ctx->timer_ui_update = 0;
+    input_disable_virtual_button(-1);
+    input_disable_button_dev();
+    input_delete_virtual_buttons();
 }
 
 
@@ -300,9 +261,9 @@ event_t const *player_handler(app_t *app, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
-            Create screen, arm UI update timer
+            Create screen, enable buttons, arm UI update timer
         EVT_EXIT:
-            Disarm UI update timer
+            Disarm UI update timer, disable buttons
         EVT_PLAYER_UI_UPDATE:
             Update top bar
         EVT_PLAYER_PLAY_CLICKED:
@@ -339,8 +300,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         break;
     case EVT_EXIT:
         PL_LOGD("Player: exit\n");
-        tick_disarm_timer_event(ctx->timer_ui_update);
-        ctx->timer_ui_update = 0;
+        player_on_exit(ctx);
         break;
     case EVT_PLAYER_UI_UPDATE:
         player_on_ui_update(ctx);
@@ -361,11 +321,10 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         break;
     case EVT_BUTTON_SETTING_CLICKED:
-        // State setting uses button on SW/NW and keypad on NE/SE, disable other buttons.
-        lvi_disable_button();
-        lvi_pos_button(LVI_BUTTON_SW, 1, 0);    // SW   -> BACK (1, 0)
-        lvi_pos_button(LVI_BUTTON_NW, 2, 0);    // NW   -> SETTING (2, 0)
-        lvi_enable_button();
+        // retain SETTING and BACK buttons, leave others to setting
+        input_disable_virtual_button(INPUT_KEY_PLAY);
+        input_disable_virtual_button(INPUT_KEY_UP);
+        input_disable_virtual_button(INPUT_KEY_DOWN);
         setting_create(app);
         break;
     case EVT_SETTING_CLOSED:

@@ -23,7 +23,7 @@ typedef struct browser_s
     lv_obj_t *lbl_bottom;       // Bottom label
     lv_obj_t *lst_file_list;    // List of files
     lv_obj_t *focused;          // focused file in the list
-    int alarm_ui_update;
+    int timer_ui_update;
 } browser_t;
 
 event_t const *browser_handler(app_t *me, event_t const *evt);
