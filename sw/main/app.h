@@ -72,15 +72,14 @@ typedef struct alert_s
 {
     state_t *creator;
     lv_obj_t *popup;
-    char *text;
-    const void *icon;
+    int auto_close_ms;
     int timer_auto_close;
-    event_t exit_event;
+    int exit_event;
 } alert_t;
 
 event_t const *alert_handler(app_t *me, event_t const *evt);
 
-void alert_create(app_t *me, const void *icon, const char *text, const event_t *exit);
+void alert_create(app_t *me, const void *icon, const char *text, int auto_close, int exit_event);
 
 
 // Application level state machine

@@ -4,7 +4,6 @@ target_sources(display INTERFACE
     st7789.c
     lvtheme.c
     lvstyle.c
-    lvinput.c
     lvsupp.c
     img_browser_folder.c
     img_browser_file.c

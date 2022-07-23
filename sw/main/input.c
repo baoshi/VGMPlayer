@@ -35,7 +35,7 @@ static lv_style_t _style_invisible_btn;
 static bool _style_initialized = false;
 
 
-static void _button_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
+static void button_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 {
     static uint32_t last_btn = 0;
     data->state = LV_INDEV_STATE_REL;    // Default state
@@ -73,7 +73,7 @@ static void button_init()
     _button_mask = 0;   // all buttons disabled
     lv_indev_drv_init(&_button_drv);
     _button_drv.type = LV_INDEV_TYPE_BUTTON;
-    _button_drv.read_cb = _button_read;
+    _button_drv.read_cb = button_read;
     indev_button = lv_indev_drv_register(&_button_drv);
     lv_indev_set_button_points(indev_button, _vbutton_coord);
     lv_indev_enable(indev_button, false);
@@ -183,7 +183,7 @@ static lv_indev_drv_t _keypad_drv;
 static uint32_t _keypad_mapping[5] = {0, 0, 0, 0, 0};
 
 
-static void _keypad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
+static void keypad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 {
     static uint32_t last_key = 0;
     data->state = LV_INDEV_STATE_REL;           // Default state
@@ -235,7 +235,7 @@ static void keypad_init()
 {
     lv_indev_drv_init(&_keypad_drv);
     _keypad_drv.type = LV_INDEV_TYPE_KEYPAD;
-    _keypad_drv.read_cb = _keypad_read;
+    _keypad_drv.read_cb = keypad_read;
     indev_keypad = lv_indev_drv_register(&_keypad_drv);
     input_keypad_group = lv_group_create();
     lv_group_set_wrap(input_keypad_group, false);

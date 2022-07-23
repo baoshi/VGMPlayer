@@ -1,7 +1,6 @@
 #include <pico/time.h>
 #include <lvgl.h>
 #include "st7789.h"
-#include "lvinput.h"
 #include "lvstyle.h"
 #include "lvtheme.h"
 #include "display.h"

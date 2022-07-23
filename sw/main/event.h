@@ -9,7 +9,7 @@ extern "C" {
 typedef struct
 {
     int   code;     /* event code */
-    void* param;    /* event parameter */
+    void *param;    /* event parameter */
 } event_t;
 
 

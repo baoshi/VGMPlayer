@@ -97,13 +97,6 @@ static void screen_event_handler(lv_event_t* e)
 }
 
 
-static void button_clicked_handler(lv_event_t *e)
-{
-    int event_id = (int)lv_event_get_user_data(e);
-    EQ_QUICK_PUSH(event_id);
-}
-
-
 static void player_map_buttons()
 {
     // Map buttons
@@ -178,7 +171,7 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
             // Remove button mapping, alert will setup its own
             PL_LOGD("Player: Unable to load entry from catalog\n");
             input_disable_button_dev();
-            alert_create(app, 0, "File not accessible", 0);
+            alert_create(app, 0, "File not accessible", 2000, 0);
             break;
         }
         lv_label_set_text(ctx->lbl_bottom, ctx->file);
@@ -192,7 +185,7 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
             PL_LOGD("Player: Setup song return %d\n", r);
             // Remove button mapping, alert will setup its own
             input_disable_button_dev();
-            alert_create(app, 0, "Cannot play file", 0);
+            alert_create(app, 0, "Cannot play file", 2000, 0);
             break;
         }
         PL_LOGD("Player: Going play song %s\n", ctx->file);

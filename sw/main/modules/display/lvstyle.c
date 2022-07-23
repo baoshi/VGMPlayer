@@ -17,15 +17,6 @@ lv_style_t lvs_browser_file_list;
 
 void lvs_init()
 {
-    // Invisible button
-    lv_style_init(&lvs_invisible_btn);
-    lv_style_set_text_opa(&lvs_invisible_btn, LV_OPA_TRANSP);
-    lv_style_set_bg_opa(&lvs_invisible_btn, LV_OPA_TRANSP);
-    lv_style_set_border_width(&lvs_invisible_btn, 0);
-    lv_style_set_shadow_width(&lvs_invisible_btn, 0);
-    lv_style_set_outline_width(&lvs_invisible_btn, 0);
-    lv_style_set_outline_opa(&lvs_invisible_btn, LV_OPA_TRANSP);
-
     // Default style
     lv_style_init(&lvs_default);
     lv_style_set_bg_opa(&lvs_default, LV_OPA_COVER);

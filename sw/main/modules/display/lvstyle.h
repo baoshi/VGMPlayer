@@ -32,7 +32,6 @@ extern lv_style_t lvs_msgbox;
 // Application specific styles
 extern lv_style_t lvs_recolored_icon;
 extern lv_style_t lvs_browser_file_list;
-extern lv_style_t lvs_invisible_btn;
 
 void lvs_init();
 
