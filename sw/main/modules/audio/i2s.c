@@ -102,10 +102,11 @@ static void pio_i2s_start()
 
 static void pio_i2s_flush()
 {
-    // Execute PIO state machine until FIFO is empty
     static const uint32_t SM_STALL_MASK = 1u << (PIO_FDEBUG_TXSTALL_LSB + I2S_PIO_SM);
     // Disable IRQ
     i2s_dma_channel_irq_disable();
+    // Let PIO execute until stalled
+    pio_sm_set_enabled(I2S_PIO, I2S_PIO_SM, true); 
     // Clear the sticky stall status
     I2S_PIO->fdebug = SM_STALL_MASK;
     // Wait until the stall flag is up again.

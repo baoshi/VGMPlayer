@@ -44,33 +44,33 @@ enum
 {
     PLAYER_OK = 0,
     PLAYER_ERR_FILE_NOT_ACCESSIBLE,
-    PLAYER_ERR_FILE_NOT_SUPPORTED
+};
+
+
+enum
+{
+    SONG_TYPE_UNKNOWN = 0,
+    SONG_TYPE_S16
 };
 
 
 // Setup audio and decoder using current selected file
 // Return PLAYER_OK or failure code
-static int setup_song(player_t *ctx)
+static uint8_t check_song(const char *file)
 {
-    int r = PLAYER_OK;
+    uint8_t r = SONG_TYPE_UNKNOWN;
     do
     {
         char ext[4];
         uint8_t type;
         // Get file extension
-        if (!path_get_ext(ctx->file, ext, 4))
+        if (!path_get_ext(file, ext, 4))
         {
-            r = PLAYER_ERR_FILE_NOT_SUPPORTED;
             break;
         }
         if (0 == strcasecmp(ext, "s16"))
         {
-            // s16 file
-            break;
-        }
-        else
-        {
-            r = PLAYER_ERR_FILE_NOT_SUPPORTED;
+            r = SONG_TYPE_S16;
             break;
         }
     } while (0);
@@ -179,16 +179,18 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
         app->catalog_history_page[app->catalog_history_index] = app->catalog->cur_page;
         app->catalog_history_selection[app->catalog_history_index] = app->catalog->cur_index;
         PL_LOGD("Player: setup song %s\n", ctx->file);
-        int r = setup_song(ctx);
-        if (PLAYER_OK != r)
+        uint8_t type = check_song(ctx->file);
+        switch (type)
         {
-            PL_LOGD("Player: Setup song return %d\n", r);
+        case SONG_TYPE_UNKNOWN:
             // Remove button mapping, alert will setup its own
             input_disable_button_dev();
-            alert_create(app, 0, "Cannot play file", 2000, 0);
+            alert_create(app, 0, "Unknown file type", 2000, 0);
+            break;
+        case SONG_TYPE_S16:
+            STATE_TRAN(app, &(app->player_s16));
             break;
         }
-        PL_LOGD("Player: Going play song %s\n", ctx->file);
     } while (0);
 }
 
@@ -299,7 +301,6 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         player_on_ui_update(ctx);
         break;
     case EVT_BUTTON_PLAY_CLICKED:
-        PL_LOGD("Player: PLAY clicked\n");
         player_on_play_clicked(app, ctx);
         break;
     case EVT_PLAYER_PLAY_NEXT:
@@ -336,6 +337,103 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         break;
     case EVT_DISK_EJECTED:
         STATE_TRAN((hsm_t*)app, &app->browser_nodisk);
+        break;
+    default:
+        r = evt;
+        break;
+    }
+    return r;
+}
+
+
+event_t const *player_s16_handler(app_t *me, event_t const *evt)
+{
+    event_t const *r = 0;
+    player_t *ctx = &(me->player_ctx);
+    switch (evt->code)
+    {
+    case EVT_ENTRY:
+        PL_LOGD("Player_S16: entry\n");
+        MY_ASSERT(ctx->decoder == 0);
+        ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
+        // TODO: Handle error here
+        MY_ASSERT(ctx->decoder != 0);
+        break;
+    case EVT_EXIT:
+        PL_LOGD("Player_S16: exit\n");
+        audio_stop_playback();
+        if (ctx->decoder)
+        {
+            decoder_s16_destroy((decoder_s16_t *)(ctx->decoder));
+            ctx->decoder = 0;
+        }
+        break;
+    case EVT_START:
+        PL_LOGD("Player_S16: start\n");
+        audio_setup_playback(ctx->decoder);
+        audio_start_playback();
+        STATE_START(me, &me->player_s16_playing); 
+        break;
+    default:
+        r = evt;
+        break;
+    }
+    return r;
+}
+
+
+event_t const *player_s16_playing_handler(app_t *me, event_t const *evt)
+{
+    event_t const *r = 0;
+    player_t *ctx = &(me->player_ctx);
+    switch (evt->code)
+    {
+    case EVT_ENTRY:
+        PL_LOGD("Player_S16_Playing: entry\n");
+        break;
+    case EVT_EXIT:
+        PL_LOGD("Player_S16_Playing: exit\n");
+        break;
+    case EVT_START:
+        PL_LOGD("Player_S16_Playing: start\n");
+        break;
+    case EVT_BUTTON_PLAY_CLICKED:
+        audio_pause_playback();
+        STATE_TRAN(me, &(me->player_s16_paused));
+        break;
+    case EVT_PLAYER_SONG_ENDED:
+        STATE_TRAN(me, &(me->browser_disk));
+        break;
+    default:
+        r = evt;
+        break;
+    }
+    return r;
+}
+
+
+event_t const *player_s16_paused_handler(app_t *me, event_t const *evt)
+{
+    event_t const *r = 0;
+    player_t *ctx = &(me->player_ctx);
+    switch (evt->code)
+    {
+    case EVT_ENTRY:
+        PL_LOGD("Player_S16_Paused: entry\n");
+        break;
+    case EVT_EXIT:
+        PL_LOGD("Player_S16_Paused: exit\n");
+        break;
+    case EVT_START:
+        PL_LOGD("Player_S16_Paused: start\n");
+        break;
+    case EVT_BUTTON_PLAY_CLICKED:
+        audio_unpause_playback();
+        STATE_TRAN(me, &(me->player_s16_playing));
+        break;
+    case EVT_BUTTON_BACK_CLICKED:
+        audio_stop_playback();
+        STATE_TRAN(me, &(me->browser_disk));
         break;
     default:
         r = evt;

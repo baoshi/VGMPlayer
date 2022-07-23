@@ -13,7 +13,7 @@
 
 
 #ifndef AUDIO_DEBUG
-#  define AUDIO_DEBUG 1
+#  define AUDIO_DEBUG 0
 #endif
 
 // Debug log

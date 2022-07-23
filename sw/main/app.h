@@ -46,7 +46,9 @@ typedef struct player_s
 } player_t;
 
 event_t const *player_handler(app_t *me, event_t const *evt);
-
+event_t const *player_s16_handler(app_t *me, event_t const *evt);
+event_t const *player_s16_playing_handler(app_t *me, event_t const *evt);
+event_t const *player_s16_paused_handler(app_t *me, event_t const *evt);
 
 //
 // Settings
@@ -60,7 +62,6 @@ typedef struct settings_s
 event_t const *setting_handler(app_t *me, event_t const *evt);
 event_t const *setting_brightness_handler(app_t *me, event_t const *evt);
 event_t const *setting_volume_handler(app_t *me, event_t const *evt);
-
 
 void setting_create(app_t *me);
 
@@ -90,7 +91,7 @@ struct app_s
     state_t browser, browser_disk, browser_nodisk, browser_baddisk;
     browser_t browser_ctx;
 
-    state_t player;
+    state_t player, player_s16, player_s16_playing, player_s16_paused; 
     player_t player_ctx;
 
     state_t setting, setting_volume, setting_brightness;
