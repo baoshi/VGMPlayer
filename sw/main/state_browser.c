@@ -67,9 +67,9 @@ static void browser_on_entry(browser_t *ctx)
     // Self-destruction callback
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void *)ctx);
     // Setup button for SETTING and BACK
-    input_create_virtual_buttons(ctx->screen);
-    input_enable_virtual_button(INPUT_KEY_SETTING);
-    input_enable_virtual_button(INPUT_KEY_BACK);
+    input_create_buttons(ctx->screen);
+    input_enable_button(INPUT_KEY_SETTING);
+    input_enable_button(INPUT_KEY_BACK);
     input_enable_button_dev(true);
     //
     // UI Elements
@@ -106,9 +106,9 @@ static void browser_on_exit(browser_t *ctx)
 {
     tick_disarm_timer_event(ctx->timer_ui_update);
     ctx->timer_ui_update = 0;
-    input_disable_virtual_button(-1);
+    input_disable_button(-1);
     input_disable_button_dev();
-    input_delete_virtual_buttons();
+    input_delete_buttons();
 }
 
 

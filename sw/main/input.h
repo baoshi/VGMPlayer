@@ -26,10 +26,11 @@ extern lv_obj_t *input_button_down;
 
 void input_enable_button_dev();
 void input_disable_button_dev();
-void input_create_virtual_buttons(lv_obj_t *screen);
-void input_delete_virtual_buttons();
-void input_enable_virtual_button(int id);
-void input_disable_virtual_button(int id);
+void input_create_buttons(lv_obj_t *screen);
+void input_delete_buttons();
+void input_enable_button(int id);
+void input_disable_button(int id);
+void input_map_button(int id, int lv_event, int app_event);
 
 
 extern lv_indev_t* indev_keypad;

@@ -7,9 +7,14 @@
 //
 // LVGL button device
 // To use the 5 physical buttons as LVGL button device, we create 5 invisible buttons on the screen, and 
-// associate the physical button to the coordinates where the invisible buttons are positioned. Invisible 
-// buttons will send EVT_BUTTON_XXX_CLICKED when clicked.
-// Buttons are disabled when created. Use input_enable_virtual_button to enable each button.
+// associate the physical button to the coordinates where the invisible buttons are positioned.
+// Buttons are disabled when created. To enable and use a button, do:
+// 1. Map an application event to the LVGL button event. e.g.
+//    input_map_button(INPUT_KEY_SETTING, LV_EVENT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
+// 2. Enable button
+//    input_enable_button(INPUT_KEY_SETTING);
+// Then EVT_BUTTON_SETTING_CLICKED will be posted to the application event queue when SETTING key is clicked.
+// input_map_button(INPUT_KEY_SETTING, 0, 0) removes all events for the button.
 //
 
 lv_indev_t *indev_button = NULL;
@@ -33,6 +38,21 @@ static lv_point_t _vbutton_coord[5] =
 };
 static lv_style_t _style_invisible_btn;
 static bool _style_initialized = false;
+
+/* Mapping of button events <-> application events
+ * LVGL button messages are (verify with lv_evnet.h if upgrade)
+ * LV_EVENT_PRESSED = 1
+ * LV_EVENT_PRESSING = 2
+ * LV_EVENT_PRESS_LOST = 3
+ * LV_EVENT_SHORT_CLICKED = 4
+ * LV_EVENT_LONG_PRESSED = 5
+ * LV_EVENT_LONG_PRESSED_REPEAT = 6
+ * LV_EVENT_CLICKED = 7
+ * LV_EVENT_RELEASED = 8
+ */
+#define LV_BUTTON_EVENT_MIN LV_EVENT_PRESSED
+#define LV_BUTTON_EVENT_MAX LV_EVENT_RELEASED
+static int _button_events_table[LV_BUTTON_EVENT_MAX - LV_BUTTON_EVENT_MIN + 1][5] = { 0 };
 
 
 static void button_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
@@ -80,10 +100,15 @@ static void button_init()
 }
 
 
-static void button_clicked_handler(lv_event_t *e)
+static void button_event_handler(lv_event_t *e)
 {
-    int event_id = (int)lv_event_get_user_data(e);
-    EQ_QUICK_PUSH(event_id);
+    int btn_id = (int)lv_event_get_user_data(e);
+    int lv_event = (int)lv_event_get_code(e);
+    if ((lv_event >= LV_BUTTON_EVENT_MIN) && (lv_event <= LV_BUTTON_EVENT_MAX))
+    {
+        int app_event = _button_events_table[lv_event - LV_BUTTON_EVENT_MIN][btn_id];
+        if (app_event != 0) EQ_QUICK_PUSH(app_event);
+    }
 }
 
 
@@ -103,7 +128,7 @@ static void button_create_invisible_style()
 }
 
 
-static lv_obj_t * button_create_virtual_button(lv_obj_t *screen, int btn_id, int event)
+static lv_obj_t * button_create_virtual_button(lv_obj_t *screen, int btn_id)
 {
     lv_obj_t *btn;
     btn = lv_btn_create(screen);
@@ -112,7 +137,7 @@ static lv_obj_t * button_create_virtual_button(lv_obj_t *screen, int btn_id, int
     lv_obj_set_pos(btn, _vbutton_coord[btn_id].x, _vbutton_coord[btn_id].y);
     lv_obj_set_size(btn, 1, 1);
     lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
-    lv_obj_add_event_cb(btn, button_clicked_handler, LV_EVENT_CLICKED, (void*)event);
+    lv_obj_add_event_cb(btn, button_event_handler, LV_EVENT_ALL, (void *)btn_id);
     return btn;
 }
 
@@ -130,18 +155,18 @@ void input_disable_button_dev()
 
 
 // Create invisible virtual buttons
-void input_create_virtual_buttons(lv_obj_t *screen)
+void input_create_buttons(lv_obj_t *screen)
 {
     button_create_invisible_style();
-    input_button_setting = button_create_virtual_button(screen, INPUT_KEY_SETTING, EVT_BUTTON_SETTING_CLICKED);
-    input_button_back = button_create_virtual_button(screen, INPUT_KEY_BACK, EVT_BUTTON_BACK_CLICKED);
-    input_button_play = button_create_virtual_button(screen, INPUT_KEY_PLAY, EVT_BUTTON_PLAY_CLICKED);
-    input_button_up = button_create_virtual_button(screen, INPUT_KEY_UP, EVT_BUTTON_UP_CLICKED);
-    input_button_down = button_create_virtual_button(screen, INPUT_KEY_DOWN, EVT_BUTTON_DOWN_CLICKED);
+    input_button_setting = button_create_virtual_button(screen, INPUT_KEY_SETTING);
+    input_button_back = button_create_virtual_button(screen, INPUT_KEY_BACK);
+    input_button_play = button_create_virtual_button(screen, INPUT_KEY_PLAY);
+    input_button_up = button_create_virtual_button(screen, INPUT_KEY_UP);
+    input_button_down = button_create_virtual_button(screen, INPUT_KEY_DOWN);
 }
 
 
-void input_delete_virtual_buttons()
+void input_delete_buttons()
 {
     lv_obj_del(input_button_down); input_button_down = NULL;
     lv_obj_del(input_button_up); input_button_up = NULL;
@@ -151,7 +176,7 @@ void input_delete_virtual_buttons()
 }
 
 
-void input_enable_virtual_button(int id)
+void input_enable_button(int id)
 {
     if ((id >= KEY_INDEX_MIN) && (id <= KEY_INDEX_MAX))
     {
@@ -160,7 +185,7 @@ void input_enable_virtual_button(int id)
 }
 
 
-void input_disable_virtual_button(int id)
+void input_disable_button(int id)
 {
     if ((id < KEY_INDEX_MIN) || (id > KEY_INDEX_MAX))
     {
@@ -171,6 +196,28 @@ void input_disable_virtual_button(int id)
         _button_mask &= ~(0x01 << id);
     }
 }
+
+
+/**
+ * @brief Map LVGL button event to application event for a given button
+ * 
+ * @param id        Key ID (INPUT_KEY_XXX)
+ * @param lv_event  LVGL button event [LV_BUTTON_EVENT_MIN .. LV_BUTTON_EVENT_MAX], 0 to indicate all events
+ * @param app_event Application event to be posted to the event queue, 0 to disable this event.
+ */
+void input_map_button(int id, int lv_event, int app_event)
+{
+    if (0 == lv_event)
+    {
+        for (int i = 0; i <= LV_BUTTON_EVENT_MAX - LV_BUTTON_EVENT_MAX; ++i)
+            _button_events_table[i - LV_BUTTON_EVENT_MIN][id] = app_event;
+    }
+    else if ((lv_event >= LV_BUTTON_EVENT_MIN) && (lv_event <= LV_BUTTON_EVENT_MAX))
+    {
+        _button_events_table[lv_event - LV_BUTTON_EVENT_MIN][id] = app_event;
+    }
+}
+
 
 //
 // LVGL Keypad device
