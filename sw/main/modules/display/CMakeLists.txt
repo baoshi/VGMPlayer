@@ -7,6 +7,8 @@ target_sources(display INTERFACE
     lvsupp.c
     img_browser_folder.c
     img_browser_file.c
+    img_browser_pageup.c
+    img_browser_pagedown.c
     img_browser_nsf.c
     img_setting_brightness.c
     display.c

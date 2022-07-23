@@ -276,14 +276,14 @@ static void populate_file_list(app_t *me, int mode)
     // If we are on the fist page of a sub directory, add ".."
     if ((0 == page) && (!path_is_root_dir(me->catalog->dir)))
     {
-        btn = lv_list_add_btn_ex(ctx->lst_file_list, 0, "[..]", LV_LABEL_LONG_DOT);
+        btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_browser_folder, "[ .. ]", LV_LABEL_LONG_DOT);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PARENT);
         lv_obj_add_event_cb(btn, file_list_button_handler, LV_EVENT_ALL, (void *)ctx);
     }
     // 2nd page onwards, add "PgUp" button
     if (page > 0)
     {
-        btn = lv_list_add_btn_ex(ctx->lst_file_list, 0, "[" LV_SYMBOL_UP "]", LV_LABEL_LONG_DOT);
+        btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_browser_pageup, NULL, LV_LABEL_LONG_CLIP);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEUP);
         lv_obj_add_event_cb(btn, file_list_button_handler, LV_EVENT_ALL, (void *)ctx);
     }
@@ -326,7 +326,7 @@ static void populate_file_list(app_t *me, int mode)
     }
     if (page < me->catalog->pages - 1)
     {
-        btn = lv_list_add_btn_ex(ctx->lst_file_list, 0, "[" LV_SYMBOL_DOWN "]", LV_LABEL_LONG_DOT);
+        btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_browser_pagedown,  NULL, LV_LABEL_LONG_CLIP);
         lv_obj_set_user_data(btn, (void *)FILE_LIST_ENTRY_TYPE_PAGEDOWN);
         lv_obj_add_event_cb(btn, file_list_button_handler, LV_EVENT_ALL, (void *)ctx);
     }
