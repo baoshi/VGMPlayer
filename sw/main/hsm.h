@@ -3,21 +3,28 @@
  * In the original repo author has mentioned corrections on inherited transitions. However,
  * I choose to revert it because of the scenario needed in this project. Consider this example:
  * 
- *    S1        S1 is the parent state and S11, S111 are sub states.
- *     |        S1 has a handler for event e1. S11 does not handle e1.
- *     |        When e1 arrives, we shall transit from current state to S111.
- *    S11
- *     |        Assume we are currently at S11, e1 will be handled by higher S1 handler.
- *     |
- *    S111      In the original implementation, LCA calculation is done from handler's state to the 
- *              desitnation state (S1 to S111), and these steps will happen during transition:
- *              (S11 Exit) -> (S11 Entry) -> (S111 Entry). S11 Exit/Entry seems redundant.
+ *      S1          S1 is the parent state and S11, S111 are sub states.
+ *       |          S1 has a handler for event e1. S11 does not handle e1.
+ *       |          When e1 arrives, we shall transit from current state to S111.
+ *     *S11
+ *       |          Assume we are currently at S11, e1 will be handled by higher S1 handler.
+ *       |
+ *      S111        In the original implementation, LCA calculation is done from handler's state to the 
+ *                  desitnation state (S1 to S111), and these steps will happen during transition:
+ *                  (S11 Exit) -> (S11 Entry) -> (S111 Entry). S11 Exit/Entry seems redundant.
  *
- *              In my version, LCA calculation is done from the current state to the destination state
- *              (S11 to S111), only (S111 Entry) will happen.
+ *                  In my version, LCA calculation is done from the current state to the destination state
+ *                  (S11 to S111), only (S111 Entry) will happen.
  * 
- * I also removed the static LCA calculation. This allows dynamic states attachment. See settings and alert state
- * for example.
+ * I also removed the static LCA calculation. This allows dynamic states attachment. For eample:
+ *
+ *      S1          S111 is not initialized at startup. On event e1, S1 handler initailize S111 by:
+ *      /\          1. Set "super" state of S111 to the current state (e.g. S12).
+ *     /  \         2. Keep a copy of the current state (S12) in "creator" member variable.
+ *   S11  *S12      3. Transit to S111.
+ *          |       When S111 finishes, it can return back to the "creator" state. 
+ *          |       This mechanism is used for UI popups in this project. See "settings" and "alert"
+ *        S111      states for detailed implementation.
  */ 
 
 #ifndef HSM_H
