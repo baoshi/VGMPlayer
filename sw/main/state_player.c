@@ -97,16 +97,17 @@ static void screen_event_handler(lv_event_t* e)
 }
 
 
-static void player_map_buttons()
+static void player_setup_input()
 {
     // Map buttons
     input_disable_button_dev();
+    input_map_button(-1, 0, 0);
     input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
-    input_map_button(INPUT_KEY_PLAY, 0, 0);
-    input_map_button(INPUT_KEY_UP, 0, 0);
-    input_map_button(INPUT_KEY_DOWN, 0, 0);
+    input_map_button(INPUT_KEY_PLAY, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_PLAY_CLICKED);
     input_enable_button_dev();
+    // Keypad
+    input_disable_keypad_dev();
 }
 
 
@@ -118,8 +119,8 @@ static void player_on_entry(player_t *ctx)
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void*)ctx);
     // Create virtual buttons
     input_create_buttons(ctx->screen);
-    // Map buttons
-    player_map_buttons();
+    // Setup input
+    player_setup_input();
     //
     // UI Elements
     //
@@ -148,8 +149,6 @@ static void player_on_exit(player_t *ctx)
 {
     tick_disarm_timer_event(ctx->timer_ui_update);
     ctx->timer_ui_update = 0;
-    input_map_button(-1, 0, 0);
-    input_disable_button_dev();
     input_delete_buttons();
 }
 
@@ -256,7 +255,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
-            Create screen, enable buttons, arm UI update timer
+            Create screen, setup input, arm UI update timer
         EVT_EXIT:
             Disarm UI update timer, disable buttons
         EVT_PLAYER_UI_UPDATE:
@@ -276,7 +275,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         EVT_BACK_CLICKED:
             Transit to browser_disk
         EVT_ALERT_CLOSED:
-            Remap buttons
+            Setup input
         EVT_DISK_ERROR:
             Sent by play_next. Transit to browser_baddisk
         EVT_DISK_EJECTED:
@@ -323,14 +322,14 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         break;
     case EVT_SETTING_CLOSED:
         // reenable buttons
-        player_map_buttons();
+        player_setup_input();
         break;
     case EVT_BUTTON_BACK_CLICKED:
         STATE_TRAN(app, &(app->browser_disk));
         break;
     case EVT_ALERT_CLOSED:
         PL_LOGD("Player: alert closed\n");
-        player_map_buttons();
+        player_setup_input();
         break;
     case EVT_DISK_ERROR:
         STATE_TRAN((hsm_t*)app, &app->browser_baddisk);

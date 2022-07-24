@@ -37,6 +37,17 @@
 #endif
 
 
+static void alert_setup_input()
+{
+    // Button
+    input_disable_button_dev();
+    // Keypad
+    input_disable_keypad_dev();
+    input_map_keypad(-1, 0);
+    input_map_keypad(INPUT_KEY_PLAY, LV_KEY_ENTER); // for keypad indev, only LV_KEY_ENTER emits RELEASED event
+    input_enable_keypad_dev();
+}
+
 
 static void enter_handler(lv_event_t *e)
 {
@@ -77,11 +88,7 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
     {
     case EVT_ENTRY:
         ALT_LOGD("Alert: entry\n");
-        // Setup keypad
-        input_disable_keypad_dev();
-        input_map_keypad(-1, 0);
-        input_map_keypad(INPUT_KEY_PLAY, LV_KEY_ENTER); // for keypad indev, only LV_KEY_ENTER emits RELEASED event
-        input_enable_keypad_dev();
+        alert_setup_input();
         lv_obj_add_event_cb(ctx->popup, enter_handler, LV_EVENT_ALL, (void *)ctx);
         lv_group_add_obj(input_keypad_group, ctx->popup);
         // Auto close timeout
@@ -90,8 +97,6 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
         break;
     case EVT_EXIT:
         ALT_LOGD("Alert: exit\n");
-        input_disable_keypad_dev();
-        input_map_keypad(-1, 0);
         lv_alert_close(ctx->popup);
         ctx->popup = NULL;
         break;

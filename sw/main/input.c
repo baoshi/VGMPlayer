@@ -288,6 +288,12 @@ void input_disable_keypad_dev()
 }
 
 
+/**
+ * @brief Map input key as LVGL keypad code
+ * 
+ * @param id        Key ID (INPUT_KEY_XXX), -1 to disable all keypad
+ * @param keycode   LVGL keycode, LV_KEY_XXX or character
+  */
 void input_map_keypad(int id, uint32_t keycode)
 {
     if (id < 0)
