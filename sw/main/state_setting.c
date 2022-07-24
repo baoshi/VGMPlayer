@@ -50,13 +50,6 @@ void setting_create(app_t *app)
 }
 
 
-static void setting_setup_input()
-{
-    input_disable_button_dev();
-    input_disable_keypad_dev();
-}
-
-
 event_t const *setting_handler(app_t *me, event_t const *evt)
 {
     /* Events
@@ -74,7 +67,6 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
         case EVT_ENTRY:
             ST_LOGD("Setting: entry\n");
             ctx->input_save = input_export_config();
-            setting_setup_input();
             break;
         case EVT_EXIT:
             ST_LOGD("Setting: exit\n");
