@@ -608,7 +608,7 @@ static void browser_disk_on_setting(browser_t *ctx)
 static void browser_disk_on_setting_closed(browser_t *ctx)
 {
     // restore keypad mapping (internally will clean input group)
-    browser_disk_setup_input();
+    // browser_disk_setup_input();
     // attach input group to file list buttons
     for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_file_list); ++i)
     {

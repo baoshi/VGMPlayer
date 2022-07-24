@@ -1,4 +1,5 @@
 #include <lvgl.h>
+#include "my_mem.h"
 #include "ec.h"
 #include "event_ids.h"
 #include "event_queue.h"
@@ -19,6 +20,11 @@
 // input_map_button(INPUT_KEY_SETTING, 0, 0) removes all events for the button.
 //
 
+
+//
+// LVGL Button device
+//
+
 lv_indev_t *indev_button = NULL;
 lv_obj_t *input_button_setting = NULL;
 lv_obj_t *input_button_back = NULL;
@@ -29,7 +35,7 @@ lv_obj_t *input_button_down = NULL;
 static lv_indev_drv_t _button_drv;
 
 // physical button to virtual (on-screen) button coordinate mapping
-static lv_point_t _vbutton_coord[5] = 
+static lv_point_t _vbutton_coord[INPUT_KEYS] = 
 {
     {0, 0}, // KEY_INDEX_NW
     {1, 0}, // KEY_INDEX_SW
@@ -53,7 +59,26 @@ static bool _style_initialized = false;
  */
 #define LV_BUTTON_EVENT_MIN LV_EVENT_PRESSED
 #define LV_BUTTON_EVENT_MAX LV_EVENT_RELEASED
-static int _button_events_table[LV_BUTTON_EVENT_MAX - LV_BUTTON_EVENT_MIN + 1][5] = { 0 };
+
+
+//
+// LVGL Keypad device
+//
+
+lv_indev_t* indev_keypad = NULL;
+lv_group_t* input_keypad_group = NULL;
+static lv_indev_drv_t _keypad_drv;
+
+// Input Config
+typedef struct input_config_s
+{
+    int button_event_table[INPUT_KEYS][LV_BUTTON_EVENT_MAX - LV_BUTTON_EVENT_MIN + 1];
+    uint32_t keypad_code_table[INPUT_KEYS];
+    bool button_enabled;
+    bool keypad_enabled;
+} input_config_t;
+
+static input_config_t _config = { 0 };
 
 
 static void button_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
@@ -106,7 +131,7 @@ static void button_event_handler(lv_event_t *e)
     int lv_event = (int)lv_event_get_code(e);
     if ((lv_event >= LV_BUTTON_EVENT_MIN) && (lv_event <= LV_BUTTON_EVENT_MAX))
     {
-        int app_event = _button_events_table[lv_event - LV_BUTTON_EVENT_MIN][btn_id];
+        int app_event = _config.button_event_table[btn_id][lv_event - LV_BUTTON_EVENT_MIN];
         if (app_event != 0) EQ_QUICK_PUSH(app_event);
     }
 }
@@ -145,12 +170,14 @@ static lv_obj_t * button_create_virtual_button(lv_obj_t *screen, int btn_id)
 void input_enable_button_dev()
 {
     lv_indev_enable(indev_button, true);
+    _config.button_enabled = true;
 }
 
 
 void input_disable_button_dev()
 {
     lv_indev_enable(indev_button, false);
+    _config.button_enabled = false;
 }
 
 
@@ -187,31 +214,20 @@ void input_map_button(int id, int lv_event, int app_event)
 {
     if (id < 0)
     {
-       memset(&_button_events_table, 0, sizeof(_button_events_table));
+        memset(_config.button_event_table, 0, sizeof(_config.button_event_table));
     }
     else if (0 == lv_event)
     {
         for (int i = 0; i <= LV_BUTTON_EVENT_MAX - LV_BUTTON_EVENT_MAX; ++i)
         {
-            _button_events_table[i - LV_BUTTON_EVENT_MIN][id] = 0;
+            _config.button_event_table[id][i - LV_BUTTON_EVENT_MIN] = 0;
         }
     }
     else if ((lv_event >= LV_BUTTON_EVENT_MIN) && (lv_event <= LV_BUTTON_EVENT_MAX))
     {
-        _button_events_table[lv_event - LV_BUTTON_EVENT_MIN][id] = app_event;
+        _config.button_event_table[id][lv_event - LV_BUTTON_EVENT_MIN] = app_event;
     }
 }
-
-
-//
-// LVGL Keypad device
-//
-
-lv_indev_t* indev_keypad = NULL;
-lv_group_t* input_keypad_group = NULL;
-
-static lv_indev_drv_t _keypad_drv;
-static uint32_t _keypad_mapping[5] = {0, 0, 0, 0, 0};
 
 
 static void keypad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
@@ -220,42 +236,42 @@ static void keypad_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
     data->state = LV_INDEV_STATE_REL;           // Default state
     if (ec_keys & EC_KEY_MASK_NW)         // 0x01
     {
-        if (_keypad_mapping[0] != 0)
+        if (_config.keypad_code_table[0] != 0)
         {
             data->state = LV_INDEV_STATE_PR;
-            last_key = _keypad_mapping[0];
+            last_key = _config.keypad_code_table[0];
         }
     }
     else if (ec_keys & EC_KEY_MASK_SW)    // 0x02
     {
-        if (_keypad_mapping[1] != 0)
+        if (_config.keypad_code_table[1] != 0)
         {
             data->state = LV_INDEV_STATE_PR;
-            last_key = _keypad_mapping[1];
+            last_key = _config.keypad_code_table[1];
         }
     }
     else if (ec_keys & EC_KEY_MASK_PLAY)  // 0x04
     {
-        if (_keypad_mapping[2] != 0)
+        if (_config.keypad_code_table[2] != 0)
         {
             data->state = LV_INDEV_STATE_PR;
-            last_key = _keypad_mapping[2];
+            last_key = _config.keypad_code_table[2];
         }
     }
     else if (ec_keys & EC_KEY_MASK_NE)    // 0x08
     {
-        if (_keypad_mapping[3] != 0)
+        if (_config.keypad_code_table[3] != 0)
         {
             data->state = LV_INDEV_STATE_PR;
-            last_key = _keypad_mapping[3];
+            last_key = _config.keypad_code_table[3];
         }
     }
     else if (ec_keys & EC_KEY_MASK_SE)    // 0x10
     {
-        if (_keypad_mapping[4] != 0)
+        if (_config.keypad_code_table[4] != 0)
         {
             data->state = LV_INDEV_STATE_PR;
-            last_key = _keypad_mapping[4];
+            last_key = _config.keypad_code_table[4];
         }
     }
     data->key = last_key;
@@ -278,6 +294,7 @@ static void keypad_init()
 void input_enable_keypad_dev()
 {
     lv_indev_enable(indev_keypad, true);
+    _config.keypad_enabled = true;
 }
 
 
@@ -285,6 +302,7 @@ void input_disable_keypad_dev()
 {
     lv_group_remove_all_objs(input_keypad_group);
     lv_indev_enable(indev_keypad, false);
+    _config.keypad_enabled = false;
 }
 
 
@@ -298,23 +316,44 @@ void input_map_keypad(int id, uint32_t keycode)
 {
     if (id < 0)
     {
-        _keypad_mapping[0] = 0;
-        _keypad_mapping[1] = 0;
-        _keypad_mapping[2] = 0;
-        _keypad_mapping[3] = 0;
-        _keypad_mapping[4] = 0;
+        for (int i = 0; i < INPUT_KEYS; ++i)
+            _config.keypad_code_table[i] = 0;
     }
     else if ((id >= KEY_INDEX_MIN) && (id <= KEY_INDEX_MAX))
     {
-        _keypad_mapping[id] = keycode;
+        _config.keypad_code_table[id] = keycode;
     }
 }
 
 
 void input_init()
 {
+    memset(&_config, 0, sizeof(input_config_t));
     button_init();
     keypad_init();
 }
 
 
+void *input_export_config()
+{
+    input_config_t *mem = MY_MALLOC(sizeof(input_config_t));
+    if (mem)
+    {
+        memcpy(mem, &_config, sizeof(input_config_t));
+    }
+    return (void *)mem;
+}
+
+
+void input_import_config(void *config)
+{
+    if (config)
+    {
+        input_disable_button_dev();
+        input_disable_keypad_dev();
+        memcpy(&_config, (input_config_t *)config, sizeof(input_config_t));
+        if (_config.button_enabled) input_enable_button_dev();
+        if (_config.keypad_enabled) input_enable_keypad_dev();
+        MY_FREE(config);
+    }
+}

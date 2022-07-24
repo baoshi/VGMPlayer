@@ -73,11 +73,13 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
     {
         case EVT_ENTRY:
             ST_LOGD("Setting: entry\n");
+            ctx->input_save = input_export_config();
             setting_setup_input();
             break;
         case EVT_EXIT:
             ST_LOGD("Setting: exit\n");
-            
+            input_import_config(ctx->input_save);
+            ctx->input_save = NULL;
             break;
         case EVT_START:
             ST_LOGD("Setting: start\n");

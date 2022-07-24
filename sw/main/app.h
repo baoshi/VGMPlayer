@@ -57,6 +57,7 @@ typedef struct settings_s
 {
     state_t *creator;
     lv_obj_t *popup;
+    void *input_save;
 } setting_t;
 
 event_t const *setting_handler(app_t *me, event_t const *evt);
