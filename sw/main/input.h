@@ -28,8 +28,6 @@ void input_enable_button_dev();
 void input_disable_button_dev();
 void input_create_buttons(lv_obj_t *screen);
 void input_delete_buttons();
-void input_enable_button(int id);
-void input_disable_button(int id);
 void input_map_button(int id, int lv_event, int app_event);
 
 

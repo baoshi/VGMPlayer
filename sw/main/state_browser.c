@@ -60,6 +60,22 @@ static void screen_event_handler(lv_event_t *e)
 }
 
 
+static void browser_map_button()
+{
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
+    input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
+    input_enable_button_dev();
+}
+
+
+static void browser_unmap_button()
+{
+    input_disable_button_dev();
+    input_map_button(INPUT_KEY_SETTING, 0, 0);
+    input_map_button(INPUT_KEY_BACK, 0, 0);
+}
+
+
 static void browser_on_entry(browser_t *ctx)
 {
     // Create screen
@@ -68,9 +84,7 @@ static void browser_on_entry(browser_t *ctx)
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void *)ctx);
     // Setup button for SETTING and BACK
     input_create_buttons(ctx->screen);
-    input_enable_button(INPUT_KEY_SETTING);
-    input_enable_button(INPUT_KEY_BACK);
-    input_enable_button_dev(true);
+    browser_map_button();
     //
     // UI Elements
     //
@@ -106,8 +120,7 @@ static void browser_on_exit(browser_t *ctx)
 {
     tick_disarm_timer_event(ctx->timer_ui_update);
     ctx->timer_ui_update = 0;
-    input_disable_button(-1);
-    input_disable_button_dev();
+    browser_unmap_button();
     input_delete_buttons();
 }
 
@@ -334,7 +347,7 @@ static void populate_file_list(app_t *me, int mode)
     {
         focus = btn; // btn points to the last button added
     }
-    // Add all buttons to input group
+    // Add all file/directory buttons to input group
     lv_group_remove_all_objs(input_keypad_group);
     uint32_t cnt = lv_obj_get_child_cnt(ctx->lst_file_list);
     for (uint32_t i = 0; i < cnt; ++i)
@@ -368,11 +381,19 @@ static void clean_file_list(app_t* me, browser_t *ctx)
 static void browser_disk_map_keypad()
 {
     input_disable_keypad_dev();
-    input_map_keypad(-1, 0);
     input_map_keypad(INPUT_KEY_PLAY, LV_KEY_ENTER);
     input_map_keypad(INPUT_KEY_UP, LV_KEY_PREV);
     input_map_keypad(INPUT_KEY_DOWN, LV_KEY_NEXT);
     input_enable_keypad_dev();
+}
+
+
+static void browser_disk_unmap_keypad()
+{
+    input_disable_keypad_dev();
+    input_map_keypad(INPUT_KEY_PLAY, 0);
+    input_map_keypad(INPUT_KEY_UP, 0);
+    input_map_keypad(INPUT_KEY_DOWN, 0);
 }
 
 
@@ -468,8 +489,7 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
 static void browser_disk_on_exit()
 {
     // Unmap keypad and input group
-    input_disable_keypad_dev();
-    input_map_keypad(-1, 0);
+    browser_disk_unmap_keypad();
 }
 
 
@@ -586,9 +606,6 @@ static void browser_disk_on_back(app_t *me, browser_t *ctx)
 
 static void browser_disk_on_setting(browser_t *ctx)
 {
-    // State setting will uses UP/DOWN as keypad, disable keypad used here
-    input_disable_keypad_dev();
-    input_map_keypad(-1, 0);
     // Save current focused file
     ctx->focused = 0;
     for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_file_list); ++i)
@@ -600,17 +617,16 @@ static void browser_disk_on_setting(browser_t *ctx)
             break;
         }
     }
-    // keypads nolonger controls file list
-    lv_group_remove_all_objs(input_keypad_group);
+    // Disable keypad
+    browser_disk_unmap_keypad();
 }
 
 
 static void browser_disk_on_setting_closed(browser_t *ctx)
 {
-    // restore keypad mapping
+    // restore keypad mapping (internally will clean input group)
     browser_disk_map_keypad();
     // attach input group to file list buttons
-    lv_group_remove_all_objs(input_keypad_group);
     for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_file_list); ++i)
     {
         lv_obj_t *obj = lv_obj_get_child(ctx->lst_file_list, i);

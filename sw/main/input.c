@@ -13,6 +13,8 @@
 //    input_map_button(INPUT_KEY_SETTING, LV_EVENT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
 // 2. Enable button
 //    input_enable_button(INPUT_KEY_SETTING);
+// 3. Enable button device
+//    input_enable_button_dev();
 // Then EVT_BUTTON_SETTING_CLICKED will be posted to the application event queue when SETTING key is clicked.
 // input_map_button(INPUT_KEY_SETTING, 0, 0) removes all events for the button.
 //
@@ -25,7 +27,6 @@ lv_obj_t *input_button_up = NULL;
 lv_obj_t *input_button_down = NULL;
 
 static lv_indev_drv_t _button_drv;
-static uint8_t _button_mask;
 
 // physical button to virtual (on-screen) button coordinate mapping
 static lv_point_t _vbutton_coord[5] = 
@@ -59,27 +60,27 @@ static void button_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 {
     static uint32_t last_btn = 0;
     data->state = LV_INDEV_STATE_REL;    // Default state
-    if (ec_keys & _button_mask & EC_KEY_MASK_NW)
+    if (ec_keys & EC_KEY_MASK_NW)
     {
         data->state = LV_INDEV_STATE_PR;
         last_btn = KEY_INDEX_NW;
     }
-    else if (ec_keys & _button_mask & EC_KEY_MASK_SW)
+    else if (ec_keys & EC_KEY_MASK_SW)
     {
         data->state = LV_INDEV_STATE_PR;
         last_btn = KEY_INDEX_SW;
     }
-    else if (ec_keys & _button_mask & EC_KEY_MASK_PLAY)
+    else if (ec_keys & EC_KEY_MASK_PLAY)
     {
         data->state = LV_INDEV_STATE_PR;
         last_btn = KEY_INDEX_PLAY;
     }
-    else if (ec_keys & _button_mask & EC_KEY_MASK_NE)
+    else if (ec_keys & EC_KEY_MASK_NE)
     {
         data->state = LV_INDEV_STATE_PR;
         last_btn = KEY_INDEX_NE;
     }
-    else if (ec_keys & _button_mask & EC_KEY_MASK_SE)
+    else if (ec_keys & EC_KEY_MASK_SE)
     {
         data->state = LV_INDEV_STATE_PR;
         last_btn = KEY_INDEX_SE;
@@ -90,7 +91,6 @@ static void button_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 
 static void button_init()
 {
-    _button_mask = 0;   // all buttons disabled
     lv_indev_drv_init(&_button_drv);
     _button_drv.type = LV_INDEV_TYPE_BUTTON;
     _button_drv.read_cb = button_read;
@@ -176,41 +176,25 @@ void input_delete_buttons()
 }
 
 
-void input_enable_button(int id)
-{
-    if ((id >= KEY_INDEX_MIN) && (id <= KEY_INDEX_MAX))
-    {
-        _button_mask |= (0x01 << id);
-    }
-}
-
-
-void input_disable_button(int id)
-{
-    if ((id < KEY_INDEX_MIN) || (id > KEY_INDEX_MAX))
-    {
-        _button_mask = 0;
-    }
-    else
-    {
-        _button_mask &= ~(0x01 << id);
-    }
-}
-
-
 /**
  * @brief Map LVGL button event to application event for a given button
  * 
- * @param id        Key ID (INPUT_KEY_XXX)
- * @param lv_event  LVGL button event [LV_BUTTON_EVENT_MIN .. LV_BUTTON_EVENT_MAX], 0 to indicate all events
+ * @param id        Key ID (INPUT_KEY_XXX), -1 to disable all buttons
+ * @param lv_event  LVGL button event [LV_BUTTON_EVENT_MIN .. LV_BUTTON_EVENT_MAX], 0 to disable all events
  * @param app_event Application event to be posted to the event queue, 0 to disable this event.
  */
 void input_map_button(int id, int lv_event, int app_event)
 {
-    if (0 == lv_event)
+    if (id < 0)
+    {
+       memset(&_button_events_table, 0, sizeof(_button_events_table));
+    }
+    else if (0 == lv_event)
     {
         for (int i = 0; i <= LV_BUTTON_EVENT_MAX - LV_BUTTON_EVENT_MAX; ++i)
-            _button_events_table[i - LV_BUTTON_EVENT_MIN][id] = app_event;
+        {
+            _button_events_table[i - LV_BUTTON_EVENT_MIN][id] = 0;
+        }
     }
     else if ((lv_event >= LV_BUTTON_EVENT_MIN) && (lv_event <= LV_BUTTON_EVENT_MAX))
     {

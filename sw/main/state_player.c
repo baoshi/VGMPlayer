@@ -101,11 +101,11 @@ static void player_map_buttons()
 {
     // Map buttons
     input_disable_button_dev();
-    input_enable_button(INPUT_KEY_SETTING);
-    input_enable_button(INPUT_KEY_BACK);
-    input_enable_button(INPUT_KEY_PLAY);
-    input_enable_button(INPUT_KEY_UP);
-    input_enable_button(INPUT_KEY_DOWN);
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
+    input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
+    input_map_button(INPUT_KEY_PLAY, 0, 0);
+    input_map_button(INPUT_KEY_UP, 0, 0);
+    input_map_button(INPUT_KEY_DOWN, 0, 0);
     input_enable_button_dev();
 }
 
@@ -148,7 +148,7 @@ static void player_on_exit(player_t *ctx)
 {
     tick_disarm_timer_event(ctx->timer_ui_update);
     ctx->timer_ui_update = 0;
-    input_disable_button(-1);
+    input_map_button(-1, 0, 0);
     input_disable_button_dev();
     input_delete_buttons();
 }
@@ -316,9 +316,9 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         break;
     case EVT_BUTTON_SETTING_CLICKED:
         // retain SETTING and BACK buttons, leave others to setting
-        input_disable_button(INPUT_KEY_PLAY);
-        input_disable_button(INPUT_KEY_UP);
-        input_disable_button(INPUT_KEY_DOWN);
+        //input_disable_button(INPUT_KEY_PLAY);
+        //input_disable_button(INPUT_KEY_UP);
+        //input_disable_button(INPUT_KEY_DOWN);
         setting_create(app);
         break;
     case EVT_SETTING_CLOSED:
