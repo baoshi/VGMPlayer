@@ -42,13 +42,13 @@ typedef struct player_s
     int timer_ui_update;    // UI update timer
     char file[FF_LFN_BUF + 1];
     int nav_dir;            // file navigation direction. 0 = next, 1 = previous
+    bool playing;
     decoder_t* decoder;
 } player_t;
 
 event_t const *player_handler(app_t *me, event_t const *evt);
 event_t const *player_s16_handler(app_t *me, event_t const *evt);
-event_t const *player_s16_playing_handler(app_t *me, event_t const *evt);
-event_t const *player_s16_paused_handler(app_t *me, event_t const *evt);
+
 
 //
 // Settings
@@ -57,7 +57,7 @@ typedef struct settings_s
 {
     state_t *creator;
     lv_obj_t *popup;
-    void *input_save;
+    void *input;   // to save/restore input config 
 } setting_t;
 
 event_t const *setting_handler(app_t *me, event_t const *evt);
@@ -77,6 +77,7 @@ typedef struct alert_s
     int auto_close_ms;
     int timer_auto_close;
     int exit_event;
+    void *input;   // to save/restore input config when activating
 } alert_t;
 
 event_t const *alert_handler(app_t *me, event_t const *evt);

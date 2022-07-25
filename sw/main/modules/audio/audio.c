@@ -13,7 +13,7 @@
 
 
 #ifndef AUDIO_DEBUG
-#  define AUDIO_DEBUG 0
+#  define AUDIO_DEBUG 1
 #endif
 
 // Debug log
@@ -44,7 +44,8 @@ typedef enum playback_states
     PLAY_NORMAL,
     PLAY_RAMPDOWN,
     PLAY_SILENCE,
-    PLAY_RAMPUP
+    PLAY_RAMPUP,
+    PLAY_STOPPING
 } playback_state_t;
 static playback_state_t _play_state;
 
@@ -65,7 +66,7 @@ enum decoder_cmds
     DECODER_GEN_RAMPDOWN,
     DECODER_GEN_RAMPUP,
     DECODER_GEN_SILENCE,
-    DECODER_CMD_STOP,
+    DECODER_STOP,
     DECODER_FINISH,
 };
 
@@ -124,14 +125,14 @@ void audio_close()
 // decoder thread function running on core 1
 void decoder_entry()
 {
+    uint32_t last_cmd = 0;
     uint32_t last_sample = 0;
     bool finishing = false;
     bool stop = false;
-    AUD_LOGD("Audio: Core1: entry\n");
+    AUD_LOGD("Audio: core1: entry\n");
     while (!stop)
     {
         uint32_t cmd = multicore_fifo_pop_blocking();
-        AUD_LOGD("Audio: Core1: cmd = %d\n", cmd);
         // find which buffer to receive new samples
         uint32_t *obuf = cur_tx_buf ? tx_buf0 : tx_buf1;
         uint32_t *olen = cur_tx_buf ? &tx_buf0_len : &tx_buf1_len;
@@ -140,12 +141,14 @@ void decoder_entry()
         switch (cmd)
         {
         case DECODER_GET_SAMPLE_BLOCKING:
+            if (cmd != last_cmd) AUD_LOGD("Audio: core1: GET_SAMPLE_BLOCKING\n");
             finishing = false;
             *olen = playback_ctx.decoder->get_samples(playback_ctx.decoder, obuf, AUDIO_MAX_BUFFER_LENGTH);
             multicore_fifo_push_blocking(*olen);    // unblock caller
             break;
 
         case DECODER_GET_SAMPLE:
+            if (cmd != last_cmd) AUD_LOGD("Audio: core1: GET_SAMPLE\n");
             if (!finishing)
             {
                 *olen = playback_ctx.decoder->get_samples(playback_ctx.decoder, obuf, AUDIO_MAX_BUFFER_LENGTH);
@@ -165,22 +168,22 @@ void decoder_entry()
                         obuf[i] = ((uint32_t)ll) << 16 | rr;
                     }
                     *olen = AUDIO_MAX_BUFFER_LENGTH;
-                    AUD_LOGD("Audio: Core1: Rampdown\n");
+                    AUD_LOGD("Audio: core1: auto rampdown\n");
                 }
                 else
                 {
                     last_sample = obuf[*olen - 1];   // keep last sampled value for rampdown
-                    AUD_LOGD("Audio: Core1: %d samples\n", *olen);
                 }
             }
             else
             {
                 *olen = 0;  // This will tell i2s to finish
-                AUD_LOGD("Audio: Core1: No more samples\n");
+                AUD_LOGD("Audio: core1: no more samples\n");
             }
             break;
 
         case DECODER_GEN_RAMPDOWN:
+            if (cmd != last_cmd) AUD_LOGD("Audio: core1: GEN_RAMPDOWN\n");
             l = (int16_t)(last_sample >> 16);
             r = (int16_t)(last_sample & 0xffff);
             for (register int i = 0; i < AUDIO_MAX_BUFFER_LENGTH; ++i)
@@ -194,6 +197,7 @@ void decoder_entry()
             break;
 
         case DECODER_GEN_RAMPUP:
+            if (cmd != last_cmd) AUD_LOGD("Audio: core1: GEN_RAMPUP\n");
             l = (int16_t)(last_sample >> 16);
             r = (int16_t)(last_sample & 0xffff);
             for (register int i = 0; i < AUDIO_MAX_BUFFER_LENGTH; ++i)
@@ -206,23 +210,28 @@ void decoder_entry()
             break;
 
         case DECODER_GEN_SILENCE:
+            if (cmd != last_cmd) AUD_LOGD("Audio: core1: GEN_SILENCE\n");
             memset(obuf, 0, AUDIO_MAX_BUFFER_LENGTH * sizeof(uint32_t));
             *olen = AUDIO_MAX_BUFFER_LENGTH;
             break;
 
-        case DECODER_CMD_STOP:
+        case DECODER_STOP:
+            if (cmd != last_cmd) AUD_LOGD("Audio: core1: STOP\n");
             *olen = 0;  // set output sample size to 0 so i2s won't request new samples anymore
             stop = true;
             break;
 
         case DECODER_FINISH:
+            if (cmd != last_cmd) AUD_LOGD("Audio: core1: FINISH\n");
             // no break
         default:
             stop = true;
             break;
         }
+        last_cmd = cmd;
     }
-    AUD_LOGD("Audio: Core1: exit\n");
+    multicore_fifo_push_blocking(0);    // Core0 may wait for thread exit
+    AUD_LOGD("Audio: core1: exit\n");
 }
 
 
@@ -247,10 +256,16 @@ void i2s_notify_cb(int notify, void *param)
         case PLAY_SILENCE:
             multicore_fifo_push_blocking(DECODER_GEN_SILENCE);
             break;
+        case PLAY_STOPPING:
+            multicore_fifo_push_blocking(DECODER_STOP);
+            break;
         }
         break;
     case I2S_NOTIFY_PLAYBACK_FINISHING:
-        audio_stop_playback();
+        multicore_fifo_push_blocking(DECODER_FINISH);
+        // If we did not force stop playing, send SONG_ENDDED event
+        if (PLAY_STOPPING != _play_state)
+            EQ_QUICK_PUSH(EVT_AUDIO_SONG_ENDED);
         break;
     }
 }
@@ -258,9 +273,11 @@ void i2s_notify_cb(int notify, void *param)
 
 void audio_setup_playback(decoder_t *decoder)
 {
+    AUD_LOGD("Audio: core0: setup\n");
     i2s_stop_playback();
     playback_ctx.decoder = decoder;
     // launch decoder thread on core1, the thread will be blocked until command is received
+    multicore_fifo_drain();
     multicore_reset_core1();
     multicore_launch_core1(decoder_entry);
 }
@@ -268,8 +285,9 @@ void audio_setup_playback(decoder_t *decoder)
 
 void audio_start_playback()
 {
+    AUD_LOGD("Audio: core0: start playback\n");
     _play_state = PLAY_NORMAL;
-    cur_tx_buf = false; // Cause next DECODER_GET_SAMPLE_BLOCKING will fetch sample in tx_buf1
+    cur_tx_buf = false; // Cause the next DECODER_GET_SAMPLE_BLOCKING to fetch sample in tx_buf1
     multicore_fifo_push_blocking(DECODER_GET_SAMPLE_BLOCKING);
     multicore_fifo_pop_blocking();  // wait decoding thread to unblock when finish receive one buffer
     if (tx_buf1_len > 0)
@@ -309,23 +327,32 @@ void audio_start_playback()
 
 void audio_stop_playback()
 {
-    // stop decoding thread, flush I2S fifo and exit
-    multicore_fifo_push_blocking(DECODER_FINISH);
+    AUD_LOGD("Audio: core0: stopping\n");
+    _play_state = PLAY_STOPPING;
+}
+
+
+void audio_finish_playback()
+{
+    // wait decoding join, flush I2S FIFO
+    multicore_fifo_pop_blocking();
+    AUD_LOGD("Audio: core0: core1 joined\n");
     i2s_stop_playback();
     wm8978_mute(true);
-    EQ_QUICK_PUSH(EVT_PLAYER_SONG_ENDED);
 }
 
 
 void audio_pause_playback()
 {
+    AUD_LOGD("Audio: core0: pause playback\n");
     if (_play_state == PLAY_NORMAL)
         _play_state = PLAY_RAMPDOWN;
 }
 
 
-void audio_unpause_playback()
+void audio_resume_playback()
 {
+    AUD_LOGD("Audio: core0: resume\n");
     _play_state = PLAY_RAMPUP;
 }
 

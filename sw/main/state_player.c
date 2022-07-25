@@ -99,14 +99,17 @@ static void screen_event_handler(lv_event_t* e)
 
 static void player_setup_input()
 {
-    // Map buttons
+    // Buttons
     input_disable_button_dev();
     input_map_button(-1, 0, 0);
     input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
     input_map_button(INPUT_KEY_PLAY, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_PLAY_CLICKED);
+    input_map_button(INPUT_KEY_UP, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_UP_CLICKED);
+    input_map_button(INPUT_KEY_DOWN, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_DOWN_CLICKED);
     input_enable_button_dev();
     // Keypad
+    input_map_keypad(-1, 0);
     input_disable_keypad_dev();
 }
 
@@ -182,8 +185,6 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
         switch (type)
         {
         case SONG_TYPE_UNKNOWN:
-            // Remove button mapping, alert will setup its own
-            input_disable_button_dev();
             alert_create(app, 0, "Unknown file type", 2000, 0);
             break;
         case SONG_TYPE_S16:
@@ -275,7 +276,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         EVT_BACK_CLICKED:
             Transit to browser_disk
         EVT_ALERT_CLOSED:
-            Setup input
+            Nothing
         EVT_DISK_ERROR:
             Sent by play_next. Transit to browser_baddisk
         EVT_DISK_EJECTED:
@@ -314,10 +315,6 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         break;
     case EVT_BUTTON_SETTING_CLICKED:
-        // retain SETTING and BACK buttons, leave others to setting
-        //input_disable_button(INPUT_KEY_PLAY);
-        //input_disable_button(INPUT_KEY_UP);
-        //input_disable_button(INPUT_KEY_DOWN);
         setting_create(app);
         break;
     case EVT_SETTING_CLOSED:
@@ -329,7 +326,6 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         break;
     case EVT_ALERT_CLOSED:
         PL_LOGD("Player: alert closed\n");
-        player_setup_input();
         break;
     case EVT_DISK_ERROR:
         STATE_TRAN((hsm_t*)app, &app->browser_baddisk);
@@ -344,15 +340,33 @@ event_t const *player_handler(app_t *app, event_t const *evt)
     return r;
 }
 
+static void player_s16_setup_input()
+{
+    // Buttons
+    input_disable_button_dev();
+    input_map_button(-1, 0, 0);
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
+    input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
+    input_map_button(INPUT_KEY_PLAY, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_PLAY_CLICKED);
+    input_map_button(INPUT_KEY_UP, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_UP_CLICKED);
+    input_map_button(INPUT_KEY_DOWN, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_DOWN_CLICKED);
+    input_enable_button_dev();
+    // Keypad
+    input_map_keypad(-1, 0);
+    input_disable_keypad_dev();
+}
 
-event_t const *player_s16_handler(app_t *me, event_t const *evt)
+
+event_t const *player_s16_handler(app_t *app, event_t const *evt)
 {
     event_t const *r = 0;
-    player_t *ctx = &(me->player_ctx);
+    player_t *ctx = &(app->player_ctx);
     switch (evt->code)
     {
     case EVT_ENTRY:
         PL_LOGD("Player_S16: entry\n");
+        player_s16_setup_input();
+        ctx->playing = false;
         MY_ASSERT(ctx->decoder == 0);
         ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
         // TODO: Handle error here
@@ -360,79 +374,58 @@ event_t const *player_s16_handler(app_t *me, event_t const *evt)
         break;
     case EVT_EXIT:
         PL_LOGD("Player_S16: exit\n");
-        audio_stop_playback();
+        audio_finish_playback();
         if (ctx->decoder)
         {
             decoder_s16_destroy((decoder_s16_t *)(ctx->decoder));
             ctx->decoder = 0;
         }
+        PL_LOGD("Player_S16: audio finished\n");
         break;
     case EVT_START:
         PL_LOGD("Player_S16: start\n");
         audio_setup_playback(ctx->decoder);
         audio_start_playback();
-        STATE_START(me, &me->player_s16_playing); 
-        break;
-    default:
-        r = evt;
-        break;
-    }
-    return r;
-}
-
-
-event_t const *player_s16_playing_handler(app_t *me, event_t const *evt)
-{
-    event_t const *r = 0;
-    player_t *ctx = &(me->player_ctx);
-    switch (evt->code)
-    {
-    case EVT_ENTRY:
-        PL_LOGD("Player_S16_Playing: entry\n");
-        break;
-    case EVT_EXIT:
-        PL_LOGD("Player_S16_Playing: exit\n");
-        break;
-    case EVT_START:
-        PL_LOGD("Player_S16_Playing: start\n");
+        ctx->playing = true;
         break;
     case EVT_BUTTON_PLAY_CLICKED:
-        audio_pause_playback();
-        STATE_TRAN(me, &(me->player_s16_paused));
-        break;
-    case EVT_PLAYER_SONG_ENDED:
-        STATE_TRAN(me, &(me->browser_disk));
-        break;
-    default:
-        r = evt;
-        break;
-    }
-    return r;
-}
-
-
-event_t const *player_s16_paused_handler(app_t *me, event_t const *evt)
-{
-    event_t const *r = 0;
-    player_t *ctx = &(me->player_ctx);
-    switch (evt->code)
-    {
-    case EVT_ENTRY:
-        PL_LOGD("Player_S16_Paused: entry\n");
-        break;
-    case EVT_EXIT:
-        PL_LOGD("Player_S16_Paused: exit\n");
-        break;
-    case EVT_START:
-        PL_LOGD("Player_S16_Paused: start\n");
-        break;
-    case EVT_BUTTON_PLAY_CLICKED:
-        audio_unpause_playback();
-        STATE_TRAN(me, &(me->player_s16_playing));
+        PL_LOGD("Player_S16: play clicked\n");
+        if (ctx->playing)
+        {
+            audio_pause_playback();
+            ctx->playing = false;
+        } 
+        else
+        {
+            audio_resume_playback();
+            ctx->playing = true;
+        }
         break;
     case EVT_BUTTON_BACK_CLICKED:
+        PL_LOGD("Player_S16: back clicked\n");
         audio_stop_playback();
-        STATE_TRAN(me, &(me->browser_disk));
+        STATE_TRAN(app, &(app->browser_disk));
+        break;
+    case EVT_BUTTON_UP_CLICKED:
+        PL_LOGD("Player_S16: up clicked\n");
+        audio_stop_playback();
+        // Go back to player state and re-queue EVT_BUTTON_UP_CLICKED
+        STATE_TRAN((hsm_t*)app, &(app->player));
+        EQ_QUICK_PUSH(EVT_BUTTON_UP_CLICKED);
+        break;
+    case EVT_BUTTON_DOWN_CLICKED:
+        PL_LOGD("Player_S16: down clicked\n");
+        audio_stop_playback();
+        // Go back to player state and re-queue EVT_BUTTON_DOWN_CLICKED
+        STATE_TRAN((hsm_t*)app, &(app->player));
+        EQ_QUICK_PUSH(EVT_BUTTON_DOWN_CLICKED);
+        break;
+    case EVT_AUDIO_SONG_ENDED:
+        PL_LOGD("Player_S16: song endded\n");
+        // Song endded normally, go to next song
+        // Note if playback is stopped manually, we will also receive this event
+        STATE_TRAN(app, &(app->player));
+        EQ_QUICK_PUSH(EVT_BUTTON_DOWN_CLICKED);
         break;
     default:
         r = evt;

@@ -16,9 +16,10 @@ void audio_close();
 
 void audio_setup_playback(decoder_t *decoder);
 void audio_start_playback();
-void audio_stop_playback();
 void audio_pause_playback();
-void audio_unpause_playback();
+void audio_resume_playback();
+void audio_stop_playback();
+void audio_finish_playback();
 
 int  audio_jack_detect(uint32_t now);
 bool audio_get_jack_state();

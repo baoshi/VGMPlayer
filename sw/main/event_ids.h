@@ -21,6 +21,8 @@ enum
     EVT_ALERT_AUTO_CLOSE,   // Alert popup autoclose
     EVT_ALERT_CLOSED,       // Alert popup closed
 
+    EVT_AUDIO_SONG_ENDED,   // Audio decoding ended (application need call audio_finish_playback())
+
     EVT_EARPIECE_PLUGGED,
     EVT_EARPIECE_UNPLUGGED,
     
@@ -31,5 +33,5 @@ enum
     EVT_PLAYER_UI_UPDATE,
     EVT_PLAYER_PLAY,
     EVT_PLAYER_PLAY_NEXT,
-    EVT_PLAYER_SONG_ENDED,
+
 };

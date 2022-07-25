@@ -41,6 +41,7 @@ static void alert_setup_input()
 {
     // Button
     input_disable_button_dev();
+    input_map_button(-1, 0, 0);
     // Keypad
     input_disable_keypad_dev();
     input_map_keypad(-1, 0);
@@ -88,6 +89,7 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
     {
     case EVT_ENTRY:
         ALT_LOGD("Alert: entry\n");
+        ctx->input = input_export_config();
         alert_setup_input();
         lv_obj_add_event_cb(ctx->popup, enter_handler, LV_EVENT_ALL, (void *)ctx);
         lv_group_add_obj(input_keypad_group, ctx->popup);
@@ -99,6 +101,8 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
         ALT_LOGD("Alert: exit\n");
         lv_alert_close(ctx->popup);
         ctx->popup = NULL;
+        input_restore_config(ctx->input);
+        ctx->input = NULL;
         break;
     case EVT_ALERT_MANUAL_CLOSE:
         ALT_LOGD("Alert: manual close\n");

@@ -345,7 +345,7 @@ void *input_export_config()
 }
 
 
-void input_import_config(void *config)
+void input_restore_config(void *config)
 {
     if (config)
     {
