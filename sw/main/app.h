@@ -41,7 +41,7 @@ typedef struct player_s
     lv_obj_t* lbl_bottom;   // Bottom indicators
     int timer_ui_update;    // UI update timer
     char file[FF_LFN_BUF + 1];
-    int nav_dir;            // file navigation direction. 0 = next, 1 = previous
+    int nav_dir;            // file navigation direction. 1 = next, -1 = previous, 0 = go back to browser_disk
     bool playing;
     decoder_t* decoder;
 } player_t;

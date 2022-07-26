@@ -2,6 +2,7 @@
 #include <pico/multicore.h>
 #include <hardware/gpio.h>
 #include "hw_conf.h"
+#include "sw_conf.h"
 #include "my_debug.h"
 #include "my_mem.h"
 #include "tick.h"
@@ -128,6 +129,7 @@ void decoder_entry()
     uint32_t last_cmd = 0;
     uint32_t last_sample = 0;
     bool finishing = false;
+    int silence_gap = AUDIO_SONG_GAP_MS * AUDIO_SAMPLE_RATE / AUDIO_MAX_BUFFER_LENGTH / 1000;    // number of silence buffer to send before finish the song
     bool stop = false;
     AUD_LOGD("Audio: core1: entry\n");
     while (!stop)
@@ -151,6 +153,7 @@ void decoder_entry()
             if (cmd != last_cmd) AUD_LOGD("Audio: core1: GET_SAMPLE\n");
             if (!finishing)
             {
+                // decoder not finished, continue get sample
                 *olen = playback_ctx.decoder->get_samples(playback_ctx.decoder, obuf, AUDIO_MAX_BUFFER_LENGTH);
                 if (*olen == 0)
                 {
@@ -175,8 +178,16 @@ void decoder_entry()
                     last_sample = obuf[*olen - 1];   // keep last sampled value for rampdown
                 }
             }
+            else if (silence_gap > 0)
+            {
+                // decoder finished, sending silence buffer
+                --silence_gap;
+                memset(obuf, 0, AUDIO_MAX_BUFFER_LENGTH * sizeof(uint32_t));
+                *olen = AUDIO_MAX_BUFFER_LENGTH;
+            }
             else
             {
+                // sending slience buffer finished
                 *olen = 0;  // This will tell i2s to finish
                 AUD_LOGD("Audio: core1: no more samples\n");
             }
@@ -263,9 +274,7 @@ void i2s_notify_cb(int notify, void *param)
         break;
     case I2S_NOTIFY_PLAYBACK_FINISHING:
         multicore_fifo_push_blocking(DECODER_FINISH);
-        // If we did not force stop playing, send SONG_ENDDED event
-        if (PLAY_STOPPING != _play_state)
-            EQ_QUICK_PUSH(EVT_AUDIO_SONG_ENDED);
+        EQ_QUICK_PUSH(EVT_AUDIO_SONG_ENDED);
         break;
     }
 }
@@ -327,7 +336,7 @@ void audio_start_playback()
 
 void audio_stop_playback()
 {
-    AUD_LOGD("Audio: core0: stopping\n");
+    AUD_LOGD("Audio: core0: stop playback\n");
     _play_state = PLAY_STOPPING;
 }
 

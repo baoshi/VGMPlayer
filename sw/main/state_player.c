@@ -202,7 +202,8 @@ static void player_on_play_next(app_t *app, player_t *ctx)
     {
         // loop until find a file to play or error occurred
         uint8_t type;
-        if (0 == ctx->nav_dir)
+        MY_ASSERT(ctx->nav_dir != 0);   // nav_dir == 0 means go back to browser.
+        if (1 == ctx->nav_dir)
             r = catalog_get_next_entry(app->catalog, false, false, ctx->file, FF_LFN_BUF + 1, &type);
         else
             r = catalog_get_prev_entry(app->catalog, false, false, ctx->file, FF_LFN_BUF + 1, &type);
@@ -289,13 +290,13 @@ event_t const *player_handler(app_t *app, event_t const *evt)
     case EVT_ENTRY:
         PL_LOGD("Player: entry\n");
         player_on_entry(ctx);
-        ctx->nav_dir = 0;  // default to play next
+        ctx->nav_dir = 1;  // default to play next
         ctx->decoder = 0;
         EQ_QUICK_PUSH(EVT_BUTTON_PLAY_CLICKED);
         break;
     case EVT_EXIT:
-        PL_LOGD("Player: exit\n");
         player_on_exit(ctx);
+        PL_LOGD("Player: exit\n");
         break;
     case EVT_PLAYER_UI_UPDATE:
         player_on_ui_update(ctx);
@@ -307,11 +308,11 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         player_on_play_next(app, ctx);
         break;
     case EVT_BUTTON_UP_CLICKED:
-        ctx->nav_dir = 1;
+        ctx->nav_dir = -1;
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         break;
     case EVT_BUTTON_DOWN_CLICKED:
-        ctx->nav_dir = 0;
+        ctx->nav_dir = 1;
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         break;
     case EVT_BUTTON_SETTING_CLICKED:
@@ -366,6 +367,7 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
     case EVT_ENTRY:
         PL_LOGD("Player_S16: entry\n");
         player_s16_setup_input();
+        ctx->nav_dir = 1;   // default next song direction
         ctx->playing = false;
         MY_ASSERT(ctx->decoder == 0);
         ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
@@ -373,7 +375,6 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         MY_ASSERT(ctx->decoder != 0);
         break;
     case EVT_EXIT:
-        PL_LOGD("Player_S16: exit\n");
         audio_finish_playback();
         if (ctx->decoder)
         {
@@ -381,6 +382,7 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
             ctx->decoder = 0;
         }
         PL_LOGD("Player_S16: audio finished\n");
+        PL_LOGD("Player_S16: exit\n");
         break;
     case EVT_START:
         PL_LOGD("Player_S16: start\n");
@@ -404,28 +406,34 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
     case EVT_BUTTON_BACK_CLICKED:
         PL_LOGD("Player_S16: back clicked\n");
         audio_stop_playback();
-        STATE_TRAN(app, &(app->browser_disk));
+        // Set navigation back, wait event EVT_AUDIO_SONG_ENDED to go back to browser_disk
+        ctx->nav_dir = 0;
         break;
     case EVT_BUTTON_UP_CLICKED:
         PL_LOGD("Player_S16: up clicked\n");
         audio_stop_playback();
-        // Go back to player state and re-queue EVT_BUTTON_UP_CLICKED
-        STATE_TRAN((hsm_t*)app, &(app->player));
-        EQ_QUICK_PUSH(EVT_BUTTON_UP_CLICKED);
+        // Set navigation direction to -1, wait event EVT_AUDIO_SONG_ENDED to play next
+        ctx->nav_dir = -1;
         break;
     case EVT_BUTTON_DOWN_CLICKED:
         PL_LOGD("Player_S16: down clicked\n");
         audio_stop_playback();
-        // Go back to player state and re-queue EVT_BUTTON_DOWN_CLICKED
-        STATE_TRAN((hsm_t*)app, &(app->player));
-        EQ_QUICK_PUSH(EVT_BUTTON_DOWN_CLICKED);
+        // Set navigation direction to 1, wait event EVT_AUDIO_SONG_ENDED to play next
+        ctx->nav_dir = 1;
         break;
     case EVT_AUDIO_SONG_ENDED:
         PL_LOGD("Player_S16: song endded\n");
-        // Song endded normally, go to next song
-        // Note if playback is stopped manually, we will also receive this event
-        STATE_TRAN(app, &(app->player));
-        EQ_QUICK_PUSH(EVT_BUTTON_DOWN_CLICKED);
+        if (0 == ctx->nav_dir)
+        {
+            PL_LOGD("Player_S16: go back to browser_disk\n");
+            STATE_TRAN(app, &(app->browser_disk));
+        }
+        else
+        {
+            PL_LOGD("Player_S16: go to next song\n");
+            STATE_TRAN(app, &(app->player));
+            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+        }
         break;
     default:
         r = evt;

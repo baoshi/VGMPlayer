@@ -16,7 +16,8 @@
 #define CATALOG_HISTORY_DEPTH           10
 
 #define AUDIO_SAMPLE_RATE               48000
-#define AUDIO_POWER_SAVER_MS            5000
+#define AUDIO_SONG_GAP_MS               2000
+
 
 
 union nvram_t
