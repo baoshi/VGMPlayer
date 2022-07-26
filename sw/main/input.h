@@ -35,5 +35,5 @@ void input_disable_keypad_dev();
 void input_map_keypad(int id, uint32_t keycode);
 
 void input_init();
-void * input_export_config();
-void input_restore_config(void *config);
+void * input_save();
+void input_load(void *config);

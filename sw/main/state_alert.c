@@ -14,8 +14,6 @@
 #include "app.h"
 
 
-// State "message"
-
 #ifndef ALERT_DEBUG
 # define ALERT_DEBUG 1
 #endif
@@ -37,7 +35,7 @@
 #endif
 
 
-static void enter_handler(lv_event_t *e)
+static void key_enter_handler(lv_event_t *e)
 {
     alert_t* ctx = (alert_t*)lv_event_get_user_data(e);
     lv_event_code_t code = lv_event_get_code(e);
@@ -61,10 +59,13 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
-            Map keypad
+            Save previous input config
+            Setup keypad
             Arm autoclose
         EVT_EXIT:
-            Close popup, disable keypad
+            Close popup
+            Restore previous input config
+            Delete keypad
         EVT_ALERT_MANUAL_CLOSE
             Disarm auto close and do AUTO_CLOSE
         EVT_ALERT_AUTO_CLOSE:
@@ -76,7 +77,8 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
     {
     case EVT_ENTRY:
         ALT_LOGD("Alert: entry\n");
-        ctx->input_config = input_export_config();
+        // save previous input config
+        ctx->prev_input = input_save();
         // Not using buttons
         input_disable_button_dev();
         input_map_button(-1, 0, 0);
@@ -87,7 +89,7 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
         ctx->keypad_group = lv_group_create();
         lv_indev_set_group(indev_keypad, ctx->keypad_group);
         input_enable_keypad_dev();
-        lv_obj_add_event_cb(ctx->popup, enter_handler, LV_EVENT_ALL, (void *)ctx);
+        lv_obj_add_event_cb(ctx->popup, key_enter_handler, LV_EVENT_ALL, (void *)ctx);
         lv_group_add_obj(ctx->keypad_group, ctx->popup);
         // Auto close timeout
         if (ctx->auto_close_ms > 0)
@@ -96,11 +98,12 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
     case EVT_EXIT:
         lv_alert_close(ctx->popup);
         ctx->popup = NULL;
-        input_restore_config(ctx->input_config);
-        ctx->input_config = NULL;
         lv_group_remove_all_objs(ctx->keypad_group);
         lv_group_del(ctx->keypad_group);
         ctx->keypad_group = NULL;
+        // restore old input config
+        input_load(ctx->prev_input);
+        ctx->prev_input = NULL;
         ALT_LOGD("Alert: exit\n");
         break;
     case EVT_ALERT_MANUAL_CLOSE:

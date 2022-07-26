@@ -331,7 +331,7 @@ void input_init()
 }
 
 
-void *input_export_config()
+void *input_save()
 {
     input_config_t *mem = MY_MALLOC(sizeof(input_config_t));
     if (mem)
@@ -350,7 +350,7 @@ void *input_export_config()
 }
 
 
-void input_restore_config(void *config)
+void input_load(void *config)
 {
     if (config)
     {

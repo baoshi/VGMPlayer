@@ -51,14 +51,14 @@ event_t const *player_s16_handler(app_t *me, event_t const *evt);
 
 
 //
-// Settings
+// Settings popup
 //
 typedef struct settings_s
 {
     state_t *creator;
     lv_obj_t *popup;
     lv_group_t *keypad_group;   // keypad input group
-    void *input_config;         // to save/restore input config 
+    void *prev_input;           // to save/restore input config 
 } setting_t;
 
 event_t const *setting_handler(app_t *me, event_t const *evt);
@@ -69,7 +69,7 @@ void setting_create(app_t *me);
 
 
 //
-// Alert
+// Alert popup
 //
 typedef struct alert_s
 {
@@ -79,7 +79,7 @@ typedef struct alert_s
     int auto_close_ms;
     int timer_auto_close;
     int exit_event;
-    void *input_config;         // to save/restore input config when activating
+    void *prev_input;         // to save/restore input config
 } alert_t;
 
 event_t const *alert_handler(app_t *me, event_t const *evt);
