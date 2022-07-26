@@ -22,7 +22,7 @@ typedef struct browser_s
     lv_obj_t *lbl_top;          // Top indicators
     lv_obj_t *lbl_bottom;       // Bottom label
     lv_obj_t *lst_file_list;    // List of files
-    lv_obj_t *focused;          // focused file in the list
+    lv_group_t *keypad_group;   // keypad input group
     int timer_ui_update;
 } browser_t;
 
@@ -57,7 +57,8 @@ typedef struct settings_s
 {
     state_t *creator;
     lv_obj_t *popup;
-    void *input;   // to save/restore input config 
+    lv_group_t *keypad_group;   // keypad input group
+    void *input_config;         // to save/restore input config 
 } setting_t;
 
 event_t const *setting_handler(app_t *me, event_t const *evt);
@@ -74,10 +75,11 @@ typedef struct alert_s
 {
     state_t *creator;
     lv_obj_t *popup;
+    lv_group_t *keypad_group;   // keypad input group
     int auto_close_ms;
     int timer_auto_close;
     int exit_event;
-    void *input;   // to save/restore input config when activating
+    void *input_config;         // to save/restore input config when activating
 } alert_t;
 
 event_t const *alert_handler(app_t *me, event_t const *evt);

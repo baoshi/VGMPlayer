@@ -66,7 +66,6 @@ static bool _style_initialized = false;
 //
 
 lv_indev_t* indev_keypad = NULL;
-lv_group_t* input_keypad_group = NULL;
 static lv_indev_drv_t _keypad_drv;
 
 // Input Config
@@ -76,6 +75,7 @@ typedef struct input_config_s
     uint32_t keypad_code_table[INPUT_KEYS];
     bool button_enabled;
     bool keypad_enabled;
+    lv_group_t *input_group;
 } input_config_t;
 
 static input_config_t _config = { 0 };
@@ -284,9 +284,6 @@ static void keypad_init()
     _keypad_drv.type = LV_INDEV_TYPE_KEYPAD;
     _keypad_drv.read_cb = keypad_read;
     indev_keypad = lv_indev_drv_register(&_keypad_drv);
-    input_keypad_group = lv_group_create();
-    lv_group_set_wrap(input_keypad_group, false);
-    lv_indev_set_group(indev_keypad, input_keypad_group);
     lv_indev_enable(indev_keypad, false);
 }
 
@@ -300,7 +297,7 @@ void input_enable_keypad_dev()
 
 void input_disable_keypad_dev()
 {
-    lv_group_remove_all_objs(input_keypad_group);
+    lv_indev_set_group(indev_keypad, NULL);
     lv_indev_enable(indev_keypad, false);
     _config.keypad_enabled = false;
 }
@@ -340,6 +337,14 @@ void *input_export_config()
     if (mem)
     {
         memcpy(mem, &_config, sizeof(input_config_t));
+        if (_config.keypad_enabled)
+        {
+            mem->input_group = indev_keypad->group;
+        }
+        else
+        {
+            mem->input_group = NULL;
+        }
     }
     return (void *)mem;
 }
@@ -353,7 +358,12 @@ void input_restore_config(void *config)
         input_disable_keypad_dev();
         memcpy(&_config, (input_config_t *)config, sizeof(input_config_t));
         if (_config.button_enabled) input_enable_button_dev();
-        if (_config.keypad_enabled) input_enable_keypad_dev();
+        if (_config.keypad_enabled) 
+        {
+            if (_config.input_group)
+                lv_indev_set_group(indev_keypad, _config.input_group);
+            input_enable_keypad_dev();
+        }
         MY_FREE(config);
     }
 }

@@ -77,7 +77,24 @@
         "lvsupp.h": "c",
         "sw_conf.h": "c",
         "stdio.h": "c",
-        "event_ids.h": "c"
+        "event_ids.h": "c",
+        "array": "c",
+        "bit": "c",
+        "concepts": "c",
+        "algorithm": "c",
+        "deque": "c",
+        "functional": "c",
+        "iterator": "c",
+        "memory": "c",
+        "memory_resource": "c",
+        "optional": "c",
+        "string": "c",
+        "string_view": "c",
+        "system_error": "c",
+        "unordered_map": "c",
+        "vector": "c",
+        "ostream": "c",
+        "iosfwd": "c"
     },
     "cmake.configureOnOpen": true
 }

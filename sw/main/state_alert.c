@@ -37,19 +37,6 @@
 #endif
 
 
-static void alert_setup_input()
-{
-    // Button
-    input_disable_button_dev();
-    input_map_button(-1, 0, 0);
-    // Keypad
-    input_disable_keypad_dev();
-    input_map_keypad(-1, 0);
-    input_map_keypad(INPUT_KEY_PLAY, LV_KEY_ENTER); // for keypad indev, only LV_KEY_ENTER emits RELEASED event
-    input_enable_keypad_dev();
-}
-
-
 static void enter_handler(lv_event_t *e)
 {
     alert_t* ctx = (alert_t*)lv_event_get_user_data(e);
@@ -89,20 +76,32 @@ event_t const *alert_handler(app_t *app, event_t const *evt)
     {
     case EVT_ENTRY:
         ALT_LOGD("Alert: entry\n");
-        ctx->input = input_export_config();
-        alert_setup_input();
+        ctx->input_config = input_export_config();
+        // Not using buttons
+        input_disable_button_dev();
+        input_map_button(-1, 0, 0);
+        // PLAY key used as Keypad
+        input_disable_keypad_dev();
+        input_map_keypad(-1, 0);
+        input_map_keypad(INPUT_KEY_PLAY, LV_KEY_ENTER); // for keypad indev, only LV_KEY_ENTER emits RELEASED event
+        ctx->keypad_group = lv_group_create();
+        lv_indev_set_group(indev_keypad, ctx->keypad_group);
+        input_enable_keypad_dev();
         lv_obj_add_event_cb(ctx->popup, enter_handler, LV_EVENT_ALL, (void *)ctx);
-        lv_group_add_obj(input_keypad_group, ctx->popup);
+        lv_group_add_obj(ctx->keypad_group, ctx->popup);
         // Auto close timeout
         if (ctx->auto_close_ms > 0)
             ctx->timer_auto_close = tick_arm_timer_event(ctx->auto_close_ms, false, EVT_ALERT_AUTO_CLOSE, true);
         break;
     case EVT_EXIT:
-        ALT_LOGD("Alert: exit\n");
         lv_alert_close(ctx->popup);
         ctx->popup = NULL;
-        input_restore_config(ctx->input);
-        ctx->input = NULL;
+        input_restore_config(ctx->input_config);
+        ctx->input_config = NULL;
+        lv_group_remove_all_objs(ctx->keypad_group);
+        lv_group_del(ctx->keypad_group);
+        ctx->keypad_group = NULL;
+        ALT_LOGD("Alert: exit\n");
         break;
     case EVT_ALERT_MANUAL_CLOSE:
         ALT_LOGD("Alert: manual close\n");

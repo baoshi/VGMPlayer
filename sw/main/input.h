@@ -30,7 +30,6 @@ void input_delete_buttons();
 void input_map_button(int id, int lv_event, int app_event);
 
 extern lv_indev_t* indev_keypad;
-extern lv_group_t* input_keypad_group;
 void input_enable_keypad_dev();
 void input_disable_keypad_dev();
 void input_map_keypad(int id, uint32_t keycode);

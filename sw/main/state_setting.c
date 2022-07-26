@@ -66,12 +66,12 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
     {
         case EVT_ENTRY:
             ST_LOGD("Setting: entry\n");
-            ctx->input = input_export_config();
+            ctx->input_config = input_export_config();
             break;
         case EVT_EXIT:
             ST_LOGD("Setting: exit\n");
-            input_restore_config(ctx->input);
-            ctx->input = NULL;
+            input_restore_config(ctx->input_config);
+            ctx->input_config = NULL;
             break;
         case EVT_START:
             ST_LOGD("Setting: start\n");
@@ -91,7 +91,7 @@ event_t const *setting_handler(app_t *me, event_t const *evt)
 
 
 
-static void setting_volume_setup_input()
+static void setting_volume_setup_input(setting_t *ctx)
 {
     // Button
     input_disable_button_dev();
@@ -104,12 +104,14 @@ static void setting_volume_setup_input()
     input_map_keypad(-1, 0);
     input_map_keypad(INPUT_KEY_UP, LV_KEY_UP);
     input_map_keypad(INPUT_KEY_DOWN, LV_KEY_DOWN);
+    ctx->keypad_group = lv_group_create();
+    lv_indev_set_group(indev_keypad, ctx->keypad_group);
     input_enable_keypad_dev();
 }
 
 static void setting_volume_event_handler(lv_event_t* e)
 {
-    browser_t* ctx = (browser_t*)lv_event_get_user_data(e);
+    setting_t* ctx = (setting_t*)lv_event_get_user_data(e);
     uint32_t c = lv_indev_get_key(lv_indev_get_act());
     switch (c)
     {
@@ -143,16 +145,19 @@ event_t const *setting_volume_handler(app_t *me, event_t const *evt)
     {
     case EVT_ENTRY:
         ST_LOGD("Setting_Volume: entry\n");
-        setting_volume_setup_input();
+        setting_volume_setup_input(ctx);
         ctx->popup = lv_barbox_create(lv_scr_act(), 0, 0, 100, 20);
         lv_obj_add_event_cb(ctx->popup, setting_volume_event_handler, LV_EVENT_KEY, (void *)ctx);
-        lv_group_remove_all_objs(input_keypad_group);
-        lv_group_add_obj(input_keypad_group, ctx->popup);
+        lv_group_add_obj(ctx->keypad_group, ctx->popup);
         break;
     case EVT_EXIT:
         ST_LOGD("Setting_Volume: exit\n");
         lv_barbox_close(ctx->popup);
         ctx->popup = 0;
+        lv_indev_set_group(indev_keypad, NULL);
+        lv_group_remove_all_objs(ctx->keypad_group);
+        lv_group_del(ctx->keypad_group);
+        ctx->keypad_group = NULL;
         break;
     case EVT_BUTTON_SETTING_CLICKED:
         STATE_TRAN(me, &(me->setting_brightness));
@@ -165,7 +170,7 @@ event_t const *setting_volume_handler(app_t *me, event_t const *evt)
 }
 
 
-static void setting_brightness_setup_input()
+static void setting_brightness_setup_input(setting_t *ctx)
 {
     // Button
     input_disable_button_dev();
@@ -178,6 +183,8 @@ static void setting_brightness_setup_input()
     input_map_keypad(-1, 0);
     input_map_keypad(INPUT_KEY_UP, LV_KEY_UP);
     input_map_keypad(INPUT_KEY_DOWN, LV_KEY_DOWN);
+    ctx->keypad_group = lv_group_create();
+    lv_indev_set_group(indev_keypad, ctx->keypad_group);
     input_enable_keypad_dev();
 }
 
@@ -198,7 +205,7 @@ static void setting_brightness_on_value_changed(lv_event_t *e)
 
 static void setting_brightness_on_entry(setting_t *ctx)
 {
-    setting_brightness_setup_input();
+    setting_brightness_setup_input(ctx);
     // Brightness range is [9..99]
     // Maps to Slider [2-20] -> brightness = slider * 5 - 1
     // slider = (brightness + 1) / 5
@@ -207,8 +214,7 @@ static void setting_brightness_on_entry(setting_t *ctx)
     if (s > 20) s = 20;
     ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_setting_brightness, 2, 20, s);
     lv_obj_t *slider = lv_sliderbox_get_slider(ctx->popup);
-    lv_group_remove_all_objs(input_keypad_group);
-    lv_group_add_obj(input_keypad_group, slider);
+    lv_group_add_obj(ctx->keypad_group, slider);
     lv_obj_add_event_cb(slider, setting_brightness_on_value_changed, LV_EVENT_VALUE_CHANGED, NULL);
 }
 
@@ -218,6 +224,10 @@ static void setting_brightness_on_exit(setting_t *ctx)
     // Close popup
     lv_sliderbox_close(ctx->popup);
     ctx->popup = 0;
+    lv_indev_set_group(indev_keypad, NULL);
+    lv_group_remove_all_objs(ctx->keypad_group);
+    lv_group_del(ctx->keypad_group);
+    ctx->keypad_group = 0;
 }
 
 

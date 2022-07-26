@@ -99,7 +99,7 @@ static void browser_on_entry(browser_t *ctx)
     lv_obj_set_size(ctx->lst_file_list, 240, 192);
     lv_obj_set_pos(ctx->lst_file_list, 0, 24);
     // Other UI elements
-    ctx->focused = 0;
+    ctx->keypad_group = NULL;
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Load screen
@@ -341,12 +341,12 @@ static void populate_file_list(app_t *me, int mode)
         focus = btn; // btn points to the last button added
     }
     // Add all file/directory buttons to input group
-    lv_group_remove_all_objs(input_keypad_group);
+    lv_group_remove_all_objs(ctx->keypad_group);
     uint32_t cnt = lv_obj_get_child_cnt(ctx->lst_file_list);
     for (uint32_t i = 0; i < cnt; ++i)
     {
         lv_obj_t *obj = lv_obj_get_child(ctx->lst_file_list, i);
-        lv_group_add_obj(input_keypad_group, obj);
+        lv_group_add_obj(ctx->keypad_group, obj);
     }
     // Set focus if necessary
     if (focus != NULL)
@@ -371,7 +371,7 @@ static void clean_file_list(app_t* me, browser_t *ctx)
 }
 
 
-static void browser_disk_setup_input()
+static void browser_disk_setup_input(browser_t *ctx)
 {
     // Button
     input_disable_button_dev();
@@ -385,6 +385,9 @@ static void browser_disk_setup_input()
     input_map_keypad(INPUT_KEY_PLAY, LV_KEY_ENTER);
     input_map_keypad(INPUT_KEY_UP, LV_KEY_PREV);
     input_map_keypad(INPUT_KEY_DOWN, LV_KEY_NEXT);
+    ctx->keypad_group = lv_group_create();
+    lv_group_set_wrap(ctx->keypad_group, false);
+    lv_indev_set_group(indev_keypad, ctx->keypad_group);
     input_enable_keypad_dev();
 }
 
@@ -392,7 +395,7 @@ static void browser_disk_setup_input()
 static void browser_disk_on_entry(app_t *me, browser_t *ctx)
 {
     // Setup keypad
-    browser_disk_setup_input();
+    browser_disk_setup_input(ctx);
     // build up file list box
     int t;
     if (0 == me->catalog)
@@ -475,6 +478,15 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
             break;
         }
     }
+}
+
+
+static void browser_disk_on_exit(browser_t *ctx)
+{
+    lv_indev_set_group(indev_keypad, NULL);
+    lv_group_remove_all_objs(ctx->keypad_group);
+    lv_group_del(ctx->keypad_group);
+    ctx->keypad_group = NULL;
 }
 
 
@@ -589,40 +601,6 @@ static void browser_disk_on_back(app_t *me, browser_t *ctx)
 }
 
 
-static void browser_disk_on_setting(browser_t *ctx)
-{
-    // Save current focused file
-    ctx->focused = 0;
-    for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_file_list); ++i)
-    {
-        lv_obj_t *obj = lv_obj_get_child(ctx->lst_file_list, i);
-        if (lv_obj_has_state(obj, LV_STATE_FOCUSED))
-        {
-            ctx->focused = obj;
-            break;
-        }
-    }
-}
-
-
-static void browser_disk_on_setting_closed(browser_t *ctx)
-{
-    // restore keypad mapping (internally will clean input group)
-    // browser_disk_setup_input();
-    // attach input group to file list buttons
-    for (uint32_t i = 0; i < lv_obj_get_child_cnt(ctx->lst_file_list); ++i)
-    {
-        lv_obj_t *obj = lv_obj_get_child(ctx->lst_file_list, i);
-        lv_group_add_obj(input_keypad_group, obj);
-    }
-    // Set focus if necessary
-    if (ctx->focused != 0)
-    {
-        lv_group_focus_obj(ctx->focused);
-    }
-}
-
-
 event_t const *browser_disk_handler(app_t *me, event_t const *evt)
 {
     /* Events
@@ -639,16 +617,6 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
             If click on Page Up/Down, navigate page
         EVT_BUTTON_BACK_CLICKED:
             Pop history and navigate to parent directory
-        EVT_BUTTON_SETTING_CLICKED:
-            call browser_disk_on_setting()
-              - Clean keypad mapping
-              - Save current focused file
-            Let browser state handle further
-        EVT_SETTING_CLOSED:
-            call browser_disk_on_setting_closed()
-              -  restore keypad mapping
-              -  Restore fcoused file
-            Let browser state to handle further
         EVT_DISK_ERROR:
             Cleanup
             Transit to browser_baddisk state
@@ -665,6 +633,7 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         browser_disk_on_entry(me, ctx);
         break;
     case EVT_EXIT:
+        browser_disk_on_exit(ctx);
         BR_LOGD("Browser_Disk: exit\n");
         break;
     case EVT_BROWSER_PLAY_CLICKED:
@@ -672,14 +641,6 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         break;
     case EVT_BUTTON_BACK_CLICKED:
         browser_disk_on_back(me, ctx);
-        break;
-    case EVT_BUTTON_SETTING_CLICKED:
-        browser_disk_on_setting(ctx);
-        r = evt; // super state browser will process EVT_BUTTON_SETTING_CLICKED further
-        break;
-    case EVT_SETTING_CLOSED:
-        browser_disk_on_setting_closed(ctx);
-        r = evt; // super state browser will process EVT_SETTING_CLICKED further
         break;
     case EVT_DISK_ERROR:
         clean_file_list(me, ctx);
