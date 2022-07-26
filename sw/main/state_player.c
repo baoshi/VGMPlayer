@@ -373,6 +373,9 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
         // TODO: Handle error here
         MY_ASSERT(ctx->decoder != 0);
+        audio_setup_playback(ctx->decoder);
+        audio_start_playback();
+        ctx->playing = true;
         break;
     case EVT_EXIT:
         audio_finish_playback();
@@ -383,12 +386,6 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         }
         PL_LOGD("Player_S16: audio finished\n");
         PL_LOGD("Player_S16: exit\n");
-        break;
-    case EVT_START:
-        PL_LOGD("Player_S16: start\n");
-        audio_setup_playback(ctx->decoder);
-        audio_start_playback();
-        ctx->playing = true;
         break;
     case EVT_BUTTON_PLAY_CLICKED:
         PL_LOGD("Player_S16: play clicked\n");
