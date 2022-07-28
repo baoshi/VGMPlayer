@@ -157,13 +157,13 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         // default to nodisk state and wait card insertion
         STATE_START(me, &me->browser_nodisk);
         break;
-    case EVT_BUTTON_SETTING_CLICKED:    // received from sub states
-        setting_create(me);
-        break;
-    case EVT_SETTING_CLOSED:            // received from sub states
-        if (config_is_dirty())          
-            config_save();
-        break;
+    //case EVT_BUTTON_SETTING_CLICKED:    // received from sub states
+    //    setting_create(me);
+    //    break;
+    //case EVT_SETTING_CLOSED:            // received from sub states
+    //    if (config_is_dirty())          
+    //        config_save();
+    //    break;
     case EVT_BROWSER_UI_UPDATE:
         browser_on_ui_update(ctx);
         break;
@@ -376,7 +376,7 @@ static void browser_disk_setup_input(browser_t *ctx)
     // Button
     input_disable_button_dev();
     input_map_button(-1, 0, 0);
-    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_OPEN_BRIGHTNESS_POPUP);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
     input_enable_button_dev();
     // Keypad
@@ -668,7 +668,7 @@ static void browser_nodisk_setup_input()
     // Button
     input_disable_button_dev();
     input_map_button(-1, 0, 0);
-    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_OPEN_BRIGHTNESS_POPUP);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
     input_enable_button_dev();
     // Keypad
@@ -722,7 +722,7 @@ static void browser_baddisk_setup_input()
     // Button
     input_disable_button_dev();
     input_map_button(-1, 0, 0);
-    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_OPEN_BRIGHTNESS_POPUP);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
     input_enable_button_dev();
     // Keypad

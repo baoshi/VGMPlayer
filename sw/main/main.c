@@ -26,24 +26,6 @@
 #include "eeprom.h"
 
 
-
-event_t const *top_handler(app_t *me, event_t const *evt)
-{
-    event_t const *r = evt;
-    switch (evt->code)
-    {
-        case EVT_START:
-        {
-            // initial state is browser
-            STATE_START(me, &me->browser);
-            r = 0;
-            break;
-        }
-    }
-    return r;
-}
-
-
 void app_ctor(app_t* app)
 {
     memset(app, 0, sizeof(app_t));
@@ -54,10 +36,6 @@ void app_ctor(app_t* app)
         state_ctor(&(app->browser_baddisk), "browser_baddisk", &(app->browser), (event_handler_t)browser_baddisk_handler);
     state_ctor(&(app->player), "player", &((hsm_t*)app)->top, (event_handler_t)player_handler);
         state_ctor(&(app->player_s16), "player_s16", &(app->player), (event_handler_t)player_s16_handler);
-    // settings is created on demand using setting_create()
-    // state_ctor(&(app->setting), "setting", &(app->setting), (event_handler_t)setting_handler);
-        state_ctor(&(app->setting_volume), "setting_volume", &(app->setting), (event_handler_t)setting_volume_handler);
-        state_ctor(&(app->setting_brightness), "setting_brightness", &(app->setting), (event_handler_t)setting_brightness_handler);
     // alert is created on demand using alert_create()
     // state_ctor(&(app->alert), "alert", &(app->alert), (event_handler_t)alert_handler);
 }

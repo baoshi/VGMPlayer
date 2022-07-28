@@ -94,7 +94,8 @@
         "unordered_map": "c",
         "vector": "c",
         "ostream": "c",
-        "iosfwd": "c"
+        "iosfwd": "c",
+        "app.h": "c"
     },
     "cmake.configureOnOpen": true
 }

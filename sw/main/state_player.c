@@ -102,7 +102,7 @@ static void player_setup_input()
     // Buttons
     input_disable_button_dev();
     input_map_button(-1, 0, 0);
-    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_OPEN_VOLUME_POPUP);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
     input_map_button(INPUT_KEY_PLAY, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_PLAY_CLICKED);
     input_map_button(INPUT_KEY_UP, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_UP_CLICKED);
@@ -270,10 +270,12 @@ event_t const *player_handler(app_t *app, event_t const *evt)
             Set navigation direction to up (prev) and play next
         EVT_PLAYER_DOWN_CLICKED:
             Set navigation direction to down (next) and play next
-        EVT_BUTTON_SETTING_CLICKED:
-            Create settings state and transit to it
-        EVT_SETTING_CLOSED:
-            Save settings
+        EVT_OPEN_VOLUME_POPUP:
+            Open volume popup
+        EVT_CLOSE_VOLUME_POPUP:
+            Close volume popup
+        EVT_CLOSE_VOLUME_POPUP_NEXT:
+            Close volume pop and enqueue EVT_OPEN_BRIGHTNESS_POPUP
         EVT_BACK_CLICKED:
             Transit to browser_disk
         EVT_ALERT_CLOSED:
@@ -315,12 +317,15 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         ctx->nav_dir = 1;
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         break;
-    case EVT_BUTTON_SETTING_CLICKED:
-        setting_create(app);
+    case EVT_OPEN_VOLUME_POPUP:
+        volume_popup(&(app->volume_ctx));
         break;
-    case EVT_SETTING_CLOSED:
-        // reenable buttons
-        player_setup_input();
+    case EVT_CLOSE_VOLUME_POPUP:
+        volume_close(&(app->volume_ctx));
+        break;
+    case EVT_CLOSE_VOLUME_POPUP_NEXT:
+        volume_close(&(app->volume_ctx));
+        EQ_QUICK_PUSH(EVT_OPEN_BRIGHTNESS_POPUP);
         break;
     case EVT_BUTTON_BACK_CLICKED:
         STATE_TRAN(app, &(app->browser_disk));
@@ -346,7 +351,7 @@ static void player_s16_setup_input()
     // Buttons
     input_disable_button_dev();
     input_map_button(-1, 0, 0);
-    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_SETTING_CLICKED);
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_OPEN_VOLUME_POPUP);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
     input_map_button(INPUT_KEY_PLAY, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_PLAY_CLICKED);
     input_map_button(INPUT_KEY_UP, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_UP_CLICKED);

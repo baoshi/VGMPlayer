@@ -1,0 +1,83 @@
+#include <string.h>
+#include "sw_conf.h"
+#include "my_debug.h"
+#include "lvstyle.h"
+#include "lvtheme.h"
+#include "lvsupp.h"
+#include "event_ids.h"
+#include "event_queue.h"
+#include "input.h"
+#include "audio.h"
+#include "app.h"
+
+
+#ifndef VOLUME_DEBUG
+# define VOLUME_DEBUG 1
+#endif
+
+
+// Debug log
+#if VOLUME_DEBUG
+#define VOL_LOGD(x, ...)      MY_LOGD(x, ##__VA_ARGS__)
+#define VOL_LOGI(x, ...)      MY_LOGI(x, ##__VA_ARGS__)
+#define VOL_LOGW(x, ...)      MY_LOGW(x, ##__VA_ARGS__)
+#define VOL_LOGE(x, ...)      MY_LOGE(x, ##__VA_ARGS__)
+#define VOL_DEBUGF(x, ...)    MY_DEBUGF(x, ##__VA_ARGS__)
+#else
+#define VOL_LOGD(x, ...)
+#define VOL_LOGI(x, ...)
+#define VOL_LOGW(x, ...)
+#define VOL_LOGE(x, ...)
+#define VOL_DEBUGF(x, ...)
+#endif
+
+
+static void volume_on_value_changed(lv_event_t *e)
+{
+    lv_obj_t *slider = lv_event_get_target(e);
+    int32_t s = lv_slider_get_value(slider);
+    VOL_LOGI("Volume: set %d\n", s);
+}
+
+
+void volume_popup(volume_t *ctx)
+{
+    VOL_LOGD("Volume: popup\n");
+    // Save previous input config
+    ctx->prev_input = input_save();
+
+    // Setup own input
+    // Button
+    input_disable_button_dev();
+    input_map_button(-1, 0, 0);
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_CLOSE_VOLUME_POPUP_NEXT);
+    input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_CLOSE_VOLUME_POPUP);
+    input_enable_button_dev();
+    // Keypad
+    input_disable_keypad_dev();
+    input_map_keypad(-1, 0);
+    input_map_keypad(INPUT_KEY_UP, LV_KEY_UP);
+    input_map_keypad(INPUT_KEY_DOWN, LV_KEY_DOWN);
+    ctx->keypad_group = lv_group_create();
+    lv_indev_set_group(indev_keypad, ctx->keypad_group);
+    input_enable_keypad_dev();
+
+    ctx->popup = lv_sliderbox_create(lv_scr_act(), NULL, 0, 63, config.volume_speaker);
+    lv_obj_t *slider = lv_sliderbox_get_slider(ctx->popup);
+    lv_group_add_obj(ctx->keypad_group, slider);
+    lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, NULL);
+}
+
+
+void volume_close(volume_t *ctx)
+{
+    lv_group_remove_all_objs(ctx->keypad_group);
+    lv_group_del(ctx->keypad_group);
+    ctx->keypad_group = NULL;
+    lv_sliderbox_close(ctx->popup);
+    ctx->popup = NULL;
+    // restore previous input
+    input_load(ctx->prev_input);
+    ctx->prev_input = NULL;
+    VOL_LOGD("Volume: closed\n");
+}
