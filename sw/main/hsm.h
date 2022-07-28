@@ -1,30 +1,5 @@
 /*
- * Most of the code is from https://github.com/MadsAndreasen/HierarchicalStateMachine
- * In the original repo author has mentioned corrections on inherited transitions. However,
- * I choose to revert it because of the scenario needed in this project. Consider this example:
- * 
- *      S1          S1 is the parent state and S11, S111 are sub states.
- *       |          S1 has a handler for event e1. S11 does not handle e1.
- *       |          When e1 arrives, we shall transit from current state to S111.
- *     *S11
- *       |          Assume we are currently at S11, e1 will be handled by higher S1 handler.
- *       |
- *      S111        In the original implementation, LCA calculation is done from handler's state to the 
- *                  desitnation state (S1 to S111), and these steps will happen during transition:
- *                  (S11 Exit) -> (S11 Entry) -> (S111 Entry). S11 Exit/Entry seems redundant.
- *
- *                  In my version, LCA calculation is done from the current state to the destination state
- *                  (S11 to S111), only (S111 Entry) will happen.
- * 
- * I also removed the static LCA calculation. This allows dynamic states attachment. For eample:
- *
- *      S1          S111 is not initialized at startup. On event e1, S1 handler initailize S111 by:
- *      /\          1. Set "super" state of S111 to the current state (e.g. S12).
- *     /  \         2. Keep a copy of the current state (S12) in "creator" member variable.
- *   S11  *S12      3. Transit to S111.
- *          |       When S111 finishes, it can return back to the "creator" state. 
- *          |       This mechanism is used for UI popups in this project. See "settings" and "alert"
- *        S111      states for detailed implementation.
+ * https://github.com/MadsAndreasen/HierarchicalStateMachine
  */ 
 
 #ifndef HSM_H
@@ -70,6 +45,7 @@ struct hsm_s
     char const *name;             /* state machine name */
     state_t *curr;                /* current state */
     state_t *next;                /* next state */
+    state_t *source;              /* source state during last transition */
     state_t top;                  /* top-level state object */
 };
 
@@ -88,24 +64,24 @@ void hsm_on_event(hsm_t *me, event_t const *evt);
 uint8_t hsm_to_lca_(hsm_t *me, state_t *target);
 void hsm_exit_(hsm_t *me, uint8_t levels);
 
-/* get current state */
+    /* get current state */
 #define STATE_CURR(me_) (((hsm_t *)me_)->curr)
 
 
 /* take start transition without exist any superstates */
 #define STATE_START(me_, target_) (((hsm_t *)me_)->next = (target_))
 
-
 /* state transition including exit superstates up to LCA */
-/* note levels_ is always calculated so this macro can be */        \
-/* used with dynamically created states */                          \
-#define STATE_TRAN(me_, target_)                                    \
-    do                                                              \
-    {                                                               \
-        assert(((hsm_t *)me_)->next == 0);                          \
-        uint8_t levels_ = hsm_to_lca_((hsm_t *)(me_), (target_));   \
-        hsm_exit_((hsm_t *)(me_), levels_);                         \
-        ((hsm_t *)(me_))->next = (target_);                         \
+/* note levels_ is static so need to calc once */
+#define STATE_TRAN(me_, target_)                                \
+    do                                                          \
+    {                                                           \
+        static uint8_t levels_ = 0xFF;                          \
+        assert(((hsm_t *)me_)->next == 0);                      \
+        if (levels_ == 0xFF)                                    \
+            levels_ = hsm_to_lca_((hsm_t *)(me_), (target_));   \
+        hsm_exit_((hsm_t *)(me_), levels_);                     \
+        ((hsm_t *)(me_))->next = (target_);                     \
     } while (0)
 
 
