@@ -40,9 +40,13 @@ static void volume_on_value_changed(lv_event_t *e)
 }
 
 
-void volume_popup(volume_t *ctx)
+void volume_popup(app_t *app)
 {
     VOL_LOGD("Volume: popup\n");
+    volume_t *ctx = &(app->volume_ctx);
+    MY_ASSERT(NULL == ctx->popup);
+    memset(ctx, 0, sizeof(volume_t));
+
     // Save previous input config
     ctx->prev_input = input_save();
 
@@ -62,6 +66,7 @@ void volume_popup(volume_t *ctx)
     lv_indev_set_group(indev_keypad, ctx->keypad_group);
     input_enable_keypad_dev();
 
+    // Create volume popup
     ctx->popup = lv_sliderbox_create(lv_scr_act(), NULL, 0, 63, config.volume_speaker);
     lv_obj_t *slider = lv_sliderbox_get_slider(ctx->popup);
     lv_group_add_obj(ctx->keypad_group, slider);
@@ -69,8 +74,9 @@ void volume_popup(volume_t *ctx)
 }
 
 
-void volume_close(volume_t *ctx)
+void volume_close(app_t *app)
 {
+    volume_t *ctx = &(app->volume_ctx);
     lv_group_remove_all_objs(ctx->keypad_group);
     lv_group_del(ctx->keypad_group);
     ctx->keypad_group = NULL;

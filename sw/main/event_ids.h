@@ -20,7 +20,7 @@ enum
     EVT_CLOSE_VOLUME_POPUP_NEXT,    // User pressed [SETTING] when volume popup is active
     EVT_CLOSE_VOLUME_POPUP,         // User pressed [BACK] to close volume popup
 
-    EVT_SETTING_CLOSED,     // Setting popup closed
+    EVT_CLOSE_ALERT,
 
     EVT_ALERT_MANUAL_CLOSE, // Alert popup manual close
     EVT_ALERT_AUTO_CLOSE,   // Alert popup autoclose

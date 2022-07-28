@@ -173,7 +173,7 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
             // Remove button mapping, alert will setup its own
             PL_LOGD("Player: Unable to load entry from catalog\n");
             input_disable_button_dev();
-            alert_create(app, 0, "File not accessible", 2000, 0);
+            alert_popup(app, NULL, "File not accessible", 2000);
             break;
         }
         lv_label_set_text(ctx->lbl_bottom, ctx->file);
@@ -185,7 +185,7 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
         switch (type)
         {
         case SONG_TYPE_UNKNOWN:
-            alert_create(app, 0, "Unknown file type", 2000, 0);
+            alert_popup(app, NULL, "Unknown file type", 2000);
             break;
         case SONG_TYPE_S16:
             STATE_TRAN(app, &(app->player_s16));
@@ -318,13 +318,13 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         break;
     case EVT_OPEN_VOLUME_POPUP:
-        volume_popup(&(app->volume_ctx));
+        volume_popup(app);
         break;
     case EVT_CLOSE_VOLUME_POPUP:
-        volume_close(&(app->volume_ctx));
+        volume_close(app);
         break;
     case EVT_CLOSE_VOLUME_POPUP_NEXT:
-        volume_close(&(app->volume_ctx));
+        volume_close(app);
         EQ_QUICK_PUSH(EVT_OPEN_BRIGHTNESS_POPUP);
         break;
     case EVT_BUTTON_BACK_CLICKED:

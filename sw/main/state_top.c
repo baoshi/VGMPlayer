@@ -44,10 +44,14 @@ event_t const *top_handler(app_t *app, event_t const *evt)
         STATE_START(app, &(app->browser));
         break;
     case EVT_OPEN_BRIGHTNESS_POPUP:
-        brightness_popup(&(app->brightness_ctx));
+        brightness_popup(app);
         break;
     case EVT_CLOSE_BRIGHTNESS_POPUP:
-        brightness_close(&(app->brightness_ctx));
+        brightness_close(app);
+        break;
+    case EVT_CLOSE_ALERT:
+        // alert can popup from anywhere, close alert happens here
+        alert_close(app);
         break;
     default:
         TOP_LOGD("Top: event %d not handled\n", evt->code);

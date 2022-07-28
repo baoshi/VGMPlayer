@@ -45,9 +45,14 @@ static void brightness_on_value_changed(lv_event_t *e)
 }
 
 
-void brightness_popup(brightness_t *ctx)
+void brightness_popup(app_t *app)
 {
     BRT_LOGD("Brigntness: popup\n");
+
+    brightness_t *ctx = &(app->brightness_ctx);
+    MY_ASSERT(NULL == ctx->popup);
+    memset(ctx, 0, sizeof(brightness_t));
+
     // Save previous input config
     ctx->prev_input = input_save();
 
@@ -80,8 +85,9 @@ void brightness_popup(brightness_t *ctx)
 }
 
 
-void brightness_close(brightness_t *ctx)
+void brightness_close(app_t *app)
 {
+    brightness_t *ctx = &(app->brightness_ctx);
     lv_group_remove_all_objs(ctx->keypad_group);
     lv_group_del(ctx->keypad_group);
     ctx->keypad_group = NULL;

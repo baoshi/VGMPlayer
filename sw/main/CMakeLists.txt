@@ -48,9 +48,9 @@ add_executable(${PROJ_NAME}
     state_top.c
     state_browser.c
     state_player.c
-    state_alert.c
     popup_brightness.c
     popup_volume.c
+    popup_alert.c
     decoder_s16.c
     main.c
 )

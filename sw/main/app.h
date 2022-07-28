@@ -36,6 +36,7 @@ event_t const *browser_disk_handler(app_t *app, event_t const *evt);
 event_t const *browser_nodisk_handler(app_t *app, event_t const *evt);
 event_t const *browser_baddisk_handler(app_t *app, event_t const *evt);
 
+
 //
 // Player
 //
@@ -65,8 +66,8 @@ typedef struct brightness_s
     void *prev_input;           // to save/restore input config 
 } brightness_t;
 
-void brightness_popup(brightness_t *ctx);
-void brightness_close(brightness_t *ctx);
+void brightness_popup(app_t *app);
+void brightness_close(app_t *app);
 
 
 //
@@ -79,8 +80,8 @@ typedef struct volume_s
     void *prev_input;           // to save/restore input config 
 } volume_t;
 
-void volume_popup(volume_t *ctx);
-void volume_close(volume_t *ctx);
+void volume_popup(app_t *app);
+void volume_close(app_t *app);
 
 
 //
@@ -88,21 +89,17 @@ void volume_close(volume_t *ctx);
 //
 typedef struct alert_s
 {
-    state_t *creator;
     lv_obj_t *popup;
     lv_group_t *keypad_group;   // keypad input group
-    int auto_close_ms;
+    void *prev_input;           // to save/restore input config 
     int timer_auto_close;
-    int exit_event;
-    void *prev_input;         // to save/restore input config
 } alert_t;
 
-event_t const *alert_handler(app_t *app, event_t const *evt);
+void alert_popup(app_t *app, const void *icon, const char *text, int auto_close);
+void alert_close(app_t *app);
 
-void alert_create(app_t *app, const void *icon, const char *text, int auto_close, int exit_event);
 
-
-// Application level state machine
+// Application state machine
 struct app_s
 {
     hsm_t super;
@@ -113,10 +110,9 @@ struct app_s
     state_t player, player_s16, player_s16_playing, player_s16_paused; 
     player_t player_ctx;
 
+    // popups
     brightness_t brightness_ctx;
     volume_t volume_ctx;
-
-    state_t alert;
     alert_t alert_ctx;
     
     // data shared by all states
