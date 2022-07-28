@@ -16,7 +16,7 @@ enum
 
     EVT_OPEN_BRIGHTNESS_POPUP,      // User pressed [SETTING] top open brightness popup (in top state)
     EVT_CLOSE_BRIGHTNESS_POPUP,     // User pressed [BACK] to close brightness popup
-    EVT_OPEN_VOLUME_POPUP,          // User pressed [SETTING] to open volume popup (in player state)
+    EVT_OPEN_VOLUME_POPUP,          // User pressed [SETTING] in player state
     EVT_CLOSE_VOLUME_POPUP_NEXT,    // User pressed [SETTING] when volume popup is active
     EVT_CLOSE_VOLUME_POPUP,         // User pressed [BACK] to close volume popup
 

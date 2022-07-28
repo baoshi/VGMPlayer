@@ -247,7 +247,7 @@ static void player_on_play_next(app_t *app, player_t *ctx)
         break;
     default:
         PL_LOGE("Player: unhandled error looking for next file. Error code %d\n", r);
-        STATE_TRAN(app, &(app->browser));
+        EQ_QUICK_PUSH(EVT_DISK_ERROR);
         break;
     }
 }
@@ -260,6 +260,8 @@ event_t const *player_handler(app_t *app, event_t const *evt)
             Create screen, setup input, arm UI update timer
         EVT_EXIT:
             Disarm UI update timer, disable buttons
+        EVT_START:
+            Send EVT_PLAY_CLICKED
         EVT_PLAYER_UI_UPDATE:
             Update top bar
         EVT_PLAY_CLICKED:
@@ -275,7 +277,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         EVT_CLOSE_VOLUME_POPUP:
             Close volume popup
         EVT_CLOSE_VOLUME_POPUP_NEXT:
-            Close volume pop and enqueue EVT_OPEN_BRIGHTNESS_POPUP
+            Close volume popup and enqueue EVT_OPEN_BRIGHTNESS_POPUP (to be handled by top state)
         EVT_BACK_CLICKED:
             Transit to browser_disk
         EVT_ALERT_CLOSED:
@@ -294,11 +296,14 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         player_on_entry(ctx);
         ctx->nav_dir = 1;  // default to play next
         ctx->decoder = 0;
-        EQ_QUICK_PUSH(EVT_BUTTON_PLAY_CLICKED);
         break;
     case EVT_EXIT:
         player_on_exit(ctx);
         PL_LOGD("Player: exit\n");
+        break;
+    case EVT_START:
+        PL_LOGD("Player: start\n");
+        EQ_QUICK_PUSH(EVT_BUTTON_PLAY_CLICKED);
         break;
     case EVT_PLAYER_UI_UPDATE:
         player_on_ui_update(ctx);
@@ -345,6 +350,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
     }
     return r;
 }
+
 
 static void player_s16_setup_input()
 {
