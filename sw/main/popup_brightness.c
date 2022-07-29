@@ -78,7 +78,7 @@ void brightness_popup(app_t *app)
     int32_t s = (config.backlight_brigntness_normal + 1) / 5;
     if (s < 2) s = 2;
     if (s > 20) s = 20;
-    ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_setting_brightness, 2, 20, s);
+    ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_brightness, 2, 20, s);
     lv_obj_t *slider = lv_sliderbox_get_slider(ctx->popup);
     lv_group_add_obj(ctx->keypad_group, slider);
     lv_obj_add_event_cb(slider, brightness_on_value_changed, LV_EVENT_VALUE_CHANGED, NULL);

@@ -40,7 +40,10 @@ LV_IMG_DECLARE(img_browser_file);
 LV_IMG_DECLARE(img_browser_pageup);
 LV_IMG_DECLARE(img_browser_pagedown);
 LV_IMG_DECLARE(img_browser_nsf);
-LV_IMG_DECLARE(img_setting_brightness);
+LV_IMG_DECLARE(img_popup_brightness);
+LV_IMG_DECLARE(img_popup_speaker);
+LV_IMG_DECLARE(img_popup_headphone);
+
 
 #ifdef __cplusplus
 }

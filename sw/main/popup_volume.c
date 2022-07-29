@@ -67,7 +67,7 @@ void volume_popup(app_t *app)
     input_enable_keypad_dev();
 
     // Create volume popup
-    ctx->popup = lv_sliderbox_create(lv_scr_act(), NULL, 0, 63, config.volume_speaker);
+    ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_speaker, 0, 63, config.volume_speaker);
     lv_obj_t *slider = lv_sliderbox_get_slider(ctx->popup);
     lv_group_add_obj(ctx->keypad_group, slider);
     lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, NULL);

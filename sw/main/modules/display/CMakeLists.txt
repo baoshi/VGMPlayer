@@ -10,7 +10,9 @@ target_sources(display INTERFACE
     img_browser_pageup.c
     img_browser_pagedown.c
     img_browser_nsf.c
-    img_setting_brightness.c
+    img_popup_brightness.c
+    img_popup_speaker.c
+    img_popup_headphone.c
     display.c
 )
 

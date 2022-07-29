@@ -9,11 +9,11 @@
 #define LV_ATTRIBUTE_MEM_ALIGN
 #endif
 
-#ifndef LV_ATTRIBUTE_IMG_IMG_SETTINGS_BRIGHTNESS
-#define LV_ATTRIBUTE_IMG_IMG_SETTINGS_BRIGHTNESS
+#ifndef LV_ATTRIBUTE_IMG_IMG_POPUP_BRIGHTNESS
+#define LV_ATTRIBUTE_IMG_IMG_POPUP_BRIGHTNESS
 #endif
 
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_IMG_SETTINGS_BRIGHTNESS uint8_t img_setting_brightness_map[] = {
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_IMG_POPUP_BRIGHTNESS uint8_t img_popup_brightness_map[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 
   0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 
   0x00, 0x00, 0x20, 0x00, 0x00, 0x0f, 0xf0, 0x00, 0x00, 0x02, 0x00, 0x00, 
@@ -40,12 +40,12 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_IMG_SETTI
   0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 
 };
 
-const lv_img_dsc_t img_setting_brightness = {
+const lv_img_dsc_t img_popup_brightness = {
   .header.cf = LV_IMG_CF_ALPHA_4BIT,
   .header.always_zero = 0,
   .header.reserved = 0,
   .header.w = 24,
   .header.h = 24,
   .data_size = 288,
-  .data = img_setting_brightness_map,
+  .data = img_popup_brightness_map,
 };
