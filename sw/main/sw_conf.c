@@ -17,7 +17,7 @@ static void config_load_default()
     config.ver = CONFIG_VER;
     config.backlight_brigntness_normal = 90;
     config.backlight_brignthess_dimmed = 20;
-    config.volume_earpiece = 20;
+    config.volume_headphone = 20;
     config.volume_speaker = 50;
 }
 

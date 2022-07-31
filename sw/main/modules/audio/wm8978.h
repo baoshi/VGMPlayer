@@ -9,7 +9,7 @@ extern "C" {
 typedef enum
 {
     WM8978_OUTPUT_SPEAKER = 0,
-    WM8978_OUTPUT_EARPIECE
+    WM8978_OUTPUT_HEADPHONE
 } wm8978_output_t;
 
 

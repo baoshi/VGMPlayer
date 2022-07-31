@@ -158,8 +158,8 @@ void wm8978_preinit()
     wmc_write(WMC_ADDITIONAL_CTRL, WMC_SR_48KHZ | WMC_SLOWCLKEN);
     // Jack detection is on GPIO2
     wmc_write(WMC_JACK_DETECT_CONTROL1, WMC_JD_EN | WMC_JD_SEL_GPIO2);
-    // When earpiece not present, GPIO2 = 0, enable LOUT2/ROUT2 (Speaker), WMC_OUT2_EN0
-    // When earpiece present, GPIO2 = 1, enable LOUT1/ROUT1, WMC_OUT1_EN1
+    // When headphone not present, GPIO2 = 0, enable LOUT2/ROUT2 (Speaker), WMC_OUT2_EN0
+    // When headphone present, GPIO2 = 1, enable LOUT1/ROUT1, WMC_OUT1_EN1
     wmc_write(WMC_JACK_DETECT_CONTROL2, WMC_OUT1_EN1 | WMC_OUT2_EN0);
     // Initial volume (still muted)
     wmc_write_masked(WMC_LOUT1_HP_VOLUME_CTRL, 20, WMC_AVOL);
@@ -225,7 +225,7 @@ void wm8978_set_volume(wm8978_output_t out, uint8_t vol)
         wmc_write_masked(WMC_LOUT2_SPK_VOLUME_CTRL, vol, WMC_AVOL);
         wmc_write_masked(WMC_ROUT2_SPK_VOLUME_CTRL, vol, WMC_AVOL);
     } 
-    else if (WM8978_OUTPUT_EARPIECE == out)
+    else if (WM8978_OUTPUT_HEADPHONE == out)
     {
         wmc_write_masked(WMC_LOUT1_HP_VOLUME_CTRL, vol, WMC_AVOL);
         wmc_write_masked(WMC_ROUT1_HP_VOLUME_CTRL, vol, WMC_AVOL);

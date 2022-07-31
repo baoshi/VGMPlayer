@@ -48,6 +48,7 @@ add_executable(${PROJ_NAME}
     state_top.c
     state_browser.c
     state_player.c
+    popup.c
     popup_brightness.c
     popup_volume.c
     popup_alert.c

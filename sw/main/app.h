@@ -66,9 +66,6 @@ typedef struct brightness_s
     void *prev_input;           // to save/restore input config 
 } brightness_t;
 
-void brightness_popup(app_t *app);
-void brightness_close(app_t *app);
-
 
 //
 // Volume Popup
@@ -79,9 +76,6 @@ typedef struct volume_s
     lv_group_t *keypad_group;   // keypad input group
     void *prev_input;           // to save/restore input config 
 } volume_t;
-
-void volume_popup(app_t *app);
-void volume_close(app_t *app);
 
 
 //
@@ -94,9 +88,6 @@ typedef struct alert_s
     void *prev_input;           // to save/restore input config 
     int timer_auto_close;
 } alert_t;
-
-void alert_popup(app_t *app, const void *icon, const char *text, int auto_close);
-void alert_close(app_t *app);
 
 
 // Application state machine
@@ -120,5 +111,6 @@ struct app_s
     int catalog_history_page[CATALOG_HISTORY_DEPTH];
     int catalog_history_selection[CATALOG_HISTORY_DEPTH];
     int catalog_history_index;
+    bool playing;
 };
 

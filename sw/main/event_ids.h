@@ -24,8 +24,8 @@ enum
 
     EVT_AUDIO_SONG_ENDED,           // Audio decoding ended (application need call audio_finish_playback())
 
-    EVT_EARPIECE_PLUGGED,
-    EVT_EARPIECE_UNPLUGGED,
+    EVT_HEADPHONE_PLUGGED,
+    EVT_HEADPHONE_UNPLUGGED,
     
     EVT_BROWSER_UI_UPDATE,
     EVT_BROWSER_PLAY_CLICKED,

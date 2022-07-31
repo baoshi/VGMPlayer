@@ -366,11 +366,27 @@ void audio_resume_playback()
 }
 
 
+void audio_set_speaker_volume(int8_t vol)
+{
+    if (vol < 0) vol = 0;
+    if (vol > 63) vol = 63;
+    wm8978_set_volume(WM8978_OUTPUT_SPEAKER, (uint8_t)vol);
+}
+
+
+void audio_set_headphone_volume(int8_t vol)
+{
+    if (vol < 0) vol = 0;
+    if (vol > 63) vol = 63;
+    wm8978_set_volume(WM8978_OUTPUT_HEADPHONE, (uint8_t)vol);
+}
+
+
 /**
  * @brief Call this function repeatedly to receive jack detection notification
  * 
  * @param now       Timestamp
- * @return 0 if no change; 1 if earpiece plugged; 2 if earpiece unplugged;
+ * @return 0 if no change; 1 if headphone plugged; 2 if headphone unplugged;
  */
 int audio_jack_detect(uint32_t now)
 {
@@ -393,10 +409,10 @@ int audio_jack_detect(uint32_t now)
         else if (now - _jack_timestamp >= JACK_DEBOUNCE_MS)
         {
             // jack plugged
-            AUD_LOGI("Audio: Earpiece plugged @%d\n", now);
+            AUD_LOGI("Audio: headphone plugged @%d\n", now);
             ret = 1;
             _jack_state = JACK_INSERTED;
-            EQ_QUICK_PUSH(EVT_EARPIECE_PLUGGED);
+            EQ_QUICK_PUSH(EVT_HEADPHONE_PLUGGED);
         }
         break;
     case JACK_INSERTED:
@@ -414,10 +430,10 @@ int audio_jack_detect(uint32_t now)
         else if (now - _jack_timestamp >= JACK_DEBOUNCE_MS)
         {
             // jack unplugged
-            AUD_LOGI("Audio: Earpiece unplugged @%d\n", now);
+            AUD_LOGI("Audio: headphone unplugged @%d\n", now);
             ret = 2;
             _jack_state = JACK_EMPTY;
-            EQ_QUICK_PUSH(EVT_EARPIECE_UNPLUGGED);
+            EQ_QUICK_PUSH(EVT_HEADPHONE_UNPLUGGED);
         }
         break;
     case JACK_NONE:
@@ -431,7 +447,7 @@ int audio_jack_detect(uint32_t now)
 
 /**
  * @brief Get jack status
- * @return true if earpiece plugged, false if earpiece unplugged
+ * @return true if headphone plugged, false if headphone unplugged
  */
 bool audio_get_jack_state()
 {

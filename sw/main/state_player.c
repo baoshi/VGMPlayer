@@ -14,6 +14,7 @@
 #include "audio.h"
 #include "decoder_s16.h"
 #include "catalog.h"
+#include "popup.h"
 #include "app.h"
 
 
@@ -168,11 +169,12 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
 {
     do
     {
+        // Don't want any popups on the screen
+        close_all_popups(app);
+        // Get file name at cursor
         if (CAT_OK != catalog_get_entry(app->catalog, ctx->file, FF_LFN_BUF + 1, 0))
         {
-            // Remove button mapping, alert will setup its own
             PL_LOGD("Player: Unable to load entry from catalog\n");
-            input_disable_button_dev();
             alert_popup(app, NULL, "File not accessible", 2000);
             break;
         }
@@ -180,7 +182,7 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
         // save history
         app->catalog_history_page[app->catalog_history_index] = app->catalog->cur_page;
         app->catalog_history_selection[app->catalog_history_index] = app->catalog->cur_index;
-        PL_LOGD("Player: setup song %s\n", ctx->file);
+        PL_LOGD("Player: verify song %s\n", ctx->file);
         uint8_t type = check_song(ctx->file);
         switch (type)
         {
@@ -286,6 +288,9 @@ event_t const *player_handler(app_t *app, event_t const *evt)
             Sent by play_next. Transit to browser_baddisk
         EVT_DISK_EJECTED:
             Sent by play_next or disk module. Transit to browser_nodisk
+        EVT_HEADPHONE_PLUGGED:
+        EVT_HEADPHONE_UNPLUGGED
+            Refresh volume popup if it is already shown
     */
     event_t const *r = 0;
     player_t *ctx = &(app->player_ctx);
@@ -340,6 +345,14 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         break;
     case EVT_DISK_EJECTED:
         STATE_TRAN((hsm_t*)app, &app->browser_nodisk);
+        break;
+    case EVT_HEADPHONE_PLUGGED:
+        // no break
+    case EVT_HEADPHONE_UNPLUGGED:
+        if (is_volume_popup(app))
+        {
+            volume_popup_refresh(app);
+        }
         break;
     default:
         r = evt;

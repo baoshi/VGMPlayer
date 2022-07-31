@@ -20,6 +20,8 @@ void audio_pause_playback();
 void audio_resume_playback();
 void audio_stop_playback();
 void audio_finish_playback();
+void audio_set_speaker_volume(int8_t vol);
+void audio_set_headphone_volume(int8_t vol);
 
 int  audio_jack_detect(uint32_t now);
 bool audio_get_jack_state();

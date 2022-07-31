@@ -36,7 +36,44 @@ static void volume_on_value_changed(lv_event_t *e)
 {
     lv_obj_t *slider = lv_event_get_target(e);
     int32_t s = lv_slider_get_value(slider);
-    VOL_LOGI("Volume: set %d\n", s);
+    int type = (int)lv_event_get_user_data(e);
+    if (type)
+    {
+        // headphone
+        config_set_dirty();
+        config.volume_headphone = s;
+        VOL_LOGI("Volume: headphone set %d\n", s);
+        audio_set_headphone_volume(s);
+    }
+    else
+    {
+        // speaker
+        config_set_dirty();
+        config.volume_speaker = s;
+        VOL_LOGI("Volume: speaker set %d\n", s);
+        audio_set_speaker_volume(s);
+    }
+}
+
+
+static void create_volume_popup(volume_t *ctx)
+{
+    // Create volume popup
+    lv_obj_t *slider;
+    if (audio_get_jack_state())
+    {
+        ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_headphone, 0, 63, config.volume_headphone);
+        slider = lv_sliderbox_get_slider(ctx->popup);
+        lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, (void *)1);
+        lv_group_add_obj(ctx->keypad_group, slider);
+    }
+    else
+    {
+        ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_speaker, 0, 63, config.volume_speaker);
+        slider = lv_sliderbox_get_slider(ctx->popup);
+        lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, (void *)0);
+        lv_group_add_obj(ctx->keypad_group, slider);
+    }
 }
 
 
@@ -65,12 +102,21 @@ void volume_popup(app_t *app)
     ctx->keypad_group = lv_group_create();
     lv_indev_set_group(indev_keypad, ctx->keypad_group);
     input_enable_keypad_dev();
-
     // Create volume popup
-    ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_speaker, 0, 63, config.volume_speaker);
-    lv_obj_t *slider = lv_sliderbox_get_slider(ctx->popup);
-    lv_group_add_obj(ctx->keypad_group, slider);
-    lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, NULL);
+    create_volume_popup(ctx);
+}
+
+
+void volume_popup_refresh(app_t *app)
+{
+    // if volume popup is not shown, do nothing.
+    // otherwise recreate it to reflect audio destination change.
+    volume_t *ctx = &(app->volume_ctx);
+    MY_ASSERT(ctx->popup != NULL);
+    lv_group_remove_all_objs(ctx->keypad_group);
+    lv_sliderbox_close(ctx->popup);
+    // Create new volume popup
+    create_volume_popup(ctx);
 }
 
 

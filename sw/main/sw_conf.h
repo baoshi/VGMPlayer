@@ -28,7 +28,7 @@ union nvram_t
         int8_t backlight_brigntness_normal;
         int8_t backlight_brignthess_dimmed;
         int8_t volume_speaker;
-        int8_t volume_earpiece;    
+        int8_t volume_headphone;    
     };
     uint8_t data[EEPROM_SIZE];
 };
