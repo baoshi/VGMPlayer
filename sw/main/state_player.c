@@ -335,9 +335,6 @@ event_t const *player_handler(app_t *app, event_t const *evt)
     case EVT_BUTTON_BACK_CLICKED:
         STATE_TRAN(app, &(app->browser_disk));
         break;
-    case EVT_ALERT_CLOSED:
-        PL_LOGD("Player: alert closed\n");
-        break;
     case EVT_DISK_ERROR:
         STATE_TRAN((hsm_t*)app, &app->browser_baddisk);
         break;

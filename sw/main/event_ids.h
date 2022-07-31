@@ -17,23 +17,18 @@ enum
     EVT_OPEN_BRIGHTNESS_POPUP,      // User pressed [SETTING] top open brightness popup (in top state)
     EVT_CLOSE_BRIGHTNESS_POPUP,     // User pressed [BACK] to close brightness popup
     EVT_OPEN_VOLUME_POPUP,          // User pressed [SETTING] in player state
-    EVT_CLOSE_VOLUME_POPUP_NEXT,    // User pressed [SETTING] when volume popup is active
     EVT_CLOSE_VOLUME_POPUP,         // User pressed [BACK] to close volume popup
+    EVT_CLOSE_VOLUME_POPUP_NEXT,    // User pressed [SETTING] when volume popup is active
 
-    EVT_CLOSE_ALERT,
+    EVT_CLOSE_ALERT,                // Alert popup ask to close by timer or manually
 
-    EVT_ALERT_MANUAL_CLOSE, // Alert popup manual close
-    EVT_ALERT_AUTO_CLOSE,   // Alert popup autoclose
-    EVT_ALERT_CLOSED,       // Alert popup closed
-
-    EVT_AUDIO_SONG_ENDED,   // Audio decoding ended (application need call audio_finish_playback())
+    EVT_AUDIO_SONG_ENDED,           // Audio decoding ended (application need call audio_finish_playback())
 
     EVT_EARPIECE_PLUGGED,
     EVT_EARPIECE_UNPLUGGED,
     
     EVT_BROWSER_UI_UPDATE,
     EVT_BROWSER_PLAY_CLICKED,
-    EVT_BROWSER_SETTING_CLOSED,
 
     EVT_PLAYER_UI_UPDATE,
     EVT_PLAYER_PLAY_NEXT,

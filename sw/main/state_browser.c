@@ -75,7 +75,7 @@ static void browser_on_entry(browser_t *ctx)
     ctx->screen = lv_obj_create(NULL);
     // Self-destruction callback
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void *)ctx);
-    // Setup button for SETTING and BACK
+    // Setup input
     input_create_buttons(ctx->screen);
     browser_setup_input();
     //
@@ -134,10 +134,6 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
             Delete buttons, disarm UI update timer
         EVT_START:
             Start browser_nodisk
-        EVT_BUTTON_SETTING_CLICKED:
-            Create settings state and transit to it
-        EVT_SETTING_CLOSED:
-            Save settings
         EVT_BROWSER_UI_UPDATE:
             Update top bar
     */
@@ -157,13 +153,6 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         // default to nodisk state and wait card insertion
         STATE_START(me, &me->browser_nodisk);
         break;
-    //case EVT_BUTTON_SETTING_CLICKED:    // received from sub states
-    //    setting_create(me);
-    //    break;
-    //case EVT_SETTING_CLOSED:            // received from sub states
-    //    if (config_is_dirty())          
-    //        config_save();
-    //    break;
     case EVT_BROWSER_UI_UPDATE:
         browser_on_ui_update(ctx);
         break;
@@ -605,11 +594,11 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
-            Set input
+            Setup inputs
             Create catalog from root directory or restore catalog history
             Populate file list
         EVT_EXIT:
-           Nothing. Cleanup is only done on EVT_DISK_ERROR or EVT_DISK_EJECTED
+            Delete input
         EVT_BROWSER_PLAY_CLICKED:
             If clicked on a directory, push history and navigate to that directory
             If clicked on file, transit to player state
