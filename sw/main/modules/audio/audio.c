@@ -158,7 +158,8 @@ void decoder_entry()
                 if (*olen == 0)
                 {
                     // no more samples. we will prepare rampdown buffer then finish
-                    finishing = true;   // next time DECODER_GET_SAMPLE finish
+                    AUD_LOGD("Audio: core1: auto rampdown\n");
+                    finishing = true;   // next time DECODER_GET_SAMPLE will have finishing == true
                     int16_t l = (int16_t)(last_sample >> 16);
                     int16_t r = (int16_t)(last_sample & 0xffff);
                     register int16_t ll, rr;
@@ -168,10 +169,9 @@ void decoder_entry()
                         x = AUDIO_MAX_BUFFER_LENGTH - 1 - i;
                         ll = l * x / (AUDIO_MAX_BUFFER_LENGTH - 1);
                         rr = r * x / (AUDIO_MAX_BUFFER_LENGTH - 1);
-                        obuf[i] = ((uint32_t)ll) << 16 | rr;
+                        obuf[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
                     }
                     *olen = AUDIO_MAX_BUFFER_LENGTH;
-                    AUD_LOGD("Audio: core1: auto rampdown\n");
                 }
                 else
                 {
@@ -202,7 +202,7 @@ void decoder_entry()
                 x = AUDIO_MAX_BUFFER_LENGTH - 1 - i;
                 ll = l * x / (AUDIO_MAX_BUFFER_LENGTH - 1);
                 rr = r * x / (AUDIO_MAX_BUFFER_LENGTH - 1);
-                obuf[i] = ((uint32_t)ll) << 16 | rr;
+                obuf[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
             }
             *olen = AUDIO_MAX_BUFFER_LENGTH;
             break;
@@ -215,7 +215,7 @@ void decoder_entry()
             {
                 ll = l * i / (AUDIO_MAX_BUFFER_LENGTH - 1);
                 rr = r * i / (AUDIO_MAX_BUFFER_LENGTH - 1);
-                obuf[i] = ((uint32_t)ll) << 16 | rr;
+                obuf[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
             }
             *olen = AUDIO_MAX_BUFFER_LENGTH;
             break;
@@ -310,7 +310,7 @@ void audio_start_playback()
         {
             ll = l * i / (AUDIO_MAX_BUFFER_LENGTH - 1);
             rr = r * i / (AUDIO_MAX_BUFFER_LENGTH - 1);
-            tx_buf0[i] = ((uint32_t)ll) << 16 | rr;
+            tx_buf0[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
         }
         tx_buf0_len = AUDIO_MAX_BUFFER_LENGTH;
         wm8978_mute(false);

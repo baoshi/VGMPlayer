@@ -397,6 +397,7 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         audio_setup_playback(ctx->decoder);
         audio_start_playback();
         ctx->playing = true;
+        app->busy = true;
         break;
     case EVT_EXIT:
         audio_finish_playback();
@@ -404,6 +405,11 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         {
             decoder_s16_destroy((decoder_s16_t *)(ctx->decoder));
             ctx->decoder = 0;
+        }
+        app->busy = false;
+        if (config_is_dirty())
+        {
+            config_save();
         }
         PL_LOGD("Player_S16: audio finished\n");
         PL_LOGD("Player_S16: exit\n");

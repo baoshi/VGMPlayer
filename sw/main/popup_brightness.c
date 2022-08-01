@@ -87,6 +87,10 @@ void brightness_popup(app_t *app)
 
 void brightness_close(app_t *app)
 {
+    if (!app->busy)
+    {
+        config_save();
+    }
     brightness_t *ctx = &(app->brightness_ctx);
     lv_group_remove_all_objs(ctx->keypad_group);
     lv_group_del(ctx->keypad_group);

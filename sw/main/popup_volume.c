@@ -122,6 +122,10 @@ void volume_popup_refresh(app_t *app)
 
 void volume_close(app_t *app)
 {
+    if (!app->busy)
+    {
+        config_save();
+    }
     volume_t *ctx = &(app->volume_ctx);
     lv_group_remove_all_objs(ctx->keypad_group);
     lv_group_del(ctx->keypad_group);

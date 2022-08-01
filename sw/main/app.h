@@ -111,6 +111,6 @@ struct app_s
     int catalog_history_page[CATALOG_HISTORY_DEPTH];
     int catalog_history_selection[CATALOG_HISTORY_DEPTH];
     int catalog_history_index;
-    bool playing;
+    bool busy;
 };
 
