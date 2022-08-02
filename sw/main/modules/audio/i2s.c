@@ -12,11 +12,11 @@
 
 
 // defined in audio.c
-extern uint32_t  tx_buf0[];
-extern uint32_t  tx_buf0_len;
-extern uint32_t  tx_buf1[];
-extern uint32_t  tx_buf1_len;
-extern bool      cur_tx_buf; 
+extern uint32_t  audio_tx_buf0[];
+extern uint32_t  audio_tx_buf0_len;
+extern uint32_t  audio_tx_buf1[];
+extern uint32_t  audio_tx_buf1_len;
+extern bool      audio_cur_tx_buf; 
 
 // i2s PIO program offset for cleanup
 uint pio_i2s_offset = 0;
@@ -52,22 +52,22 @@ static void i2s_dma_isr()
     if (dma_hw->I2S_DMA_INTS & (1u << DMA_CHANNEL_I2S_TX))  // interrupt because I2S TX finish
     {   
         dma_hw->I2S_DMA_INTS |= 1u << DMA_CHANNEL_I2S_TX;   // clear the interrupt request
-        if (cur_tx_buf && tx_buf0_len > 0)
+        if (audio_cur_tx_buf && audio_tx_buf0_len > 0)
         {
-            // transmit buf1 finished, buf0 contains new data
-            dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, tx_buf0, tx_buf0_len);
-            cur_tx_buf = false;
-            tx_buf1_len = 0;    // default length for next buffer
+            // transmit buf1 finished, transmit buf0 now because it contains new data
+            dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf0, audio_tx_buf0_len);
             // Notify samples requested
+            audio_cur_tx_buf = false; // currently transmitting buf0, new samples will be fetched into buf1
+            audio_tx_buf1_len = 0;    // default length for next buffer
             if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
         } 
-        else if (!cur_tx_buf && tx_buf1_len > 0)
+        else if (!audio_cur_tx_buf && audio_tx_buf1_len > 0)
         {
-            // transmit buf0 finished, buf1 contains new data
-            dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, tx_buf1, tx_buf1_len);
-            cur_tx_buf = true;
-            tx_buf0_len = 0;    // default length for next buffer
+            // transmit buf0 finished, transmit buf1 now because it contains new data
+            dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf1, audio_tx_buf1_len);
             // Notify samples requested
+            audio_cur_tx_buf = true;  // currently transmitting buf1, new samples will be fetched into buf0
+            audio_tx_buf0_len = 0;    // default length for next buffer
             if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
         } 
         else
@@ -192,13 +192,13 @@ void i2s_start_playback(i2s_notify_cb_t notify, void *param)
     notify_cb_param = param;
     i2s_dma_channel_irq_enable();
     pio_i2s_start();
-    if (cur_tx_buf)
+    if (audio_cur_tx_buf)
     {
-        dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, tx_buf1, tx_buf1_len);
+        dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf1, audio_tx_buf1_len);
     }
     else
     {
-        dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, tx_buf0, tx_buf0_len);
+        dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf0, audio_tx_buf0_len);
     }
 }
 

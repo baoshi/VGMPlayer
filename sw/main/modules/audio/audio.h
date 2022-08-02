@@ -27,6 +27,12 @@ int  audio_jack_detect(uint32_t now);
 bool audio_get_jack_state();
 void audio_jack_enable(bool enable);
 
+extern uint32_t  audio_tx_buf0[];
+extern uint32_t  audio_tx_buf0_len;
+extern uint32_t  audio_tx_buf1[];
+extern uint32_t  audio_tx_buf1_len;
+extern bool      audio_cur_tx_buf; 
+
 #ifdef __cplusplus
 }
 #endif

@@ -33,11 +33,11 @@
 #endif
 
 // Audio buffer
-uint32_t tx_buf0[AUDIO_MAX_BUFFER_LENGTH];
-uint32_t tx_buf0_len = 0;
-uint32_t tx_buf1[AUDIO_MAX_BUFFER_LENGTH];
-uint32_t tx_buf1_len = 0;
-bool cur_tx_buf = false;    // current buffer being tx'd. false:buf0; true:buf1
+uint32_t audio_tx_buf0[AUDIO_MAX_BUFFER_LENGTH];
+uint32_t audio_tx_buf0_len = 0;
+uint32_t audio_tx_buf1[AUDIO_MAX_BUFFER_LENGTH];
+uint32_t audio_tx_buf1_len = 0;
+bool audio_cur_tx_buf = false;    // current buffer being tx'd. false:buf0; true:buf1
 
 // Playback states
 typedef enum playback_states
@@ -136,16 +136,21 @@ void decoder_entry()
     {
         uint32_t cmd = multicore_fifo_pop_blocking();
         // find which buffer to receive new samples
-        uint32_t *obuf = cur_tx_buf ? tx_buf0 : tx_buf1;
-        uint32_t *olen = cur_tx_buf ? &tx_buf0_len : &tx_buf1_len;
+        uint32_t *obuf = audio_cur_tx_buf ? audio_tx_buf0 : audio_tx_buf1;
+        uint32_t *olen = audio_cur_tx_buf ? &audio_tx_buf0_len : &audio_tx_buf1_len;
         register int16_t l, ll, r, rr;
         register int x;
+        event_t e;
         switch (cmd)
         {
         case DECODER_GET_SAMPLE_BLOCKING:
             if (cmd != last_cmd) AUD_LOGD("Audio: core1: GET_SAMPLE_BLOCKING\n");
             finishing = false;
             *olen = playback_ctx.decoder->get_samples(playback_ctx.decoder, obuf, AUDIO_MAX_BUFFER_LENGTH);
+            // Notify new audio samples
+            e.code = EVT_AUDIO_SAMPLE_READY;
+            e.param = (void *)(!audio_cur_tx_buf);  // true if new samples in buf1, false if new samples in buf0
+            event_queue_push_back(&e, true);
             multicore_fifo_push_blocking(*olen);    // unblock caller
             break;
 
@@ -176,6 +181,10 @@ void decoder_entry()
                 else
                 {
                     last_sample = obuf[*olen - 1];   // keep last sampled value for rampdown
+                    // Notify new audio samples
+                    e.code = EVT_AUDIO_SAMPLE_READY;
+                    e.param = (void *)(!audio_cur_tx_buf);  // true if new samples in buf1, false if new samples in buf0
+                    event_queue_push_back(&e, true);
                 }
             }
             else if (silence_gap > 0)
@@ -224,6 +233,9 @@ void decoder_entry()
             if (cmd != last_cmd) AUD_LOGD("Audio: core1: GEN_SILENCE\n");
             memset(obuf, 0, AUDIO_MAX_BUFFER_LENGTH * sizeof(uint32_t));
             *olen = AUDIO_MAX_BUFFER_LENGTH;
+            e.code = EVT_AUDIO_SAMPLE_READY;
+            e.param = (void *)(!audio_cur_tx_buf);  // true if new samples in buf1, false if new samples in buf0
+            event_queue_push_back(&e, true);
             break;
 
         case DECODER_STOP:
@@ -296,13 +308,13 @@ void audio_start_playback()
 {
     AUD_LOGD("Audio: core0: start playback\n");
     _play_state = PLAY_NORMAL;
-    cur_tx_buf = false; // Cause the next DECODER_GET_SAMPLE_BLOCKING to fetch sample in tx_buf1
+    audio_cur_tx_buf = false; // Cause the next DECODER_GET_SAMPLE_BLOCKING to fetch sample in audio_tx_buf1
     multicore_fifo_push_blocking(DECODER_GET_SAMPLE_BLOCKING);
     multicore_fifo_pop_blocking();  // wait decoding thread to unblock when finish receive one buffer
-    if (tx_buf1_len > 0)
+    if (audio_tx_buf1_len > 0)
     {
-        // Prepare a ramp-up sample buffer in tx_buf0
-        uint32_t first_sample = tx_buf1[0];
+        // Prepare a ramp-up sample buffer in audio_tx_buf0
+        uint32_t first_sample = audio_tx_buf1[0];
         int16_t l = (int16_t)(first_sample >> 16);
         int16_t r = (int16_t)(first_sample & 0xffff);
         register int16_t ll, rr;
@@ -310,23 +322,23 @@ void audio_start_playback()
         {
             ll = l * i / (AUDIO_MAX_BUFFER_LENGTH - 1);
             rr = r * i / (AUDIO_MAX_BUFFER_LENGTH - 1);
-            tx_buf0[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
+            audio_tx_buf0[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
         }
-        tx_buf0_len = AUDIO_MAX_BUFFER_LENGTH;
+        audio_tx_buf0_len = AUDIO_MAX_BUFFER_LENGTH;
         wm8978_mute(false);
         // Send rampup buffer
-        i2s_send_buffer_blocking(tx_buf0, tx_buf0_len);
-        // Start auto sending from tx_buf1
-        cur_tx_buf = true;
+        i2s_send_buffer_blocking(audio_tx_buf0, audio_tx_buf0_len);
+        // Start auto sending from audio_tx_buf1
+        audio_cur_tx_buf = true;
         i2s_start_playback(i2s_notify_cb, 0);
-        // Meanwhile get more samples in tx_buf0
+        // Meanwhile get more samples in audio_tx_buf0
         multicore_fifo_push_blocking(DECODER_GET_SAMPLE);
     }
     else
     {
         // first buffer is 0 length. Just send a silent buffer and let i2s finish on its own
-        memset(tx_buf0, 0, AUDIO_MAX_BUFFER_LENGTH * sizeof(uint32_t));
-        tx_buf0_len = AUDIO_MAX_BUFFER_LENGTH;
+        memset(audio_tx_buf0, 0, AUDIO_MAX_BUFFER_LENGTH * sizeof(uint32_t));
+        audio_tx_buf0_len = AUDIO_MAX_BUFFER_LENGTH;
         wm8978_mute(false);
         i2s_start_playback(i2s_notify_cb, 0);
         multicore_fifo_push_blocking(DECODER_GET_SAMPLE);   // This will receive 0 length buffer again and finish

@@ -354,6 +354,18 @@ event_t const *player_handler(app_t *app, event_t const *evt)
             volume_popup_refresh(app);
         }
         break;
+    case EVT_AUDIO_SAMPLE_READY:
+        if ((bool)(evt->param))
+        {
+            // samples in buf1
+            PL_LOGD("Player: buf1 %d samples\n", audio_tx_buf1_len);
+        }
+        else
+        {
+            // samples in buf0
+            PL_LOGD("Player: buf0 %d samples\n", audio_tx_buf0_len);
+        }
+        break;
     default:
         r = evt;
         break;
