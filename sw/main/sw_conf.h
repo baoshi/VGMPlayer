@@ -19,6 +19,8 @@
 #define AUDIO_SONG_GAP_MS               2000
 
 
+#define POPUP_AUTO_CLOSE_MS             5000
+
 
 union nvram_t
 {

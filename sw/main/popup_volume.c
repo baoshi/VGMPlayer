@@ -6,6 +6,7 @@
 #include "lvsupp.h"
 #include "event_ids.h"
 #include "event_queue.h"
+#include "tick.h"
 #include "input.h"
 #include "audio.h"
 #include "app.h"
@@ -34,10 +35,10 @@
 
 static void volume_on_value_changed(lv_event_t *e)
 {
+    volume_t *ctx = (volume_t *)lv_event_get_user_data(e);
     lv_obj_t *slider = lv_event_get_target(e);
     int32_t s = lv_slider_get_value(slider);
-    int type = (int)lv_event_get_user_data(e);
-    if (type)
+    if (audio_get_jack_state())
     {
         // headphone
         config_set_dirty();
@@ -53,6 +54,7 @@ static void volume_on_value_changed(lv_event_t *e)
         VOL_LOGI("Volume: speaker set %d\n", s);
         audio_set_speaker_volume(s);
     }
+    if (ctx->timer_auto_close) tick_reset_timer_event(ctx->timer_auto_close);
 }
 
 
@@ -64,14 +66,14 @@ static void create_volume_popup(volume_t *ctx)
     {
         ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_headphone, 0, 63, config.volume_headphone);
         slider = lv_sliderbox_get_slider(ctx->popup);
-        lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, (void *)1);
+        lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, (void *)ctx);
         lv_group_add_obj(ctx->keypad_group, slider);
     }
     else
     {
         ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_speaker, 0, 63, config.volume_speaker);
         slider = lv_sliderbox_get_slider(ctx->popup);
-        lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, (void *)0);
+        lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, (void *)ctx);
         lv_group_add_obj(ctx->keypad_group, slider);
     }
 }
@@ -104,6 +106,9 @@ void volume_popup(app_t *app)
     input_enable_keypad_dev();
     // Create volume popup
     create_volume_popup(ctx);
+
+    // auto close event
+    ctx->timer_auto_close = tick_arm_timer_event(POPUP_AUTO_CLOSE_MS, false, EVT_CLOSE_VOLUME_POPUP, true);
 }
 
 
@@ -117,16 +122,23 @@ void volume_popup_refresh(app_t *app)
     lv_sliderbox_close(ctx->popup);
     // Create new volume popup
     create_volume_popup(ctx);
+    // reset autoclose timer
+    if (ctx->timer_auto_close) tick_reset_timer_event(ctx->timer_auto_close);
 }
 
 
 void volume_close(app_t *app)
 {
-    if (!app->busy)
+    if ((!app->busy) && config_is_dirty())
     {
         config_save();
     }
     volume_t *ctx = &(app->volume_ctx);
+    if (ctx->timer_auto_close != 0)
+    {
+        tick_disarm_timer_event(ctx->timer_auto_close);
+        ctx->timer_auto_close = 0;
+    }
     lv_group_remove_all_objs(ctx->keypad_group);
     lv_group_del(ctx->keypad_group);
     ctx->keypad_group = NULL;

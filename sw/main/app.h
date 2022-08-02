@@ -64,6 +64,7 @@ typedef struct brightness_s
     lv_obj_t *popup;
     lv_group_t *keypad_group;   // keypad input group
     void *prev_input;           // to save/restore input config 
+    int timer_auto_close;
 } brightness_t;
 
 
@@ -74,7 +75,8 @@ typedef struct volume_s
 {
     lv_obj_t *popup;
     lv_group_t *keypad_group;   // keypad input group
-    void *prev_input;           // to save/restore input config 
+    void *prev_input;           // to save/restore input config
+    int timer_auto_close;
 } volume_t;
 
 

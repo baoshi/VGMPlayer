@@ -96,11 +96,11 @@ void alert_popup(app_t *app, const void *icon, const char *text, int auto_close)
 void alert_close(app_t *app)
 {
     alert_t *ctx = &(app->alert_ctx);
-     if (ctx->timer_auto_close != 0)
+    if (ctx->timer_auto_close != 0)
     {
         tick_disarm_timer_event(ctx->timer_auto_close);
+        ctx->timer_auto_close = 0;
     }
-    ctx->timer_auto_close = 0;
     // disable input
     lv_group_remove_all_objs(ctx->keypad_group);
     lv_group_del(ctx->keypad_group);

@@ -7,6 +7,7 @@
 #include "event_ids.h"
 #include "event_queue.h"
 #include "input.h"
+#include "tick.h"
 #include "backlight.h"
 #include "app.h"
 
@@ -33,6 +34,7 @@
 
 static void brightness_on_value_changed(lv_event_t *e)
 {
+    brightness_t *ctx = (brightness_t *)lv_event_get_user_data(e);
     lv_obj_t *slider = lv_event_get_target(e);
     int32_t s = lv_slider_get_value(slider);
     s = s * 5 - 1;
@@ -42,6 +44,7 @@ static void brightness_on_value_changed(lv_event_t *e)
     config_set_dirty();
     BRT_LOGI("Brightness: set %d\n", config.backlight_brigntness_normal);
     backlight_set_direct(config.backlight_brigntness_normal);
+    if (ctx->timer_auto_close) tick_reset_timer_event(ctx->timer_auto_close);
 }
 
 
@@ -81,17 +84,25 @@ void brightness_popup(app_t *app)
     ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_brightness, 2, 20, s);
     lv_obj_t *slider = lv_sliderbox_get_slider(ctx->popup);
     lv_group_add_obj(ctx->keypad_group, slider);
-    lv_obj_add_event_cb(slider, brightness_on_value_changed, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(slider, brightness_on_value_changed, LV_EVENT_VALUE_CHANGED, (void *)ctx);
+
+    // auto close event
+    ctx->timer_auto_close = tick_arm_timer_event(POPUP_AUTO_CLOSE_MS, false, EVT_CLOSE_BRIGHTNESS_POPUP, true);
 }
 
 
 void brightness_close(app_t *app)
 {
-    if (!app->busy)
+    if ((!app->busy) && config_is_dirty())
     {
         config_save();
     }
     brightness_t *ctx = &(app->brightness_ctx);
+    if (ctx->timer_auto_close != 0)
+    {
+        tick_disarm_timer_event(ctx->timer_auto_close);
+        ctx->timer_auto_close = 0;
+    }
     lv_group_remove_all_objs(ctx->keypad_group);
     lv_group_del(ctx->keypad_group);
     ctx->keypad_group = NULL;

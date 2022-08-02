@@ -95,7 +95,8 @@
         "vector": "c",
         "ostream": "c",
         "iosfwd": "c",
-        "app.h": "c"
+        "app.h": "c",
+        "compare": "c"
     },
     "cmake.configureOnOpen": true
 }
