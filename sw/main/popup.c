@@ -2,6 +2,7 @@
 #include "sw_conf.h"
 #include "my_debug.h"
 #include "app.h"
+#include "popup.h"
 
 
 void close_all_popups(app_t *app)

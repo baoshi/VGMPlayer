@@ -32,6 +32,7 @@ add_subdirectory(modules/display)
 add_subdirectory(modules/disk)
 add_subdirectory(modules/audio)
 add_subdirectory(modules/eeprom)
+add_subdirectory(modules/nsfc)
 
 add_executable(${PROJ_NAME}
     my_debug.c
