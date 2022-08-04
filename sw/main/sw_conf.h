@@ -22,6 +22,9 @@
 #define POPUP_AUTO_CLOSE_MS             5000
 
 
+#define NSF_CACHE_SIZE                  8192
+#define NSF_OVER_SAMPLE_RATE            1
+
 union nvram_t
 {
     struct 

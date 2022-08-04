@@ -13,6 +13,7 @@
 #include "path_utils.h"
 #include "audio.h"
 #include "decoder_s16.h"
+#include "decoder_nsf.h"
 #include "catalog.h"
 #include "popup.h"
 #include "app.h"
@@ -51,7 +52,8 @@ enum
 enum
 {
     SONG_TYPE_UNKNOWN = 0,
-    SONG_TYPE_S16
+    SONG_TYPE_S16,
+    SONG_TYPE_NSF
 };
 
 
@@ -72,6 +74,11 @@ static uint8_t check_song(const char *file)
         if (0 == strcasecmp(ext, "s16"))
         {
             r = SONG_TYPE_S16;
+            break;
+        }
+        if (0 == strcasecmp(ext, "nsf"))
+        {
+            r = SONG_TYPE_NSF;
             break;
         }
     } while (0);
@@ -169,10 +176,11 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
 {
     do
     {
+        char fn[FF_MAX_LFN];
         // Don't want any popups on the screen
         close_all_popups(app);
         // Get file name at cursor
-        if (CAT_OK != catalog_get_entry(app->catalog, ctx->file, FF_LFN_BUF + 1, 0))
+        if (CAT_OK != catalog_get_entry(app->catalog, ctx->file, FF_LFN_BUF + 1, true, NULL))
         {
             PL_LOGD("Player: Unable to load entry from catalog\n");
             alert_popup(app, NULL, "File not accessible", 2000);
@@ -192,6 +200,9 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
         case SONG_TYPE_S16:
             STATE_TRAN(app, &(app->player_s16));
             break;
+        case SONG_TYPE_NSF:
+            STATE_TRAN(app, &(app->player_nsf));
+            break;
         }
     } while (0);
 }
@@ -206,9 +217,9 @@ static void player_on_play_next(app_t *app, player_t *ctx)
         uint8_t type;
         MY_ASSERT(ctx->nav_dir != 0);   // nav_dir == 0 means go back to browser.
         if (1 == ctx->nav_dir)
-            r = catalog_get_next_entry(app->catalog, false, false, ctx->file, FF_LFN_BUF + 1, &type);
+            r = catalog_get_next_entry(app->catalog, false, false, ctx->file, FF_LFN_BUF + 1, true, &type);
         else
-            r = catalog_get_prev_entry(app->catalog, false, false, ctx->file, FF_LFN_BUF + 1, &type);
+            r = catalog_get_prev_entry(app->catalog, false, false, ctx->file, FF_LFN_BUF + 1, true, &type);
         if ((CAT_OK == r) && (CAT_TYPE_FILE == type))
         {
             // found a file
@@ -233,7 +244,7 @@ static void player_on_play_next(app_t *app, player_t *ctx)
         catalog_move_cursor(app->catalog,
                             app->catalog_history_page[app->catalog_history_index],
                             app->catalog_history_selection[app->catalog_history_index]);
-        catalog_get_entry(app->catalog, 0, 0, 0);   // dummy get_entry to fetch cache
+        catalog_get_entry(app->catalog, 0, 0, false, NULL);   // dummy get_entry to fetch cache
         break;
     case CAT_ERR_FATFS:
         if (disk_present())
@@ -358,12 +369,12 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         if ((bool)(evt->param))
         {
             // samples in buf1
-            PL_LOGD("Player: buf1 %d samples\n", audio_tx_buf1_len);
+            //PL_LOGD("Player: buf1 %d samples\n", audio_tx_buf1_len);
         }
         else
         {
             // samples in buf0
-            PL_LOGD("Player: buf0 %d samples\n", audio_tx_buf0_len);
+            //PL_LOGD("Player: buf0 %d samples\n", audio_tx_buf0_len);
         }
         break;
     default:
@@ -467,6 +478,111 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         else
         {
             PL_LOGD("Player_S16: go to next song\n");
+            STATE_TRAN(app, &(app->player));
+            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+        }
+        break;
+    default:
+        r = evt;
+        break;
+    }
+    return r;
+}
+
+
+static void player_nsf_setup_input()
+{
+    // Buttons
+    input_disable_button_dev();
+    input_map_button(-1, 0, 0);
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_OPEN_VOLUME_POPUP);
+    input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
+    input_map_button(INPUT_KEY_PLAY, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_PLAY_CLICKED);
+    input_map_button(INPUT_KEY_UP, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_UP_CLICKED);
+    input_map_button(INPUT_KEY_DOWN, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_DOWN_CLICKED);
+    input_enable_button_dev();
+    // Keypad
+    input_map_keypad(-1, 0);
+    input_disable_keypad_dev();
+}
+
+
+event_t const *player_nsf_handler(app_t *app, event_t const *evt)
+{
+    event_t const *r = 0;
+    player_t *ctx = &(app->player_ctx);
+    switch (evt->code)
+    {
+    case EVT_ENTRY:
+        PL_LOGD("Player_NSF: entry\n");
+        player_nsf_setup_input();
+        ctx->nav_dir = 1;   // default next song direction
+        ctx->playing = false;
+        MY_ASSERT(ctx->decoder == 0);
+        ctx->decoder = (decoder_t *)decoder_nsf_create(ctx->file, 1);
+        // TODO: Handle error here
+        MY_ASSERT(ctx->decoder != 0);
+        audio_setup_playback(ctx->decoder);
+        audio_start_playback();
+        ctx->playing = true;
+        app->busy = true;
+        break;
+    case EVT_EXIT:
+        audio_finish_playback();
+        if (ctx->decoder)
+        {
+            decoder_nsf_destroy((decoder_nsf_t *)(ctx->decoder));
+            ctx->decoder = 0;
+        }
+        app->busy = false;
+        if (config_is_dirty())
+        {
+            config_save();
+        }
+        PL_LOGD("Player_NSF: audio finished\n");
+        PL_LOGD("Player_NSF: exit\n");
+        break;
+    case EVT_BUTTON_PLAY_CLICKED:
+        PL_LOGD("Player_NSF: play clicked\n");
+        if (ctx->playing)
+        {
+            audio_pause_playback();
+            ctx->playing = false;
+        } 
+        else
+        {
+            audio_resume_playback();
+            ctx->playing = true;
+        }
+        break;
+    case EVT_BUTTON_BACK_CLICKED:
+        PL_LOGD("Player_NSF: back clicked\n");
+        audio_stop_playback();
+        // Set navigation back, wait event EVT_AUDIO_SONG_ENDED to go back to browser_disk
+        ctx->nav_dir = 0;
+        break;
+    case EVT_BUTTON_UP_CLICKED:
+        PL_LOGD("Player_NSF: up clicked\n");
+        audio_stop_playback();
+        // Set navigation direction to -1, wait event EVT_AUDIO_SONG_ENDED to play next
+        ctx->nav_dir = -1;
+        break;
+    case EVT_BUTTON_DOWN_CLICKED:
+        PL_LOGD("Player_NSF: down clicked\n");
+        audio_stop_playback();
+        // Set navigation direction to 1, wait event EVT_AUDIO_SONG_ENDED to play next
+        ctx->nav_dir = 1;
+        break;
+    case EVT_AUDIO_SONG_ENDED:
+        PL_LOGD("Player_NSF: song endded\n");
+        if (0 == ctx->nav_dir)
+        {
+            PL_LOGD("Player_NSF: go back to browser_disk\n");
+            STATE_TRAN(app, &(app->browser_disk));
+        }
+        else
+        {
+            PL_LOGD("Player_NSF: go to next song\n");
             STATE_TRAN(app, &(app->player));
             EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         }

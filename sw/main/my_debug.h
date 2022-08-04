@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define DEBUG
+
 #define DBG_LEVEL_DBG   0x01
 #define DBG_LEVEL_WARN  0x02
 #define DBG_LEVEL_ERR   0x03

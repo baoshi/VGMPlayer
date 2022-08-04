@@ -96,7 +96,10 @@
         "ostream": "c",
         "iosfwd": "c",
         "app.h": "c",
-        "compare": "c"
+        "compare": "c",
+        "nsfreader_file_fatfs.h": "c",
+        "nsfreader.h": "c",
+        "nesfloat.h": "c"
     },
     "cmake.configureOnOpen": true
 }

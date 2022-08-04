@@ -12,11 +12,11 @@
 
 
 // defined in audio.c
-extern uint32_t  audio_tx_buf0[];
-extern uint32_t  audio_tx_buf0_len;
-extern uint32_t  audio_tx_buf1[];
-extern uint32_t  audio_tx_buf1_len;
-extern bool      audio_cur_tx_buf; 
+extern uint32_t audio_tx_buf0[];
+extern volatile int32_t audio_tx_buf0_len;
+extern uint32_t audio_tx_buf1[];
+extern volatile int32_t audio_tx_buf1_len;
+extern volatile bool audio_cur_tx_buf; 
 
 // i2s PIO program offset for cleanup
 uint pio_i2s_offset = 0;
@@ -52,33 +52,70 @@ static void i2s_dma_isr()
     if (dma_hw->I2S_DMA_INTS & (1u << DMA_CHANNEL_I2S_TX))  // interrupt because I2S TX finish
     {   
         dma_hw->I2S_DMA_INTS |= 1u << DMA_CHANNEL_I2S_TX;   // clear the interrupt request
-        if (audio_cur_tx_buf && audio_tx_buf0_len > 0)
+        if (audio_cur_tx_buf)
         {
-            // transmit buf1 finished, transmit buf0 now because it contains new data
-            dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf0, audio_tx_buf0_len);
-            // Notify samples requested
-            audio_cur_tx_buf = false; // currently transmitting buf0, new samples will be fetched into buf1
-            audio_tx_buf1_len = 0;    // default length for next buffer
-            if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
-        } 
-        else if (!audio_cur_tx_buf && audio_tx_buf1_len > 0)
-        {
-            // transmit buf0 finished, transmit buf1 now because it contains new data
-            dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf1, audio_tx_buf1_len);
-            // Notify samples requested
-            audio_cur_tx_buf = true;  // currently transmitting buf1, new samples will be fetched into buf0
-            audio_tx_buf0_len = 0;    // default length for next buffer
-            if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
-        } 
-        else
-        {
-            // No more data, no need DMA irq anymore
-            i2s_dma_channel_irq_disable();
-            // Notify playback finishing
-            // Note this is finishing instead of finished. There are still data in the FIFO. 
-            // Use i2s_stop_playback() to flush FIFO and finish playback.
-            if (nofity_cb) nofity_cb(I2S_NOTIFY_PLAYBACK_FINISHING, notify_cb_param);
+            if (audio_tx_buf0_len > 0)
+            {
+                // transmit buf1 finished, transmit buf0 now because it contains new data
+                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf0, audio_tx_buf0_len);
+                // Notify samples requested
+                audio_cur_tx_buf = false; // currently transmitting buf0, new samples will be fetched into buf1
+                audio_tx_buf1_len = -1;    // default length for next buffer
+                if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
+            }
+            else if (audio_tx_buf0_len < 0)
+            {
+                // buffer underrun
+                while (audio_tx_buf0_len < 0) { tight_loop_contents(); };
+                // transmit buf1 finished, transmit buf0 now because it contains new data
+                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf0, audio_tx_buf0_len);
+                // Notify samples requested
+                audio_cur_tx_buf = false; // currently transmitting buf0, new samples will be fetched into buf1
+                audio_tx_buf1_len = -1;    // default length for next buffer
+                if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
+            }
+            else
+            {
+                // No more data, no need DMA irq anymore
+                i2s_dma_channel_irq_disable();
+                // Notify playback finishing
+                // Note this is finishing instead of finished. There are still data in the FIFO. 
+                // Use i2s_stop_playback() to flush FIFO and finish playback.
+                if (nofity_cb) nofity_cb(I2S_NOTIFY_PLAYBACK_FINISHING, notify_cb_param);
+            }
         }
+        else 
+        {
+            if (audio_tx_buf1_len > 0)
+            {
+                // transmit buf0 finished, transmit buf1 now because it contains new data
+                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf1, audio_tx_buf1_len);
+                // Notify samples requested
+                audio_cur_tx_buf = true;  // currently transmitting buf1, new samples will be fetched into buf0
+                audio_tx_buf0_len = -1;    // default length for next buffer
+                if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
+            }
+            else if (audio_tx_buf1_len < 0)
+            {
+                // buffer underrun
+                while (audio_tx_buf1_len < 0) { tight_loop_contents(); };
+                // transmit buf0 finished, transmit buf1 now because it contains new data
+                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf1, audio_tx_buf1_len);
+                // Notify samples requested
+                audio_cur_tx_buf = true;  // currently transmitting buf1, new samples will be fetched into buf0
+                audio_tx_buf0_len = -1;    // default length for next buffer
+                if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
+            }
+            else
+            {
+                // No more data, no need DMA irq anymore
+                i2s_dma_channel_irq_disable();
+                // Notify playback finishing
+                // Note this is finishing instead of finished. There are still data in the FIFO. 
+                // Use i2s_stop_playback() to flush FIFO and finish playback.
+                if (nofity_cb) nofity_cb(I2S_NOTIFY_PLAYBACK_FINISHING, notify_cb_param);
+            }
+        } 
     }
 }
 

@@ -34,10 +34,10 @@
 
 // Audio buffer
 uint32_t audio_tx_buf0[AUDIO_MAX_BUFFER_LENGTH];
-uint32_t audio_tx_buf0_len = 0;
+volatile int32_t audio_tx_buf0_len = 0;
 uint32_t audio_tx_buf1[AUDIO_MAX_BUFFER_LENGTH];
-uint32_t audio_tx_buf1_len = 0;
-bool audio_cur_tx_buf = false;    // current buffer being tx'd. false:buf0; true:buf1
+volatile int32_t audio_tx_buf1_len = 0;
+volatile bool audio_cur_tx_buf = false;    // current buffer being tx'd. false:buf0; true:buf1
 
 // Playback states
 typedef enum playback_states
@@ -137,7 +137,7 @@ void decoder_entry()
         uint32_t cmd = multicore_fifo_pop_blocking();
         // find which buffer to receive new samples
         uint32_t *obuf = audio_cur_tx_buf ? audio_tx_buf0 : audio_tx_buf1;
-        uint32_t *olen = audio_cur_tx_buf ? &audio_tx_buf0_len : &audio_tx_buf1_len;
+        uint32_t *olen = audio_cur_tx_buf ? (uint32_t *)&audio_tx_buf0_len : (uint32_t *)&audio_tx_buf1_len;
         register int16_t l, ll, r, rr;
         register int x;
         event_t e;
@@ -151,7 +151,7 @@ void decoder_entry()
             e.code = EVT_AUDIO_SAMPLE_READY;
             e.param = (void *)(!audio_cur_tx_buf);  // true if new samples in buf1, false if new samples in buf0
             event_queue_push_back(&e, true);
-            multicore_fifo_push_blocking(*olen);    // unblock caller
+            multicore_fifo_push_blocking(0);    // unblock caller
             break;
 
         case DECODER_GET_SAMPLE:

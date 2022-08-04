@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define AUDIO_MAX_BUFFER_LENGTH 1024
+#define AUDIO_MAX_BUFFER_LENGTH 2048
 
 void audio_preinit();
 void audio_postinit();
@@ -28,10 +28,10 @@ bool audio_get_jack_state();
 void audio_jack_enable(bool enable);
 
 extern uint32_t  audio_tx_buf0[];
-extern uint32_t  audio_tx_buf0_len;
+extern volatile int32_t audio_tx_buf0_len;
 extern uint32_t  audio_tx_buf1[];
-extern uint32_t  audio_tx_buf1_len;
-extern bool      audio_cur_tx_buf; 
+extern volatile int32_t audio_tx_buf1_len;
+extern volatile bool audio_cur_tx_buf; 
 
 #ifdef __cplusplus
 }

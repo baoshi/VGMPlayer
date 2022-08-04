@@ -36,8 +36,7 @@ void app_ctor(app_t* app)
         state_ctor(&(app->browser_baddisk), "browser_baddisk", &(app->browser), (event_handler_t)browser_baddisk_handler);
     state_ctor(&(app->player), "player", &((hsm_t*)app)->top, (event_handler_t)player_handler);
         state_ctor(&(app->player_s16), "player_s16", &(app->player), (event_handler_t)player_s16_handler);
-    // alert is created on demand using alert_create()
-    // state_ctor(&(app->alert), "alert", &(app->alert), (event_handler_t)alert_handler);
+        state_ctor(&(app->player_nsf), "player_nsf", &(app->player), (event_handler_t)player_nsf_handler);
 }
 
 
@@ -49,7 +48,7 @@ int main()
     // If using memory debugger
     MY_MEM_INIT();
     // main clock, calculated using vcocalc.py, set sys clock to 120MHz
-    set_sys_clock_pll(1440 * MHZ, 6, 2);
+    set_sys_clock_pll(1440 * MHZ, 6, 2);    // 120MHz
     // tick timer and event queue
     tick_init();
     event_queue_init(10);

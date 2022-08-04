@@ -54,6 +54,7 @@ add_executable(${PROJ_NAME}
     popup_volume.c
     popup_alert.c
     decoder_s16.c
+    decoder_nsf.c
     main.c
 )
 

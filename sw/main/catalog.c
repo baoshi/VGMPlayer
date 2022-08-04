@@ -722,8 +722,9 @@ int catalog_move_cursor(catalog_t *cat, int page, int index)
 
 // get content of an entry
 // read from cache if already read
-int catalog_get_entry(catalog_t *cat, char *out, int len, uint8_t *type)
+int catalog_get_entry(catalog_t *cat, char *out, int len, bool absolute, uint8_t *type)
 {
+    char fn[FF_MAX_LFN + 1];
     int r = CAT_OK;
     do
     {
@@ -747,13 +748,22 @@ int catalog_get_entry(catalog_t *cat, char *out, int len, uint8_t *type)
         }
         if ('!' == cat->cache[0])
         {
-            if (out != 0) path_copy(&(cat->cache[1]), out, len);
+            if (out != 0) path_copy(&(cat->cache[1]), fn, len);
             if (type != 0) *type = CAT_TYPE_DIRECTORY;
         }
         else
         {
-            if (out != 0) path_copy(cat->cache, out, len);
+            if (out != 0) path_copy(cat->cache, fn, len);
             if (type != 0) *type = CAT_TYPE_FILE;
+        }
+        // return absolute or relative path
+        if (absolute)
+        {
+            path_concatenate(cat->dir, fn, out, len, false);
+        }
+        else
+        {
+            strncpy(out, fn, len);
         }
     } while (0);
     return r;
@@ -765,7 +775,7 @@ int catalog_get_entry(catalog_t *cat, char *out, int len, uint8_t *type)
 //   in_page = true: return EOF; in_page = false: advance to the next page
 // when at the end of the catalog:
 //   wrap = true: wrap to the very beginning of the catalog; wrap = false: return EOF
-int catalog_get_next_entry(catalog_t *cat, bool in_page, bool wrap, char *out, int len, uint8_t *type)
+int catalog_get_next_entry(catalog_t *cat, bool in_page, bool wrap, char *out, int len, bool absolute, uint8_t *type)
 {
     int r = CAT_OK;
     do
@@ -818,7 +828,7 @@ int catalog_get_next_entry(catalog_t *cat, bool in_page, bool wrap, char *out, i
             }
         }
     } while (0);
-    if (CAT_OK == r) r = catalog_get_entry(cat, out, len, type);
+    if (CAT_OK == r) r = catalog_get_entry(cat, out, len, absolute, type);
     return r;
 }
 
@@ -828,7 +838,7 @@ int catalog_get_next_entry(catalog_t *cat, bool in_page, bool wrap, char *out, i
 //   in_page = true: return EOF; in_page = false: move up to the last entry of previous page
 // when at the very beginning of the catalog:
 //   wrap = true: wrap to the last entry; wrap = false: return EOF
-int catalog_get_prev_entry(catalog_t *cat, bool in_page, bool wrap, char *out, int len, uint8_t *type)
+int catalog_get_prev_entry(catalog_t *cat, bool in_page, bool wrap, char *out, int len, bool absolute, uint8_t *type)
 {
     // vs. move_next: 
     // in move_next, if cache is empty, we will fetch cache instead of move forward
@@ -884,7 +894,7 @@ int catalog_get_prev_entry(catalog_t *cat, bool in_page, bool wrap, char *out, i
         }
     } while (0);
     // read entry
-    if (CAT_OK == r) r = catalog_get_entry(cat, out, len, type);
+    if (CAT_OK == r) r = catalog_get_entry(cat, out, len, absolute, type);
     return r;
 }
 

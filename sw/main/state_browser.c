@@ -285,7 +285,7 @@ static void populate_file_list(app_t *me, int mode)
     catalog_move_cursor(me->catalog, page, 0);
     uint8_t type;
     char name[FF_LFN_BUF + 3];
-    while (CAT_OK == catalog_get_next_entry(me->catalog, true, false, name + 1, FF_LFN_BUF + 1, &type))
+    while (CAT_OK == catalog_get_next_entry(me->catalog, true, false, name + 1, FF_LFN_BUF + 1, false, &type))
     {
         if (type == CAT_TYPE_DIRECTORY)
         {

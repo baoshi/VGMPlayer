@@ -28,7 +28,7 @@ enum
 
 typedef struct _catalog_s
 {
-    char        dir[FF_LFN_BUF + 1];    // listing directory
+    char        dir[FF_LFN_BUF + 1];    // catalog directory
     FIL         fd;                     // catalog file handle
     uint16_t    checksum;               // checksum
     int         count;                  // total count under this directory
@@ -47,10 +47,10 @@ int catalog_close(catalog_t *cat);
 
 int catalog_move_cursor(catalog_t *cat, int page, int index);
 
-int catalog_get_entry(catalog_t *cat, char *out, int len, uint8_t *type);
+int catalog_get_entry(catalog_t *cat, char *out, int len, bool absolute, uint8_t *type);
 
-int catalog_get_next_entry(catalog_t *cat, bool in_page, bool wrap, char *out, int len, uint8_t *type);
+int catalog_get_next_entry(catalog_t *cat, bool in_page, bool wrap, char *out, int len, bool absolute, uint8_t *type);
 
-int catalog_get_prev_entry(catalog_t *cat, bool in_page, bool wrap, char *out, int len, uint8_t *type);
+int catalog_get_prev_entry(catalog_t *cat, bool in_page, bool wrap, char *out, int len, bool absolute, uint8_t *type);
 
 FRESULT catalog_get_fatfs_error();
