@@ -7,6 +7,7 @@
 #include "event_ids.h"
 #include "event_queue.h"
 #include "input.h"
+#include "popup.h"
 #include "backlight.h"
 #include "app.h"
 

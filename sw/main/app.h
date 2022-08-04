@@ -54,6 +54,7 @@ typedef struct player_s
 
 event_t const *player_handler(app_t *app, event_t const *evt);
 event_t const *player_s16_handler(app_t *app, event_t const *evt);
+event_t const *player_nsf_handler(app_t *app, event_t const *evt);
 
 
 //
@@ -100,7 +101,7 @@ struct app_s
     state_t browser, browser_disk, browser_nodisk, browser_baddisk;
     browser_t browser_ctx;
 
-    state_t player, player_s16, player_s16_playing, player_s16_paused; 
+    state_t player, player_s16, player_nsf;
     player_t player_ctx;
 
     // popups
