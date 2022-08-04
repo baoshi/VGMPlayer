@@ -10,7 +10,6 @@ typedef struct decoder_s16_s
     char const *fn;
     FIL fd;
     uint32_t samples;
-    uint16_t buffer[AUDIO_MAX_BUFFER_LENGTH];
 } decoder_s16_t;
 
 

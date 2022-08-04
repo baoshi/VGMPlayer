@@ -27,14 +27,15 @@
 
 uint32_t decoder_s16_get_samples(decoder_s16_t *me, uint32_t *buf, uint32_t len)
 {
+    uint16_t buffer[AUDIO_MAX_BUFFER_LENGTH];
     // For len uint32_t samples, we need to read len uint16_t data, or len * 2 uint8_t data
     FRESULT fr;
     UINT ret = 0;
-    fr = f_read(&(me->fd), me->buffer, len * 2, &ret);
+    fr = f_read(&(me->fd), buffer, len * 2, &ret);
     ret = ret / 2;
     for (int i = 0; i < ret; ++i)
     {
-        buf[i] = (((uint32_t)(me->buffer[i])) << 16) | (me->buffer[i]);
+        buf[i] = (((uint32_t)(buffer[i])) << 16) | (buffer[i]);
     }
     S16_LOGD("S16: return %d samples\n", ret);
     return (uint32_t)ret;
