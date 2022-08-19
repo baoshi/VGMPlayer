@@ -54,7 +54,7 @@ add_executable(${PROJ_NAME}
     popup_volume.c
     popup_alert.c
     decoder_s16.c
-    decoder_nsf.c
+    decoder_vgm.c
     main.c
 )
 
@@ -70,7 +70,7 @@ target_link_libraries(${PROJ_NAME}
     disk
     audio
     eeprom
-    nsf
+    vgmdec
 )
 
 #target_compile_definitions(${PROJ_NAME} PRIVATE PICO_DEBUG_MALLOC=1)

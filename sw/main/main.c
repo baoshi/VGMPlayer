@@ -36,7 +36,7 @@ void app_ctor(app_t* app)
         state_ctor(&(app->browser_baddisk), "browser_baddisk", &(app->browser), (event_handler_t)browser_baddisk_handler);
     state_ctor(&(app->player), "player", &((hsm_t*)app)->top, (event_handler_t)player_handler);
         state_ctor(&(app->player_s16), "player_s16", &(app->player), (event_handler_t)player_s16_handler);
-        state_ctor(&(app->player_nsf), "player_nsf", &(app->player), (event_handler_t)player_nsf_handler);
+        state_ctor(&(app->player_vgm), "player_vgm", &(app->player), (event_handler_t)player_vgm_handler);
 }
 
 

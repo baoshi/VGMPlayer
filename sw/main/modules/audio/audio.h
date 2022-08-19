@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define AUDIO_MAX_BUFFER_LENGTH 2048
+#define AUDIO_MAX_BUFFER_LENGTH 1024
 
 void audio_preinit();
 void audio_postinit();

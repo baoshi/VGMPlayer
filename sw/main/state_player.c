@@ -13,7 +13,7 @@
 #include "path_utils.h"
 #include "audio.h"
 #include "decoder_s16.h"
-#include "decoder_nsf.h"
+#include "decoder_vgm.h"
 #include "catalog.h"
 #include "popup.h"
 #include "app.h"
@@ -53,7 +53,7 @@ enum
 {
     SONG_TYPE_UNKNOWN = 0,
     SONG_TYPE_S16,
-    SONG_TYPE_NSF
+    SONG_TYPE_VGM
 };
 
 
@@ -76,9 +76,9 @@ static uint8_t check_song(const char *file)
             r = SONG_TYPE_S16;
             break;
         }
-        if (0 == strcasecmp(ext, "nsf"))
+        if (0 == strcasecmp(ext, "vgm"))
         {
-            r = SONG_TYPE_NSF;
+            r = SONG_TYPE_VGM;
             break;
         }
     } while (0);
@@ -200,8 +200,8 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
         case SONG_TYPE_S16:
             STATE_TRAN(app, &(app->player_s16));
             break;
-        case SONG_TYPE_NSF:
-            STATE_TRAN(app, &(app->player_nsf));
+        case SONG_TYPE_VGM:
+            STATE_TRAN(app, &(app->player_vgm));
             break;
         }
     } while (0);
@@ -490,7 +490,7 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
 }
 
 
-static void player_nsf_setup_input()
+static void player_vgm_setup_input()
 {
     // Buttons
     input_disable_button_dev();
@@ -507,20 +507,20 @@ static void player_nsf_setup_input()
 }
 
 
-event_t const *player_nsf_handler(app_t *app, event_t const *evt)
+event_t const *player_vgm_handler(app_t *app, event_t const *evt)
 {
     event_t const *r = 0;
     player_t *ctx = &(app->player_ctx);
     switch (evt->code)
     {
     case EVT_ENTRY:
-        PL_LOGD("Player_NSF: entry\n");
-        player_nsf_setup_input();
+        PL_LOGD("Player_VGM: entry\n");
+        player_vgm_setup_input();
         ctx->nav_dir = 1;   // default next song direction
         ctx->playing = false;
         MY_ASSERT(ctx->decoder == 0);
-        ctx->decoder = (decoder_t *)decoder_nsf_create(ctx->file, 1);
-        // TODO: Handle error here
+        ctx->decoder = (decoder_t *)decoder_vgm_create(ctx->file);
+        // TODO: Handle error here?
         MY_ASSERT(ctx->decoder != 0);
         audio_setup_playback(ctx->decoder);
         audio_start_playback();
@@ -531,7 +531,7 @@ event_t const *player_nsf_handler(app_t *app, event_t const *evt)
         audio_finish_playback();
         if (ctx->decoder)
         {
-            decoder_nsf_destroy((decoder_nsf_t *)(ctx->decoder));
+            decoder_vgm_destroy((decoder_vgm_t *)(ctx->decoder));
             ctx->decoder = 0;
         }
         app->busy = false;
@@ -539,11 +539,11 @@ event_t const *player_nsf_handler(app_t *app, event_t const *evt)
         {
             config_save();
         }
-        PL_LOGD("Player_NSF: audio finished\n");
-        PL_LOGD("Player_NSF: exit\n");
+        PL_LOGD("Player_VGM: audio finished\n");
+        PL_LOGD("Player_VGM: exit\n");
         break;
     case EVT_BUTTON_PLAY_CLICKED:
-        PL_LOGD("Player_NSF: play clicked\n");
+        PL_LOGD("Player_VGM: play clicked\n");
         if (ctx->playing)
         {
             audio_pause_playback();
@@ -556,33 +556,33 @@ event_t const *player_nsf_handler(app_t *app, event_t const *evt)
         }
         break;
     case EVT_BUTTON_BACK_CLICKED:
-        PL_LOGD("Player_NSF: back clicked\n");
+        PL_LOGD("Player_VGM: back clicked\n");
         audio_stop_playback();
         // Set navigation back, wait event EVT_AUDIO_SONG_ENDED to go back to browser_disk
         ctx->nav_dir = 0;
         break;
     case EVT_BUTTON_UP_CLICKED:
-        PL_LOGD("Player_NSF: up clicked\n");
+        PL_LOGD("Player_VGM: up clicked\n");
         audio_stop_playback();
         // Set navigation direction to -1, wait event EVT_AUDIO_SONG_ENDED to play next
         ctx->nav_dir = -1;
         break;
     case EVT_BUTTON_DOWN_CLICKED:
-        PL_LOGD("Player_NSF: down clicked\n");
+        PL_LOGD("Player_VGM: down clicked\n");
         audio_stop_playback();
         // Set navigation direction to 1, wait event EVT_AUDIO_SONG_ENDED to play next
         ctx->nav_dir = 1;
         break;
     case EVT_AUDIO_SONG_ENDED:
-        PL_LOGD("Player_NSF: song endded\n");
+        PL_LOGD("Player_VGM: song endded\n");
         if (0 == ctx->nav_dir)
         {
-            PL_LOGD("Player_NSF: go back to browser_disk\n");
+            PL_LOGD("Player_VGM: go back to browser_disk\n");
             STATE_TRAN(app, &(app->browser_disk));
         }
         else
         {
-            PL_LOGD("Player_NSF: go to next song\n");
+            PL_LOGD("Player_VGM: go to next song\n");
             STATE_TRAN(app, &(app->player));
             EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
         }
