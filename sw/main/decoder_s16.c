@@ -1,6 +1,7 @@
 #include <string.h>
 #include "my_debug.h"
 #include "my_mem.h"
+#include "sw_conf.h"
 #include "decoder_s16.h"
 
 

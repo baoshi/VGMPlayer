@@ -111,6 +111,8 @@ void audio_postinit()
 {
     AUD_LOGD("Audio: PostInit @ %d\n", tick_millis());
     wm8978_postinit();
+    audio_set_headphone_volume(config.volume_headphone);
+    audio_set_speaker_volume(config.volume_speaker);
     audio_jack_enable(true);
 }
 

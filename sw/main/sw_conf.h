@@ -16,13 +16,14 @@
 #define CATALOG_HISTORY_DEPTH           10
 
 #define AUDIO_SAMPLE_RATE               44100
+#define AUDIO_MAX_BUFFER_LENGTH         1470
 #define AUDIO_SONG_GAP_MS               2000
 
 
 #define POPUP_AUTO_CLOSE_MS             5000
 
 
-#define VGM_CACHE_SIZE                  8192
+#define VGM_CACHE_SIZE                  4096
 
 
 union nvram_t
