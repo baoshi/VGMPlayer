@@ -1,5 +1,6 @@
 #include <string.h>
 #include <pico/multicore.h>
+#include <pico/time.h>
 #include <hardware/gpio.h>
 #include "hw_conf.h"
 #include "sw_conf.h"
@@ -38,6 +39,8 @@ volatile int32_t audio_tx_buf0_len = 0;
 uint32_t audio_tx_buf1[AUDIO_MAX_BUFFER_LENGTH];
 volatile int32_t audio_tx_buf1_len = 0;
 volatile bool audio_cur_tx_buf = false;    // current buffer being tx'd. false:buf0; true:buf1
+
+absolute_time_t t1, t2, t3;
 
 // Playback states
 typedef enum playback_states
@@ -161,7 +164,11 @@ void decoder_entry()
             if (!finishing)
             {
                 // decoder not finished, continue get sample
+                t1 = get_absolute_time();
                 *olen = playback_ctx.decoder->get_samples(playback_ctx.decoder, obuf, AUDIO_MAX_BUFFER_LENGTH);
+                t2 = get_absolute_time();
+                int32_t us = (int32_t)absolute_time_diff_us(t1, t2);
+                AUD_LOGD("Audio: %d, %d\n", us);
                 if (*olen == 0)
                 {
                     // no more samples. we will prepare rampdown buffer then finish
@@ -258,6 +265,7 @@ void decoder_entry()
     multicore_fifo_push_blocking(0);    // Core0 may wait for thread exit
     AUD_LOGD("Audio: core1: exit\n");
 }
+
 
 
 void i2s_notify_cb(int notify, void *param)

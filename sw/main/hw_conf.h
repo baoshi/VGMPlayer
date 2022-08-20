@@ -29,8 +29,8 @@
 #define ST7789_CS_PIN           4
 #define ST7789_DC_PIN           3
 #define ST7789_RST_PIN          5
-#define ST7789_DMA_IRQ          DMA_IRQ_0
-#define ST7789_DMA_INTS         ints0
+#define ST7789_DMA_IRQ          DMA_IRQ_1
+#define ST7789_DMA_INTS         ints1
 // Check RP2040 Datasheet for slice and channel for PWM
 #define ST7789_BCKL_PIN         8
 #define ST7789_BCKL_PWM_SLICE   4
@@ -50,8 +50,8 @@
 #define I2S_MCLK_PIN            21
 #define I2S_PIO                 pio0            // Use pio0 for I2S
 #define I2S_PIO_SM              0               // Use statement machine 0
-#define I2S_DMA_IRQ             DMA_IRQ_1
-#define I2S_DMA_INTS            ints1
+#define I2S_DMA_IRQ             DMA_IRQ_0
+#define I2S_DMA_INTS            ints0
 #define JACK_OUTEN_PIN          20              // Audio jack output enable (active high), controls MAX9090B
 #define JACK_DETECTION_PIN      25              // Jack detection, high when jack inserted
 #define JACK_DETECTION_ADC_PIN  26              // Backup jack detection using ADC
@@ -59,11 +59,12 @@
 //
 // DMA channel allocation
 //
-#define DMA_CHANNEL_SDCARD_SPI_TX   0
-#define DMA_CHANNEL_SDCARD_SPI_RX   1
-#define DMA_CHANNEL_ST7789_SPI_TX   2
-#define DMA_CHANNEL_ST7789_SPI_RX   3
-#define DMA_CHANNEL_I2S_TX          4
+#define DMA_CHANNEL_I2S_TX          0
+#define DMA_CHANNEL_SDCARD_SPI_TX   1
+#define DMA_CHANNEL_SDCARD_SPI_RX   2
+#define DMA_CHANNEL_ST7789_SPI_TX   3
+#define DMA_CHANNEL_ST7789_SPI_RX   4
+
 
 
 #ifdef __cplusplus

@@ -42,9 +42,10 @@ event_t const *browser_baddisk_handler(app_t *app, event_t const *evt);
 //
 typedef struct player_s
 {
-    lv_obj_t* screen;
-    lv_obj_t* lbl_top;      // Top indicators
-    lv_obj_t* lbl_bottom;   // Bottom indicators
+    lv_obj_t *screen;
+    lv_obj_t *lbl_top;      // Top indicators
+    lv_obj_t *lbl_bottom;   // Bottom indicators
+    lv_obj_t *lbl_status;   
     int timer_ui_update;    // UI update timer
     char file[FF_LFN_BUF + 1];
     int nav_dir;            // file navigation direction. 1 = next, -1 = previous, 0 = go back to browser_disk

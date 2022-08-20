@@ -87,7 +87,6 @@ static void i2s_dma_isr()
             else if (audio_tx_buf0_len < 0)
             {
                 // buffer underrun
-                I2S_LOGW("I2S: buffer underrun\n");
                 while (audio_tx_buf0_len < 0) { tight_loop_contents(); };
                 // transmit buf1 finished, transmit buf0 now because it contains new data
                 dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf0, audio_tx_buf0_len);
@@ -119,7 +118,6 @@ static void i2s_dma_isr()
             }
             else if (audio_tx_buf1_len < 0)
             {
-                I2S_LOGW("I2S: buffer underrun\n");
                 // buffer underrun
                 while (audio_tx_buf1_len < 0) { tight_loop_contents(); };
                 // transmit buf0 finished, transmit buf1 now because it contains new data
@@ -179,6 +177,7 @@ static void pio_i2s_flush()
 
 void i2s_init()
 {
+    I2S_LOGD("I2S: init\n");
     // Set up I2S PIO program
     pio_sm_claim(I2S_PIO, I2S_PIO_SM);
     pio_i2s_offset = pio_add_program(I2S_PIO, &pio_i2s_program);
@@ -223,14 +222,15 @@ void i2s_init()
         false                       // Don't start yet
     );
     // Tell the DMA to raise IRQ when the channel finishes a block
-    irq_add_shared_handler(I2S_DMA_IRQ, i2s_dma_isr, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
-    // It is possible I2S_DMA_IRQ and ST7789_DMA_IRQ are set to use same IRQ, just blindly enable it. Don't disable in the future
+    irq_set_exclusive_handler(I2S_DMA_IRQ, i2s_dma_isr);
+    irq_set_priority(I2S_DMA_IRQ, 0x00);
     irq_set_enabled(I2S_DMA_IRQ, true);
 }
 
 
 void i2s_deinit()
 {
+    I2S_LOGD("I2S: deinit\n");
     // Disable DMA irq
     i2s_dma_channel_irq_disable();
     // remove IRQ handler (internally will disable IRQ before removing then restore)

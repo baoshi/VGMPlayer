@@ -141,6 +141,11 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_label_set_text(ctx->lbl_top, "");
+    // Testing status
+    ctx->lbl_status = lv_label_create(ctx->screen);
+    lv_obj_set_width(ctx->lbl_status, 240);
+    lv_obj_align(ctx->lbl_status, LV_ALIGN_CENTER, 0, 0);
+    lv_label_set_text(ctx->lbl_status, "");
     // Create bottom label
     ctx->lbl_bottom = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_bottom, 240);
@@ -382,12 +387,17 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         if ((bool)(evt->param))
         {
             // samples in buf1
-            //PL_LOGD("Player: buf1 %d samples\n", audio_tx_buf1_len);
+            // PL_LOGD("Player: buf1 %d samples\n", audio_tx_buf1_len);
+            char txt[16];
+            sprintf(txt, "Buffer: %d", audio_tx_buf1_len);
+            //lv_label_set_text(ctx->lbl_status, txt);
         }
         else
         {
             // samples in buf0
-            //PL_LOGD("Player: buf0 %d samples\n", audio_tx_buf0_len);
+            char txt[16];
+            sprintf(txt, "Buffer: %d", audio_tx_buf0_len);
+            //lv_label_set_text(ctx->lbl_status, txt);
         }
         break;
     default:

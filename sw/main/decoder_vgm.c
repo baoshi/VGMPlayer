@@ -42,8 +42,8 @@ static uint32_t decoder_vgm_get_samples(decoder_vgm_t *ctx, uint32_t *buf, uint3
     }
     absolute_time_t end = get_absolute_time();
     int64_t us = absolute_time_diff_us(start, end);
-    //if (us > 1000000 * len / 44100)
-    //    VGM_LOGI("VGM: %d samples in %u us\n", samples, us);
+    if (us > 1000000 * len / 44100)
+        VGM_LOGW("VGM: %d samples in %u us\n", samples, us);
     return (uint32_t)samples;
 }
 
