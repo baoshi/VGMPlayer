@@ -23,7 +23,8 @@ enum
     EVT_CLOSE_ALERT,                // Alert popup ask to close by timer or manually
 
     EVT_AUDIO_SAMPLE_READY,         // Audio samples are ready. Parameter is audio_buffer_t pointer
-    EVT_AUDIO_SONG_ENDED,           // Audio decoding ended (application need call audio_finish_playback())
+    EVT_AUDIO_SONG_TERMINATED,      // Audio decoding ended (application need call audio_finish_playback())
+    EVT_AUDIO_SONG_FINISHED,
 
     EVT_HEADPHONE_PLUGGED,
     EVT_HEADPHONE_UNPLUGGED,
@@ -32,5 +33,6 @@ enum
     EVT_BROWSER_PLAY_CLICKED,
 
     EVT_PLAYER_UI_UPDATE,
-    EVT_PLAYER_PLAY_NEXT,
+    EVT_PLAYER_PLAY_NEXT_OR_ALERT,
+    EVT_PLAYER_PLAY_NEXT_OR_BACK
 };

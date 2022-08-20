@@ -100,7 +100,9 @@
         "nsfreader_file_fatfs.h": "c",
         "nsfreader.h": "c",
         "nesfloat.h": "c",
-        "file_reader_cached_fatfs.h": "c"
+        "file_reader_cached_fatfs.h": "c",
+        "platform.h": "c",
+        "nesapu.h": "c"
     },
     "cmake.configureOnOpen": true
 }

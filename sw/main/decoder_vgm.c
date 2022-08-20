@@ -8,7 +8,6 @@
 #include "decoder_vgm.h"
 
 
-
 #ifndef VGM_DEBUG
 #  define VGM_DEBUG 1
 #endif
@@ -32,18 +31,19 @@
 static uint32_t decoder_vgm_get_samples(decoder_vgm_t *ctx, uint32_t *buf, uint32_t len)
 {
     int16_t samples;
-    uint16_t buffer[AUDIO_MAX_BUFFER_LENGTH];
+    uint16_t nibble;
     MY_ASSERT(len <= AUDIO_MAX_BUFFER_LENGTH);
     absolute_time_t start = get_absolute_time();
-    samples = vgm_get_samples(ctx->vgm, buffer, len);
+    samples = vgm_get_samples(ctx->vgm, ctx->buffer, len);
     for (int16_t i = 0; i < samples; ++i)
     {
-        buf[i] = (((uint32_t)(buffer[i])) << 16) | (buffer[i]);
+        nibble = (uint16_t)(ctx->buffer[i]);
+        buf[i] = (((uint32_t)nibble) << 16) | nibble;
     }
     absolute_time_t end = get_absolute_time();
     int64_t us = absolute_time_diff_us(start, end);
-    if (us > 1000000 * len / 44100)
-        VGM_LOGD("VGM: %d samples in %u us\n", samples, us);
+    //if (us > 1000000 * len / 44100)
+    //    VGM_LOGI("VGM: %d samples in %u us\n", samples, us);
     return (uint32_t)samples;
 }
 
@@ -81,7 +81,6 @@ decoder_vgm_t * decoder_vgm_create(char const *file)
         uint16_t buffer[AUDIO_MAX_BUFFER_LENGTH];
         int16_t samples = vgm_get_samples(decoder->vgm, buffer, AUDIO_MAX_BUFFER_LENGTH);
     } while (0);
-
     return decoder;
 }
 

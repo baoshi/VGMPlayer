@@ -208,7 +208,7 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
 }
 
 
-static void player_on_play_next(app_t *app, player_t *ctx)
+static void player_on_play_next(app_t *app, player_t *ctx, bool alert_or_back)
 {
     int r;
     do
@@ -245,6 +245,14 @@ static void player_on_play_next(app_t *app, player_t *ctx)
                             app->catalog_history_page[app->catalog_history_index],
                             app->catalog_history_selection[app->catalog_history_index]);
         catalog_get_entry(app->catalog, 0, 0, false, NULL);   // dummy get_entry to fetch cache
+        if (alert_or_back)
+        {
+            alert_popup(app, NULL, "No more file", 1000);
+        }
+        else
+        {
+            STATE_TRAN(app, &(app->browser_disk));
+        }
         break;
     case CAT_ERR_FATFS:
         if (disk_present())
@@ -279,8 +287,10 @@ event_t const *player_handler(app_t *app, event_t const *evt)
             Update top bar
         EVT_PLAY_CLICKED:
             Play song
-        EVT_PLAYER_PLAY_NEXT:
+        EVT_PLAYER_PLAY_NEXT_OR_ALERT:
             Find next file (can be next or previous depend on direction) and play
+        EVT_PLAYER_PLAY_NEXT_OR_BACK:
+            Find next file and play, or if not found, go back browser_disk
         EVT_PLAYER_UP_CLICKED:
             Set navigation direction to up (prev) and play next
         EVT_PLAYER_DOWN_CLICKED:
@@ -312,6 +322,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         player_on_entry(ctx);
         ctx->nav_dir = 1;  // default to play next
         ctx->decoder = 0;
+        EQ_QUICK_PUSH(EVT_BUTTON_PLAY_CLICKED);
         break;
     case EVT_EXIT:
         player_on_exit(ctx);
@@ -319,7 +330,6 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         break;
     case EVT_START:
         PL_LOGD("Player: start\n");
-        EQ_QUICK_PUSH(EVT_BUTTON_PLAY_CLICKED);
         break;
     case EVT_PLAYER_UI_UPDATE:
         player_on_ui_update(ctx);
@@ -327,16 +337,19 @@ event_t const *player_handler(app_t *app, event_t const *evt)
     case EVT_BUTTON_PLAY_CLICKED:
         player_on_play_clicked(app, ctx);
         break;
-    case EVT_PLAYER_PLAY_NEXT:
-        player_on_play_next(app, ctx);
+    case EVT_PLAYER_PLAY_NEXT_OR_ALERT:
+        player_on_play_next(app, ctx, true);
+        break;
+    case EVT_PLAYER_PLAY_NEXT_OR_BACK:
+        player_on_play_next(app, ctx, false);
         break;
     case EVT_BUTTON_UP_CLICKED:
         ctx->nav_dir = -1;
-        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT_OR_ALERT);
         break;
     case EVT_BUTTON_DOWN_CLICKED:
         ctx->nav_dir = 1;
-        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT_OR_ALERT);
         break;
     case EVT_OPEN_VOLUME_POPUP:
         volume_popup(app);
@@ -411,17 +424,20 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
     case EVT_ENTRY:
         PL_LOGD("Player_S16: entry\n");
         player_s16_setup_input();
-        ctx->nav_dir = 1;   // default next song direction
         ctx->playing = false;
-        MY_ASSERT(ctx->decoder == 0);
+        app->busy = false;
+        break;
+    case EVT_START:
+        PL_LOGD("Player_S16: start\n");
+    MY_ASSERT(ctx->decoder == 0);
         ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
         // TODO: Handle error here
         MY_ASSERT(ctx->decoder != 0);
         audio_setup_playback(ctx->decoder);
         audio_start_playback();
         ctx->playing = true;
+        ctx->nav_dir = 1;   // default next song direction
         app->busy = true;
-        break;
     case EVT_EXIT:
         audio_finish_playback();
         if (ctx->decoder)
@@ -468,18 +484,27 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         // Set navigation direction to 1, wait event EVT_AUDIO_SONG_ENDED to play next
         ctx->nav_dir = 1;
         break;
-    case EVT_AUDIO_SONG_ENDED:
-        PL_LOGD("Player_S16: song endded\n");
+    case EVT_AUDIO_SONG_FINISHED:
+        PL_LOGD("Player_S16: song finished\n");
+        PL_LOGD("Player_S16: go to next song\n");
+        STATE_TRAN(app, &(app->player));
+        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT_OR_BACK);
+        break;
+    case EVT_AUDIO_SONG_TERMINATED:
+        PL_LOGD("Player_S16: song terminated\n");
+        // Song is terminiated if press back/up/down
         if (0 == ctx->nav_dir)
         {
+            // back pressed
             PL_LOGD("Player_S16: go back to browser_disk\n");
             STATE_TRAN(app, &(app->browser_disk));
         }
         else
         {
+            // up/down pressed
             PL_LOGD("Player_S16: go to next song\n");
             STATE_TRAN(app, &(app->player));
-            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT_OR_ALERT);
         }
         break;
     default:
@@ -516,8 +541,11 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
     case EVT_ENTRY:
         PL_LOGD("Player_VGM: entry\n");
         player_vgm_setup_input();
-        ctx->nav_dir = 1;   // default next song direction
         ctx->playing = false;
+        app->busy = false;
+        break;
+    case EVT_START:
+        PL_LOGD("Player_VGM: start\n");
         MY_ASSERT(ctx->decoder == 0);
         ctx->decoder = (decoder_t *)decoder_vgm_create(ctx->file);
         // TODO: Handle error here?
@@ -525,6 +553,7 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
         audio_setup_playback(ctx->decoder);
         audio_start_playback();
         ctx->playing = true;
+        ctx->nav_dir = 1;   // default next song direction
         app->busy = true;
         break;
     case EVT_EXIT:
@@ -558,33 +587,42 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
     case EVT_BUTTON_BACK_CLICKED:
         PL_LOGD("Player_VGM: back clicked\n");
         audio_stop_playback();
-        // Set navigation back, wait event EVT_AUDIO_SONG_ENDED to go back to browser_disk
+        // Set navigation back, wait event EVT_AUDIO_SONG_TERMINATED to go back to browser_disk
         ctx->nav_dir = 0;
         break;
     case EVT_BUTTON_UP_CLICKED:
         PL_LOGD("Player_VGM: up clicked\n");
         audio_stop_playback();
-        // Set navigation direction to -1, wait event EVT_AUDIO_SONG_ENDED to play next
+        // Set navigation direction to -1, wait event EVT_AUDIO_SONG_TERMINATED to play next
         ctx->nav_dir = -1;
         break;
     case EVT_BUTTON_DOWN_CLICKED:
         PL_LOGD("Player_VGM: down clicked\n");
         audio_stop_playback();
-        // Set navigation direction to 1, wait event EVT_AUDIO_SONG_ENDED to play next
+        // Set navigation direction to 1, wait event EVT_AUDIO_SONG_TERMINATED to play next
         ctx->nav_dir = 1;
         break;
-    case EVT_AUDIO_SONG_ENDED:
-        PL_LOGD("Player_VGM: song endded\n");
+    case EVT_AUDIO_SONG_FINISHED:
+        PL_LOGD("Player_VGM: song finished\n");
+        PL_LOGD("Player_VGM: go to next song\n");
+        STATE_TRAN(app, &(app->player));
+        EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT_OR_BACK);
+        break;
+    case EVT_AUDIO_SONG_TERMINATED:
+        PL_LOGD("Player_VGM: song terminated\n");
+        // Song is terminiated if press back/up/down
         if (0 == ctx->nav_dir)
         {
+            // back pressed
             PL_LOGD("Player_VGM: go back to browser_disk\n");
             STATE_TRAN(app, &(app->browser_disk));
         }
         else
         {
+            // up/down pressed
             PL_LOGD("Player_VGM: go to next song\n");
             STATE_TRAN(app, &(app->player));
-            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT);
+            EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT_OR_ALERT);
         }
         break;
     default:

@@ -5,10 +5,31 @@
 #include <hardware/pio.h>
 #include <hardware/dma.h>
 #include <hardware/irq.h>
+#include "my_debug.h"
 #include "sw_conf.h"
 #include "hw_conf.h"
 #include "i2s.pio.h"
 #include "i2s.h"
+
+
+#ifndef I2S_DEBUG
+#  define I2S_DEBUG 1
+#endif
+
+// Debug log
+#if I2S_DEBUG
+#define I2S_LOGD(x, ...)      MY_LOGD(x, ##__VA_ARGS__)
+#define I2S_LOGW(x, ...)      MY_LOGW(x, ##__VA_ARGS__)
+#define I2S_LOGE(x, ...)      MY_LOGE(x, ##__VA_ARGS__)
+#define I2S_LOGI(x, ...)      MY_LOGI(x, ##__VA_ARGS__)
+#define I2S_DEBUGF(x, ...)    MY_DEBUGF(x, ##__VA_ARGS__)
+#else
+#define I2S_LOGD(x, ...)
+#define I2S_LOGW(x, ...)
+#define I2S_LOGE(x, ...)
+#define I2S_LOGI(x, ...)
+#define I2S_DEBUGF(x, ...)
+#endif
 
 
 // defined in audio.c
@@ -66,6 +87,7 @@ static void i2s_dma_isr()
             else if (audio_tx_buf0_len < 0)
             {
                 // buffer underrun
+                I2S_LOGW("I2S: buffer underrun\n");
                 while (audio_tx_buf0_len < 0) { tight_loop_contents(); };
                 // transmit buf1 finished, transmit buf0 now because it contains new data
                 dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf0, audio_tx_buf0_len);
@@ -97,6 +119,7 @@ static void i2s_dma_isr()
             }
             else if (audio_tx_buf1_len < 0)
             {
+                I2S_LOGW("I2S: buffer underrun\n");
                 // buffer underrun
                 while (audio_tx_buf1_len < 0) { tight_loop_contents(); };
                 // transmit buf0 finished, transmit buf1 now because it contains new data

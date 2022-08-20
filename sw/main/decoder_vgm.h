@@ -13,6 +13,7 @@ typedef struct decoder_vgm_s
     FIL fd;
     file_reader_t *reader;
     vgm_t *vgm;
+    int16_t buffer[AUDIO_MAX_BUFFER_LENGTH];
 } decoder_vgm_t;
 
 

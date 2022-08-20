@@ -287,8 +287,15 @@ void i2s_notify_cb(int notify, void *param)
         }
         break;
     case I2S_NOTIFY_PLAYBACK_FINISHING:
-        multicore_fifo_push_blocking(DECODER_FINISH);
-        EQ_QUICK_PUSH(EVT_AUDIO_SONG_ENDED);
+        if (PLAY_STOPPING == _play_state)
+        {
+            EQ_QUICK_PUSH(EVT_AUDIO_SONG_TERMINATED);
+        }
+        else
+        {
+            multicore_fifo_push_blocking(DECODER_FINISH);
+            EQ_QUICK_PUSH(EVT_AUDIO_SONG_FINISHED);
+        }
         break;
     }
 }
