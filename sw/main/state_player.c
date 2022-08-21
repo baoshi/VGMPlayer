@@ -141,11 +141,6 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_label_set_text(ctx->lbl_top, "");
-    // Testing status
-    ctx->lbl_status = lv_label_create(ctx->screen);
-    lv_obj_set_width(ctx->lbl_status, 240);
-    lv_obj_align(ctx->lbl_status, LV_ALIGN_CENTER, 0, 0);
-    lv_label_set_text(ctx->lbl_status, "");
     // Create bottom label
     ctx->lbl_bottom = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_bottom, 240);
@@ -157,7 +152,7 @@ static void player_on_entry(player_t *ctx)
     // Load screen
     lv_scr_load(ctx->screen);
     // Arm update timer    
-    ctx->timer_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_PLAYER_UI_UPDATE, true);
+    ctx->timer_ui_update = tick_arm_timer_event(30, true, EVT_PLAYER_UI_UPDATE, true);
 }
 
 
@@ -557,9 +552,13 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
     case EVT_START:
         PL_LOGD("Player_VGM: start\n");
         MY_ASSERT(ctx->decoder == 0);
-        ctx->decoder = (decoder_t *)decoder_vgm_create(ctx->file);
+        {
+            decoder_vgm_t *vgm = decoder_vgm_create(ctx->file);
+            ctx->decoder = (decoder_t *)vgm;
+            MY_ASSERT(ctx->decoder != 0);
+            lv_label_set_text(ctx->lbl_bottom, vgm->vgm->track_name_en);
+        }
         // TODO: Handle error here?
-        MY_ASSERT(ctx->decoder != 0);
         audio_setup_playback(ctx->decoder);
         audio_start_playback();
         ctx->playing = true;

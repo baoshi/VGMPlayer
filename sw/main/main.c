@@ -48,7 +48,7 @@ int main()
     // If using memory debugger
     MY_MEM_INIT();
     // main clock, calculated using vcocalc.py, set sys clock to 120MHz
-    set_sys_clock_pll(1440 * MHZ, 6, 2);    // 120MHz
+    // set_sys_clock_pll(1440 * MHZ, 6, 2);    // 120MHz
     // tick timer and event queue
     tick_init();
     event_queue_init(10);

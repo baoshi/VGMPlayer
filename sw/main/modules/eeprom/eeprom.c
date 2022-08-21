@@ -149,6 +149,6 @@ void eeprom_write(uint8_t *data)
     // write data
     uint32_t ints = save_and_disable_interrupts();
     flash_range_program(EEPROM_POOL_WRITE_OFFS + (page * FLASH_PAGE_SIZE), pd, FLASH_PAGE_SIZE);
-    restore_interrupts (ints);
+    restore_interrupts(ints);
     _cur_cell = cell;
 }

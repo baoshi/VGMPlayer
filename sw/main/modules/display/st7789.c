@@ -125,8 +125,6 @@
 // SPI interface related variables
 static dma_channel_config _spi_tx_dma_cfg;
 static dma_channel_config _spi_rx_dma_cfg;
-static semaphore_t _spi_sem;
-static const uint32_t _spi_timeout_ms = 10;
 static uint8_t _spi_dummy;
 
 
@@ -139,67 +137,46 @@ static lv_disp_drv_t _disp_drv;
 
 static void _send_cmd(uint8_t cmd)
 {
-    if (sem_acquire_timeout_ms(&_spi_sem, _spi_timeout_ms))
-    {
-        gpio_put(ST7789_DC_PIN, false);
-        gpio_put(ST7789_CS_PIN, false);
-        spi_write_blocking(ST7789_SPI_INST, &cmd, 1);
-        gpio_put(ST7789_CS_PIN, true);
-        sem_release(&_spi_sem);
-    }
+    gpio_put(ST7789_DC_PIN, false);
+    gpio_put(ST7789_CS_PIN, false);
+    spi_write_blocking(ST7789_SPI_INST, &cmd, 1);
+    gpio_put(ST7789_CS_PIN, true);
 }
 
 
 static void _send_data(const void *data, uint16_t length)
 {
-    if (sem_acquire_timeout_ms(&_spi_sem, _spi_timeout_ms))
-    {
-        gpio_put(ST7789_DC_PIN, true);
-        gpio_put(ST7789_CS_PIN, false);
-        spi_write_blocking(ST7789_SPI_INST, data, length);
-        gpio_put(ST7789_CS_PIN, true);
-        sem_release(&_spi_sem);
-    }
+    gpio_put(ST7789_DC_PIN, true);
+    gpio_put(ST7789_CS_PIN, false);
+    spi_write_blocking(ST7789_SPI_INST, data, length);
+    gpio_put(ST7789_CS_PIN, true);
 }
 
 
 static void _send_color(void *data, uint16_t length)
 {
-    if (sem_acquire_timeout_ms(&_spi_sem, _spi_timeout_ms))
-    {
-        gpio_put(ST7789_DC_PIN, true);
-        gpio_put(ST7789_CS_PIN, false);
-        dma_channel_configure(
-            DMA_CHANNEL_ST7789_SPI_TX,          // DMA channel
-            &_spi_tx_dma_cfg,                   // Pointer to channel config
-            &spi_get_hw(ST7789_SPI_INST)->dr,   // write address
-            data,                               // read address
-            length,                             // element count (each element is of size transfer_data_size (DMA_SIZE_8))
-            false);                             // don't start yet
-        dma_channel_configure(
-            DMA_CHANNEL_ST7789_SPI_RX,          // DMA channel
-            &_spi_rx_dma_cfg,                   // Pointer to channel config
-            &_spi_dummy,                        // write address
-            &spi_get_hw(ST7789_SPI_INST)->dr,   // read address
-            length,                             // element count (each element is of size transfer_data_size (DMA_SIZE_8))
-            false);                             // don't start yet
-        // start them exactly simultaneously to avoid races (in extreme cases the FIFO could overflow)
-        dma_start_channel_mask((1u << DMA_CHANNEL_ST7789_SPI_RX) | (1u << DMA_CHANNEL_ST7789_SPI_TX));
-    }
-}
-
-
-static void _spi_dma_isr()
-{
-    if (dma_hw->ST7789_DMA_INTS & (1u << DMA_CHANNEL_ST7789_SPI_RX))    // If SPI DMA finish
-    {
-        // Clear interrupt flag
-        dma_hw->ST7789_DMA_INTS |= (1u << DMA_CHANNEL_ST7789_SPI_RX);
-        // CS was asserted when starting DMA transfer, dessert here
-        gpio_put(ST7789_CS_PIN, true);
-        lv_disp_flush_ready(&_disp_drv);
-        sem_release(&_spi_sem); // acquired in _send_color
-    }
+    gpio_put(ST7789_DC_PIN, true);
+    gpio_put(ST7789_CS_PIN, false);
+    dma_channel_configure(
+        DMA_CHANNEL_ST7789_SPI_TX,          // DMA channel
+        &_spi_tx_dma_cfg,                   // Pointer to channel config
+        &spi_get_hw(ST7789_SPI_INST)->dr,   // write address
+        data,                               // read address
+        length,                             // element count (each element is of size transfer_data_size (DMA_SIZE_8))
+        false);                             // don't start yet
+    dma_channel_configure(
+        DMA_CHANNEL_ST7789_SPI_RX,          // DMA channel
+        &_spi_rx_dma_cfg,                   // Pointer to channel config
+        &_spi_dummy,                        // write address
+        &spi_get_hw(ST7789_SPI_INST)->dr,   // read address
+        length,                             // element count (each element is of size transfer_data_size (DMA_SIZE_8))
+        false);                             // don't start yet
+    // start them exactly simultaneously to avoid races (in extreme cases the FIFO could overflow)
+    dma_start_channel_mask((1u << DMA_CHANNEL_ST7789_SPI_RX) | (1u << DMA_CHANNEL_ST7789_SPI_TX));
+    dma_channel_wait_for_finish_blocking(DMA_CHANNEL_ST7789_SPI_RX);
+    dma_channel_wait_for_finish_blocking(DMA_CHANNEL_ST7789_SPI_TX);
+    gpio_put(ST7789_CS_PIN, true);
+    lv_disp_flush_ready(&_disp_drv);
 }
 
 
@@ -272,13 +249,17 @@ static void _st7789_init(void)
     gpio_set_dir(ST7789_DC_PIN, GPIO_OUT);
     gpio_init(ST7789_RST_PIN);
     gpio_set_dir(ST7789_RST_PIN, GPIO_OUT);
-    // Initialize semaphore for SPI exclusive access
-    sem_init(&_spi_sem, 1, 1);  // initial 1, max 1
     // Initial SPI bus
     spi_init(ST7789_SPI_INST, 62500000);   // 62.5MHz, maximum pico clock
     spi_set_format(ST7789_SPI_INST, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     gpio_set_function(ST7789_MOSI_PIN, GPIO_FUNC_SPI);
     gpio_set_function(ST7789_CLK_PIN, GPIO_FUNC_SPI);
+    /*
+     * The LCD does not require RX. However DMA interrupt is fired when data transfer is finished at *register* level.
+     * If we dessert CS on TX DMA interrupt, the last byte is lost because it has not been clocked out yet. The
+     * walkaround is to set up a dummy RX DMA with TX. When RX DMA finishes, RX data has been "clocked in" and hence
+     * TX data has already been clocked out.
+     */
     dma_channel_claim(DMA_CHANNEL_ST7789_SPI_TX);
     dma_channel_claim(DMA_CHANNEL_ST7789_SPI_RX);
     _spi_tx_dma_cfg = dma_channel_get_default_config(DMA_CHANNEL_ST7789_SPI_TX);
@@ -297,28 +278,13 @@ static void _st7789_init(void)
     channel_config_set_dreq(&_spi_rx_dma_cfg, (spi_get_index(ST7789_SPI_INST) == 1) ? DREQ_SPI1_RX : DREQ_SPI0_RX);
     channel_config_set_read_increment(&_spi_rx_dma_cfg, false);
     channel_config_set_write_increment(&_spi_rx_dma_cfg, false);
-    /*
-        * The LCD does not require RX. However DMA interrupt is fired when data transfer is finished at *register* level.
-        * If we dessert CS on TX DMA interrupt, the last byte is lost because it has not been clocked out yet. The
-        * walkaround is to set up a dummy RX DMA with TX. When RX DMA finishes, RX data has been "clocked in" and hence
-        * TX data has already been clocked out.
-        */
-    // Setup DMA interrupt on DMA_IRQ_0
-#if (ST7789_DMA_IRQ == DMA_IRQ_0)    
-    dma_channel_set_irq0_enabled(DMA_CHANNEL_ST7789_SPI_RX, true);
-#else
-    dma_channel_set_irq1_enabled(DMA_CHANNEL_ST7789_SPI_RX, true);
-#endif
-    irq_add_shared_handler(ST7789_DMA_IRQ, _spi_dma_isr, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
-    irq_set_enabled(ST7789_DMA_IRQ, true);
-    // Send ST7789 initialize sequence
     _send_init_cmds();
 }
 
 
 static void _lv_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_map)
 {
-    //ST_LOGD("Flush (%d,%d)-(%d,%d)\n", area->x1, area->y1, area->x2, area->y2);
+    ST_LOGD("Flush (%d,%d)-(%dx%d)\n", area->x1, area->y1, area->x2 - area->x1, area->y2 - area->y1);
     uint8_t data[4] = {0};
     uint16_t offsetx1 = area->x1;
     uint16_t offsetx2 = area->x2;

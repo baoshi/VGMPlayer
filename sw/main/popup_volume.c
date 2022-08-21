@@ -142,8 +142,11 @@ void volume_close(app_t *app)
     lv_group_remove_all_objs(ctx->keypad_group);
     lv_group_del(ctx->keypad_group);
     ctx->keypad_group = NULL;
-    lv_sliderbox_close(ctx->popup);
-    ctx->popup = NULL;
+    if (ctx->popup)
+    {
+        lv_sliderbox_close(ctx->popup);
+        ctx->popup = NULL;
+    }
     // restore previous input
     input_load(ctx->prev_input);
     ctx->prev_input = NULL;
