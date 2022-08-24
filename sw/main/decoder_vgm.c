@@ -79,8 +79,6 @@ decoder_vgm_t * decoder_vgm_create(char const *file)
         }
         vgm_prepare_playback(decoder->vgm, AUDIO_SAMPLE_RATE, true);
         decoder->super.get_samples = (get_samples_t)decoder_vgm_get_samples;
-        uint16_t buffer[AUDIO_MAX_BUFFER_LENGTH];
-        int16_t samples = vgm_get_samples(decoder->vgm, buffer, AUDIO_MAX_BUFFER_LENGTH);
     } while (0);
     return decoder;
 }

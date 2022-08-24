@@ -111,6 +111,7 @@ int ff_del_syncobj(               /* 1:Function succeeded, 0:Could not delete du
 
     /* CMSIS-RTOS */
     //	return (int)(osMutexDelete(sobj) == osOK);
+    return 1;
 }
 
 /*------------------------------------------------------------------------*/

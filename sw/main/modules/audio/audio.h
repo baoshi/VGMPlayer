@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "audio_buffer.h"
 #include "decoder.h"
 
 
@@ -26,11 +27,7 @@ int  audio_jack_detect(uint32_t now);
 bool audio_get_jack_state();
 void audio_jack_enable(bool enable);
 
-extern uint32_t  audio_tx_buf0[];
-extern volatile int32_t audio_tx_buf0_len;
-extern uint32_t  audio_tx_buf1[];
-extern volatile int32_t audio_tx_buf1_len;
-extern volatile bool audio_cur_tx_buf; 
+extern audio_cbuf_t *audio_buffer;
 
 #ifdef __cplusplus
 }

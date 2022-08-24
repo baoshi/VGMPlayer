@@ -8,6 +8,7 @@
 #include "my_debug.h"
 #include "sw_conf.h"
 #include "hw_conf.h"
+#include "audio_buffer.h"
 #include "i2s.pio.h"
 #include "i2s.h"
 
@@ -32,19 +33,16 @@
 #endif
 
 
+// flag if buffer underrun happened
+bool i2s_buffer_underrun = false;
+
 // defined in audio.c
-extern uint32_t audio_tx_buf0[];
-extern volatile int32_t audio_tx_buf0_len;
-extern uint32_t audio_tx_buf1[];
-extern volatile int32_t audio_tx_buf1_len;
-extern volatile bool audio_cur_tx_buf; 
+extern audio_cbuf_t *audio_buffer;
 
 // i2s PIO program offset for cleanup
-uint pio_i2s_offset = 0;
+static uint pio_i2s_offset = 0;
 
-// caller supplied callbacks
-static i2s_notify_cb_t nofity_cb = 0;
-static void* notify_cb_param = 0;
+
 
 
 
@@ -72,71 +70,31 @@ static void i2s_dma_isr()
 {
     if (dma_hw->I2S_DMA_INTS & (1u << DMA_CHANNEL_I2S_TX))  // interrupt because I2S TX finish
     {   
-        dma_hw->I2S_DMA_INTS |= 1u << DMA_CHANNEL_I2S_TX;   // clear the interrupt request
-        if (audio_cur_tx_buf)
+        // clear the interrupt request
+        dma_hw->I2S_DMA_INTS |= 1u << DMA_CHANNEL_I2S_TX;
+        // acknowledge buffer sent
+        audio_cbuf_finish_read(audio_buffer);
+        // get new buffer to send
+        audio_frame_t *frame = audio_cbuf_get_read_buffer(audio_buffer);
+        if (frame != NULL)
         {
-            if (audio_tx_buf0_len > 0)
+            if (frame->length > 0)
             {
-                // transmit buf1 finished, transmit buf0 now because it contains new data
-                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf0, audio_tx_buf0_len);
-                // Notify samples requested
-                audio_cur_tx_buf = false; // currently transmitting buf0, new samples will be fetched into buf1
-                audio_tx_buf1_len = -1;    // default length for next buffer
-                if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
-            }
-            else if (audio_tx_buf0_len < 0)
-            {
-                // buffer underrun
-                while (audio_tx_buf0_len < 0) { tight_loop_contents(); };
-                // transmit buf1 finished, transmit buf0 now because it contains new data
-                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf0, audio_tx_buf0_len);
-                // Notify samples requested
-                audio_cur_tx_buf = false; // currently transmitting buf0, new samples will be fetched into buf1
-                audio_tx_buf1_len = -1;    // default length for next buffer
-                if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
+                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, frame->data, frame->length);
+                i2s_buffer_underrun = false;
             }
             else
             {
                 // No more data, no need DMA irq anymore
+                I2S_LOGD("I2S: no more samples\n");
                 i2s_dma_channel_irq_disable();
-                // Notify playback finishing
-                // Note this is finishing instead of finished. There are still data in the FIFO. 
-                // Use i2s_stop_playback() to flush FIFO and finish playback.
-                if (nofity_cb) nofity_cb(I2S_NOTIFY_PLAYBACK_FINISHING, notify_cb_param);
             }
         }
-        else 
+        else
         {
-            if (audio_tx_buf1_len > 0)
-            {
-                // transmit buf0 finished, transmit buf1 now because it contains new data
-                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf1, audio_tx_buf1_len);
-                // Notify samples requested
-                audio_cur_tx_buf = true;  // currently transmitting buf1, new samples will be fetched into buf0
-                audio_tx_buf0_len = -1;    // default length for next buffer
-                if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
-            }
-            else if (audio_tx_buf1_len < 0)
-            {
-                // buffer underrun
-                while (audio_tx_buf1_len < 0) { tight_loop_contents(); };
-                // transmit buf0 finished, transmit buf1 now because it contains new data
-                dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf1, audio_tx_buf1_len);
-                // Notify samples requested
-                audio_cur_tx_buf = true;  // currently transmitting buf1, new samples will be fetched into buf0
-                audio_tx_buf0_len = -1;    // default length for next buffer
-                if (nofity_cb) nofity_cb(I2S_NOTIFY_SAMPLE_REQUESTED, notify_cb_param);
-            }
-            else
-            {
-                // No more data, no need DMA irq anymore
-                i2s_dma_channel_irq_disable();
-                // Notify playback finishing
-                // Note this is finishing instead of finished. There are still data in the FIFO. 
-                // Use i2s_stop_playback() to flush FIFO and finish playback.
-                if (nofity_cb) nofity_cb(I2S_NOTIFY_PLAYBACK_FINISHING, notify_cb_param);
-            }
-        } 
+            I2S_LOGW("I2S: buffer underrun\n");
+            i2s_buffer_underrun = true; // audio module will detect this flag and resume playback
+        }
     }
 }
 
@@ -246,20 +204,20 @@ void i2s_deinit()
 }
 
 
-void i2s_start_playback(i2s_notify_cb_t notify, void *param)
+void i2s_start_playback()
 {
-    nofity_cb = notify;
-    notify_cb_param = param;
     i2s_dma_channel_irq_enable();
     pio_i2s_start();
-    if (audio_cur_tx_buf)
-    {
-        dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf1, audio_tx_buf1_len);
-    }
-    else
-    {
-        dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, audio_tx_buf0, audio_tx_buf0_len);
-    }
+    i2s_resume_playback();
+}
+
+
+void i2s_resume_playback()
+{
+    audio_frame_t *frame = audio_cbuf_get_read_buffer(audio_buffer);
+    MY_ASSERT((frame != NULL) && (frame->length != 0));
+    dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, frame->data, frame->length);
+    i2s_buffer_underrun = false;
 }
 
 

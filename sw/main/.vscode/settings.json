@@ -102,7 +102,9 @@
         "nesfloat.h": "c",
         "file_reader_cached_fatfs.h": "c",
         "platform.h": "c",
-        "nesapu.h": "c"
+        "nesapu.h": "c",
+        "mutex.h": "c"
     },
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "cortex-debug.variableUseNaturalFormat": false
 }

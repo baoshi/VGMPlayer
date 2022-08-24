@@ -21,8 +21,10 @@
 
 #define POPUP_AUTO_CLOSE_MS             5000
 
-#define VGM_CACHE_SIZE                  4096
+#define VGM_CACHE_SIZE                  2048
 
+#define AUDIO_FRAME_LENGTH              1470
+#define AUDIO_NUM_BUFFERS               3
 
 union nvram_t
 {

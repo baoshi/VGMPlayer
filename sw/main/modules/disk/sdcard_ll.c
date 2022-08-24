@@ -399,7 +399,7 @@ static bool _spi_xfer_bulk(const uint8_t *tx, uint8_t *rx)
     }
     if (rx) 
     {
-        // If doing TX, writing address shall increase
+        // If doing RX, writing address shall increase
         channel_config_set_write_increment(&_spi_rx_dma_cfg, true);
     }
     else
@@ -1077,6 +1077,7 @@ exit:
  */
 int sdcard_read_blocks(uint8_t *buffer, uint64_t start, uint32_t count) 
 {
+    SD_LOGD("SD: read %d blocks\n", count)
     int status = SDCARD_ERROR_OK;
     uint32_t blocks = count;
 

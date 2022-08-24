@@ -1,6 +1,7 @@
 #include <string.h>
 #include <pico/multicore.h>
 #include <hardware/gpio.h>
+#include <hardware/structs/bus_ctrl.h>
 #include "hw_conf.h"
 #include "sw_conf.h"
 #include "my_debug.h"
@@ -33,11 +34,7 @@
 #endif
 
 // Audio buffer
-uint32_t audio_tx_buf0[AUDIO_MAX_BUFFER_LENGTH];
-volatile int32_t audio_tx_buf0_len = 0;
-uint32_t audio_tx_buf1[AUDIO_MAX_BUFFER_LENGTH];
-volatile int32_t audio_tx_buf1_len = 0;
-volatile bool audio_cur_tx_buf = false;    // current buffer being tx'd. false:buf0; true:buf1
+audio_cbuf_t *audio_buffer = NULL;
 
 
 // Playback states
@@ -89,12 +86,13 @@ static enum jack_states
 void audio_preinit()
 {
     AUD_LOGD("Audio: PreInit @ %d\n", tick_millis());
+    audio_buffer = audio_cbuf_create(AUDIO_NUM_BUFFERS);
+    MY_ASSERT(audio_buffer != NULL);
     // Disable jack output at beginning
     gpio_init(JACK_OUTEN_PIN);
     gpio_put(JACK_OUTEN_PIN, false);
     gpio_set_dir(JACK_OUTEN_PIN, GPIO_OUT);
-    // Initailize I2S and WM8978
-    i2s_init();
+    // Initailize WM8978
     wm8978_preinit();
     // Enable jack detection GPIO
     gpio_init(JACK_DETECTION_PIN);
@@ -121,10 +119,81 @@ void audio_postinit()
 void audio_close()
 {
     wm8978_powerdown();
-    i2s_deinit();
     _jack_state = JACK_NONE;
+    if (audio_buffer) 
+    {
+        audio_cbuf_destroy(audio_buffer);
+        audio_buffer = NULL;
+    }
 }
 
+
+void decoder_entry()
+{
+    AUD_LOGD("Audoo: core1: entry\n");
+    decoder_t *decoder = playback_ctx.decoder;
+    // 1st audio buffer is a ramp up from 0 to first sound sample
+    audio_cbuf_reset(audio_buffer);
+    uint32_t sample, num_samples;
+    num_samples = decoder->get_samples(decoder, &sample, 1);
+    if (num_samples == 0) sample = 0;   // no sample from decoder, just make a buffer of 0 and let playing finish by itself
+    audio_frame_t *frame = audio_cbuf_get_write_buffer(audio_buffer);
+    MY_ASSERT(frame != NULL);
+    int16_t l = (int16_t)(sample >> 16);
+    int16_t r = (int16_t)(sample & 0xffff);
+    int16_t ll, rr;
+    for (int i = 0; i < AUDIO_FRAME_LENGTH -1; ++i)
+    {
+        ll = l * i / (AUDIO_FRAME_LENGTH - 2);
+        rr = r * i / (AUDIO_FRAME_LENGTH - 2);
+        frame->data[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
+    }
+    frame->data[AUDIO_FRAME_LENGTH - 1] = sample;
+    frame->length = AUDIO_FRAME_LENGTH;
+    audio_cbuf_finish_write(audio_buffer);
+    // fill remaining buffer with actual samples
+    while (1)
+    {
+        frame = audio_cbuf_get_write_buffer(audio_buffer);
+        if (NULL == frame) break;
+        num_samples = decoder->get_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
+        frame->length = num_samples;
+        audio_cbuf_finish_write(audio_buffer);
+        if (0 == num_samples) break;
+    }
+    AUD_LOGD("Audio: core1: init I2S\n");
+    i2s_init();
+    wm8978_mute(false);
+    i2s_start_playback(NULL, 0);
+    bool finished = false;
+    while (!finished)
+    {
+        audio_frame_t *frame = audio_cbuf_get_write_buffer(audio_buffer);
+        if (NULL == frame) continue;    // circular buffer full, wait.
+        while (frame)
+        {
+            num_samples = decoder->get_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
+            frame->length = num_samples;
+            audio_cbuf_finish_write(audio_buffer);
+            // If I2S buffer underrun occurred, kick start again.
+            if (i2s_buffer_underrun)
+                i2s_resume_playback();
+            if (0 == num_samples)
+            {
+                finished = true;
+                break;
+            }
+            frame = audio_cbuf_get_write_buffer(audio_buffer);
+        }
+    }
+    AUD_LOGD("Audio: core1: decoding finished\n");
+    i2s_stop_playback();
+    i2s_deinit();
+    wm8978_mute(true);
+    EQ_QUICK_PUSH(EVT_AUDIO_SONG_FINISHED);
+}
+
+/*
 
 // decoder thread function running on core 1
 void decoder_entry()
@@ -261,57 +330,14 @@ void decoder_entry()
     AUD_LOGD("Audio: core1: exit\n");
     restore_interrupts(ints);
 }
-
-
-
-void i2s_notify_cb(int notify, void *param)
-{
-    switch (notify)
-    {
-    case I2S_NOTIFY_SAMPLE_REQUESTED:
-        switch (_play_state)
-        {
-        case PLAY_NORMAL:
-            multicore_fifo_push_blocking(DECODER_GET_SAMPLE);
-            break;
-        case PLAY_RAMPDOWN:
-            multicore_fifo_push_blocking(DECODER_GEN_RAMPDOWN);
-            _play_state = PLAY_SILENCE;
-            break;
-        case PLAY_RAMPUP:
-            multicore_fifo_push_blocking(DECODER_GEN_RAMPUP);
-            _play_state = PLAY_NORMAL;
-            break;
-        case PLAY_SILENCE:
-            multicore_fifo_push_blocking(DECODER_GEN_SILENCE);
-            break;
-        case PLAY_STOPPING:
-            multicore_fifo_push_blocking(DECODER_STOP);
-            break;
-        }
-        break;
-    case I2S_NOTIFY_PLAYBACK_FINISHING:
-        if (PLAY_STOPPING == _play_state)
-        {
-            EQ_QUICK_PUSH(EVT_AUDIO_SONG_TERMINATED);
-        }
-        else
-        {
-            multicore_fifo_push_blocking(DECODER_FINISH);
-            EQ_QUICK_PUSH(EVT_AUDIO_SONG_FINISHED);
-        }
-        break;
-    }
-}
+*/
 
 
 void audio_setup_playback(decoder_t *decoder)
 {
     AUD_LOGD("Audio: core0: setup\n");
-    i2s_stop_playback();
     playback_ctx.decoder = decoder;
-    // launch decoder thread on core1, the thread will be blocked until command is received
-    multicore_fifo_drain();
+    bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC1_BITS;
     multicore_reset_core1();
     multicore_launch_core1(decoder_entry);
 }
@@ -320,6 +346,7 @@ void audio_setup_playback(decoder_t *decoder)
 void audio_start_playback()
 {
     AUD_LOGD("Audio: core0: start playback\n");
+    /*
     _play_state = PLAY_NORMAL;
     audio_cur_tx_buf = false; // Cause the next DECODER_GET_SAMPLE_BLOCKING to fetch sample in audio_tx_buf1
     multicore_fifo_push_blocking(DECODER_GET_SAMPLE_BLOCKING);
@@ -343,7 +370,7 @@ void audio_start_playback()
         i2s_send_buffer_blocking(audio_tx_buf0, audio_tx_buf0_len);
         // Start auto sending from audio_tx_buf1
         audio_cur_tx_buf = true;
-        i2s_start_playback(i2s_notify_cb, 0);
+        i2s_start_playback(NULL, 0);
         // Meanwhile get more samples in audio_tx_buf0
         multicore_fifo_push_blocking(DECODER_GET_SAMPLE);
     }
@@ -356,6 +383,7 @@ void audio_start_playback()
         i2s_start_playback(i2s_notify_cb, 0);
         multicore_fifo_push_blocking(DECODER_GET_SAMPLE);   // This will receive 0 length buffer again and finish
     }
+    */
 }
 
 
@@ -369,10 +397,10 @@ void audio_stop_playback()
 void audio_finish_playback()
 {
     // wait decoding join, flush I2S FIFO
-    multicore_fifo_pop_blocking();
+    //multicore_fifo_pop_blocking();
     AUD_LOGD("Audio: core0: core1 joined\n");
-    i2s_stop_playback();
-    wm8978_mute(true);
+    //i2s_stop_playback();
+    //wm8978_mute(true);
 }
 
 

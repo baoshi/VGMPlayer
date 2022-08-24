@@ -147,6 +147,12 @@ static void player_on_entry(player_t *ctx)
     lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    // Create chart
+    ctx->chart = lv_chart_create(ctx->screen);
+    lv_obj_set_size(ctx->chart, 240, 200);
+    lv_obj_center(ctx->chart);
+    lv_chart_set_type(ctx->chart, LV_CHART_TYPE_LINE);
+    ctx->chart_series = lv_chart_add_series(ctx->chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Load screen
@@ -169,6 +175,17 @@ static void player_on_ui_update(player_t *ctx)
     char buf[32];
     sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
     lv_label_set_text(ctx->lbl_top, buf);
+    ctx->chart_series[0].y_points[0] = rand() % 100;
+    ctx->chart_series[0].y_points[1] = rand() % 100;
+    ctx->chart_series[0].y_points[2] = rand() % 100;
+    ctx->chart_series[0].y_points[3] = rand() % 100;
+    ctx->chart_series[0].y_points[4] = rand() % 100;
+    ctx->chart_series[0].y_points[5] = rand() % 100;
+    ctx->chart_series[0].y_points[6] = rand() % 100;
+    ctx->chart_series[0].y_points[7] = rand() % 100;
+    ctx->chart_series[0].y_points[8] = rand() % 100;
+    ctx->chart_series[0].y_points[9] = rand() % 100;
+    lv_chart_refresh(ctx->chart);
 }
 
 
@@ -383,15 +400,11 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         {
             // samples in buf1
             // PL_LOGD("Player: buf1 %d samples\n", audio_tx_buf1_len);
-            char txt[16];
-            sprintf(txt, "Buffer: %d", audio_tx_buf1_len);
-            //lv_label_set_text(ctx->lbl_status, txt);
+            
         }
         else
         {
             // samples in buf0
-            char txt[16];
-            sprintf(txt, "Buffer: %d", audio_tx_buf0_len);
             //lv_label_set_text(ctx->lbl_status, txt);
         }
         break;
