@@ -2,7 +2,7 @@
 #include <pico/time.h>
 #include <inttypes.h>
 #include "my_debug.h"
-#include "my_mem.h"
+#include "audio.h"
 #include "sw_conf.h"
 #include "audio.h"
 #include "file_reader_cached_fatfs.h"
@@ -54,7 +54,7 @@ decoder_vgm_t * decoder_vgm_create(char const *file)
     decoder_vgm_t *decoder = NULL;
     do
     {
-        decoder = MY_MALLOC(sizeof(decoder_vgm_t));
+        decoder = C1_MALLOC(sizeof(decoder_vgm_t));
         if (0 == decoder)
             break;
         memset(decoder, 0, sizeof(decoder_vgm_t));
@@ -63,7 +63,7 @@ decoder_vgm_t * decoder_vgm_create(char const *file)
         if (0 == decoder->reader)
         {
             VGM_LOGW("VGM: file reader creation failed\n");
-            MY_FREE(decoder);
+            C1_FREE(decoder);
             decoder = NULL;
             break;
         }
@@ -73,7 +73,7 @@ decoder_vgm_t * decoder_vgm_create(char const *file)
         {
             VGM_LOGW("VGM: vgm creation failed\n");
             cfr_destroy(decoder->reader);
-            MY_FREE(decoder);
+            C1_FREE(decoder);
             decoder = NULL;
             break;
         }
@@ -94,7 +94,7 @@ void decoder_vgm_destroy(decoder_vgm_t *ctx)
             cfr_show_cache_status(ctx->reader);
             cfr_destroy(ctx->reader);
         }
-        MY_FREE(ctx);
+        C1_FREE(ctx);
     }
 }
 

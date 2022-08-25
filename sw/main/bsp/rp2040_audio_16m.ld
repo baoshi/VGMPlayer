@@ -19,14 +19,29 @@
     __StackLimit
     __StackTop
     __stack (== StackTop)
+    __C1End
+    __C1RAMLimit
 */
 
+/*
+RP2040 memory has 4 stripes. 
+0x21000000   64kb    1       sram0
+0x21010000   64kb    2       sram1
+0x21020000   64kb    3       sram2
+0x21030000   64kb    4       sram3
+0x20040000   4kb     5       scratch_x, used by core1 stack
+0x20041000   4kb     6       scratch_y, used by core0 stack
+When sram0-3 are mapped to 0x2100xxxx, RAM is used as non-stripe configuration. Multiple bus masters 
+(Core or DMA) can access individual ram block concurrently without wait each other.
+(Slower in most cases but good for multicore program).
+Here we use 64k sram3 as Core1 ram
+*/
 MEMORY
 {
     FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 16384k - 4k
     EEPROM_POOL(rw): ORIGIN = ORIGIN(FLASH) + LENGTH(FLASH), LENGTH = 4k
     RAM(rwx) : ORIGIN =  0x21000000, LENGTH = 192k
-    RAM3(rwx) : ORIGIN = 0x21030000, LENGTH = 64k
+    C1RAM(rwx) : ORIGIN = 0x21030000, LENGTH = 64k
     SCRATCH_X(rwx) : ORIGIN = 0x20040000, LENGTH = 4k
     SCRATCH_Y(rwx) : ORIGIN = 0x20041000, LENGTH = 4k
 }
@@ -215,14 +230,12 @@ SECTIONS
         __HeapLimit = .;
     } > RAM
 
-    .core1ram (NOLOAD):
+    .core1mem (NOLOAD):
     {
         . = ALIGN(4);
-        __core1ram_begin = .;
-        KEEP(*(.core1ramdata))
-        . = ALIGN(4);
-        __core1ram_end = .;
-    } > RAM3
+        KEEP(*(.core1mem.*))
+        __C1End = .;
+    } > C1RAM
 
     /* .stack*_dummy section doesn't contains any symbols. It is only
      * used for linker to calculate size of stack sections, and assign
@@ -257,9 +270,13 @@ SECTIONS
     __StackOneBottom = __StackOneTop - SIZEOF(.stack1_dummy);
     __StackBottom = __StackTop - SIZEOF(.stack_dummy);
     PROVIDE(__stack = __StackTop);
+    __C1RAMLimit = ORIGIN(C1RAM) + LENGTH(C1RAM);
 
     /* Check if data + heap + stack exceeds RAM limit */
     ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed")
+
+    /* Check if audio block exceeds RAM3 limit *.
+    ASSERT(__C1RAMLimit >= __C1End, "region core1mem overflow")
 
     ASSERT( __binary_info_header_end - __logical_binary_start <= 256, "Binary info must be in first 256 bytes of the binary")
     /* todo assert on extra code */

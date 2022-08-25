@@ -1,11 +1,10 @@
-#include <string.h>
+#include <memory.h>
 #include <pico/multicore.h>
 #include <hardware/gpio.h>
 #include <hardware/structs/bus_ctrl.h>
 #include "hw_conf.h"
 #include "sw_conf.h"
 #include "my_debug.h"
-#include "my_mem.h"
 #include "tick.h"
 #include "event_ids.h"
 #include "event_queue.h"
@@ -32,9 +31,6 @@
 #define AUD_LOGI(x, ...)
 #define AUD_DEBUGF(x, ...)
 #endif
-
-// Audio buffer
-audio_cbuf_t *audio_buffer = NULL;
 
 
 // Playback states
@@ -86,8 +82,8 @@ static enum jack_states
 void audio_preinit()
 {
     AUD_LOGD("Audio: PreInit @ %d\n", tick_millis());
-    audio_buffer = audio_cbuf_create(AUDIO_NUM_BUFFERS);
-    MY_ASSERT(audio_buffer != NULL);
+    audio_mem_init();
+    audio_cbuf_init();
     // Disable jack output at beginning
     gpio_init(JACK_OUTEN_PIN);
     gpio_put(JACK_OUTEN_PIN, false);
@@ -120,11 +116,6 @@ void audio_close()
 {
     wm8978_powerdown();
     _jack_state = JACK_NONE;
-    if (audio_buffer) 
-    {
-        audio_cbuf_destroy(audio_buffer);
-        audio_buffer = NULL;
-    }
 }
 
 
@@ -133,11 +124,11 @@ void decoder_entry()
     AUD_LOGD("Audoo: core1: entry\n");
     decoder_t *decoder = playback_ctx.decoder;
     // 1st audio buffer is a ramp up from 0 to first sound sample
-    audio_cbuf_reset(audio_buffer);
+    audio_cbuf_reset();
     uint32_t sample, num_samples;
     num_samples = decoder->get_samples(decoder, &sample, 1);
     if (num_samples == 0) sample = 0;   // no sample from decoder, just make a buffer of 0 and let playing finish by itself
-    audio_frame_t *frame = audio_cbuf_get_write_buffer(audio_buffer);
+    audio_frame_t *frame = audio_cbuf_get_write_buffer();
     MY_ASSERT(frame != NULL);
     int16_t l = (int16_t)(sample >> 16);
     int16_t r = (int16_t)(sample & 0xffff);
@@ -150,15 +141,15 @@ void decoder_entry()
     }
     frame->data[AUDIO_FRAME_LENGTH - 1] = sample;
     frame->length = AUDIO_FRAME_LENGTH;
-    audio_cbuf_finish_write(audio_buffer);
+    audio_cbuf_finish_write();
     // fill remaining buffer with actual samples
     while (1)
     {
-        frame = audio_cbuf_get_write_buffer(audio_buffer);
+        frame = audio_cbuf_get_write_buffer();
         if (NULL == frame) break;
         num_samples = decoder->get_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
         frame->length = num_samples;
-        audio_cbuf_finish_write(audio_buffer);
+        audio_cbuf_finish_write();
         if (0 == num_samples) break;
     }
     AUD_LOGD("Audio: core1: init I2S\n");
@@ -168,13 +159,13 @@ void decoder_entry()
     bool finished = false;
     while (!finished)
     {
-        audio_frame_t *frame = audio_cbuf_get_write_buffer(audio_buffer);
+        audio_frame_t *frame = audio_cbuf_get_write_buffer();
         if (NULL == frame) continue;    // circular buffer full, wait.
         while (frame)
         {
             num_samples = decoder->get_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
             frame->length = num_samples;
-            audio_cbuf_finish_write(audio_buffer);
+            audio_cbuf_finish_write();
             // If I2S buffer underrun occurred, kick start again.
             if (i2s_buffer_underrun)
                 i2s_resume_playback();
@@ -183,7 +174,7 @@ void decoder_entry()
                 finished = true;
                 break;
             }
-            frame = audio_cbuf_get_write_buffer(audio_buffer);
+            frame = audio_cbuf_get_write_buffer();
         }
     }
     AUD_LOGD("Audio: core1: decoding finished\n");

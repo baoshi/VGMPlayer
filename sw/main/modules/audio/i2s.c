@@ -8,7 +8,7 @@
 #include "my_debug.h"
 #include "sw_conf.h"
 #include "hw_conf.h"
-#include "audio_buffer.h"
+#include "audio.h"
 #include "i2s.pio.h"
 #include "i2s.h"
 
@@ -73,9 +73,9 @@ static void i2s_dma_isr()
         // clear the interrupt request
         dma_hw->I2S_DMA_INTS |= 1u << DMA_CHANNEL_I2S_TX;
         // acknowledge buffer sent
-        audio_cbuf_finish_read(audio_buffer);
+        audio_cbuf_finish_read();
         // get new buffer to send
-        audio_frame_t *frame = audio_cbuf_get_read_buffer(audio_buffer);
+        audio_frame_t *frame = audio_cbuf_get_read_buffer();
         if (frame != NULL)
         {
             if (frame->length > 0)
@@ -214,7 +214,7 @@ void i2s_start_playback()
 
 void i2s_resume_playback()
 {
-    audio_frame_t *frame = audio_cbuf_get_read_buffer(audio_buffer);
+    audio_frame_t *frame = audio_cbuf_get_read_buffer();
     MY_ASSERT((frame != NULL) && (frame->length != 0));
     dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, frame->data, frame->length);
     i2s_buffer_underrun = false;

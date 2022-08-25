@@ -32,11 +32,9 @@ add_subdirectory(modules/display)
 add_subdirectory(modules/disk)
 add_subdirectory(modules/audio)
 add_subdirectory(modules/eeprom)
-add_subdirectory(modules/vgmdec)
 
 add_executable(${PROJ_NAME}
     my_debug.c
-    my_mem.c
     sw_conf.c
     hw_conf.c
     event_queue.c
@@ -54,7 +52,6 @@ add_executable(${PROJ_NAME}
     popup_volume.c
     popup_alert.c
     decoder_s16.c
-    decoder_vgm.c
     main.c
 )
 
@@ -70,7 +67,6 @@ target_link_libraries(${PROJ_NAME}
     disk
     audio
     eeprom
-    vgmdec
 )
 
 #target_compile_definitions(${PROJ_NAME} PRIVATE PICO_DEBUG_MALLOC=1)

@@ -15,16 +15,10 @@
 // Remember # levels of history in file navigation
 #define CATALOG_HISTORY_DEPTH           10
 
-#define AUDIO_SAMPLE_RATE               44100
-#define AUDIO_MAX_BUFFER_LENGTH         1470
-#define AUDIO_SONG_GAP_MS               2000
-
 #define POPUP_AUTO_CLOSE_MS             5000
 
 #define VGM_CACHE_SIZE                  2048
 
-#define AUDIO_FRAME_LENGTH              1470
-#define AUDIO_NUM_BUFFERS               3
 
 union nvram_t
 {

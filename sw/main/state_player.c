@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "sw_conf.h"
 #include "my_debug.h"
@@ -13,7 +14,7 @@
 #include "path_utils.h"
 #include "audio.h"
 #include "decoder_s16.h"
-#include "decoder_vgm.h"
+//#include "decoder_vgm.h"
 #include "catalog.h"
 #include "popup.h"
 #include "app.h"
@@ -566,10 +567,10 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
         PL_LOGD("Player_VGM: start\n");
         MY_ASSERT(ctx->decoder == 0);
         {
-            decoder_vgm_t *vgm = decoder_vgm_create(ctx->file);
-            ctx->decoder = (decoder_t *)vgm;
-            MY_ASSERT(ctx->decoder != 0);
-            lv_label_set_text(ctx->lbl_bottom, vgm->vgm->track_name_en);
+            //decoder_vgm_t *vgm = decoder_vgm_create(ctx->file);
+            //ctx->decoder = (decoder_t *)vgm;
+            //MY_ASSERT(ctx->decoder != 0);
+            //lv_label_set_text(ctx->lbl_bottom, vgm->vgm->track_name_en);
         }
         // TODO: Handle error here?
         audio_setup_playback(ctx->decoder);
@@ -582,7 +583,7 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
         audio_finish_playback();
         if (ctx->decoder)
         {
-            decoder_vgm_destroy((decoder_vgm_t *)(ctx->decoder));
+            //decoder_vgm_destroy((decoder_vgm_t *)(ctx->decoder));
             ctx->decoder = 0;
         }
         app->busy = false;

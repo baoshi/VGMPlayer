@@ -8,7 +8,6 @@
 #include "sw_conf.h"
 #include "hw_conf.h"
 #include "my_debug.h"
-#include "my_mem.h"
 #include "event_ids.h"
 #include "event_queue.h"
 #include "hsm.h"
@@ -22,7 +21,6 @@
 #include "splash.h"
 #include "path_utils.h"
 #include "app.h"
-
 #include "eeprom.h"
 
 
@@ -45,8 +43,6 @@ int main()
     uint32_t now;
     app_t app;
 
-    // If using memory debugger
-    MY_MEM_INIT();
     // main clock, calculated using vcocalc.py, set sys clock to 120MHz
     // set_sys_clock_pll(1440 * MHZ, 6, 2);    // 120MHz
     // tick timer and event queue

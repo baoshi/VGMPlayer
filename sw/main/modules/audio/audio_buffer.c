@@ -1,111 +1,88 @@
 #include <pico/critical_section.h>
-#include "my_mem.h"
-#include "audio_buffer.h"
+#include "audio.h"
 
-//audio_frame_t __attribute__((section(".core1ramdata"))) buffer[3];
-audio_frame_t buffer[3];
 
 struct audio_cbuf_s
 {
-	audio_frame_t *buffer;
+	audio_frame_t buffer[AUDIO_CBUF_LENGTH];
 	unsigned int head;
 	unsigned int tail;
-	unsigned int max;
 	bool full;
 	critical_section_t lock;
 };
 
 
-audio_cbuf_t * audio_cbuf_create(unsigned int blocks)
+static audio_cbuf_t __audio_ram("cbuf") cbuf;
+
+
+void audio_cbuf_init()
 {
-	audio_cbuf_t *cbuf = (audio_cbuf_t *)MY_MALLOC(sizeof(audio_cbuf_t));
-	if (NULL == cbuf)
-		return NULL;
-	cbuf->buffer = buffer; // MY_MALLOC(sizeof(audio_frame_t) * blocks);
-	if (NULL == cbuf->buffer)
-	{
-		MY_FREE(cbuf);
-		return NULL;
-	}
-	cbuf->max = blocks;
-	critical_section_init(&(cbuf->lock));
-	audio_cbuf_reset(cbuf);
-	return cbuf;
+	critical_section_init(&(cbuf.lock));
+	audio_cbuf_reset(&cbuf);
 }
 
 
-void audio_cbuf_destroy(audio_cbuf_t *me)
+void audio_cbuf_reset()
 {
-	if (me)
-	{
-		critical_section_deinit(&(me->lock));
-		//if (me->buffer) MY_FREE(me->buffer);
-		MY_FREE(me);
-	}
+	cbuf.head = 0;
+	cbuf.tail = 0;
+	cbuf.full = false;
 }
 
 
-void audio_cbuf_reset(audio_cbuf_t *me)
+unsigned int audio_cbuf_size()
 {
-	me->head = 0;
-	me->tail = 0;
-	me->full = false;
-}
-
-
-unsigned int audio_cbuf_size(audio_cbuf_t *me)
-{
-	unsigned int size = me->max;
-	if (!(me->full))
+	unsigned int size = AUDIO_CBUF_LENGTH;
+	if (!(cbuf.full))
 	{
-		if (me->head >= me->tail)
+		if (cbuf.head >= cbuf.tail)
 		{
-			size = (me->head - me->tail);
+			size = (cbuf.head - cbuf.tail);
 		}
 		else
 		{
-			size = (me->max + me->head - me->tail);
+			size = (AUDIO_CBUF_LENGTH + cbuf.head - cbuf.tail);
 		}
 	}
 	return size;
 }
 
 
-audio_frame_t * audio_cbuf_get_write_buffer(audio_cbuf_t *me)
+audio_frame_t * audio_cbuf_get_write_buffer()
 {
 	audio_frame_t *r = NULL;
-	if (!me->full)
+	if (!cbuf.full)
 	{
-		r = &(me->buffer[me->head]);
+		r = &(cbuf.buffer[cbuf.head]);
 	}
 	return r;
 }
 
 
-void audio_cbuf_finish_write(audio_cbuf_t *me)
+void audio_cbuf_finish_write()
 {
-	critical_section_enter_blocking(&(me->lock));
-	if (++(me->head) == me->max) me->head = 0;
-	me->full = (me->head == me->tail);
-	critical_section_exit(&(me->lock));
+	critical_section_enter_blocking(&(cbuf.lock));
+	if (++(cbuf.head) == AUDIO_CBUF_LENGTH) cbuf.head = 0;
+	cbuf.full = (cbuf.head == cbuf.tail);
+	critical_section_exit(&(cbuf.lock));
 }
 
 
-audio_frame_t * audio_cbuf_get_read_buffer(audio_cbuf_t *me)
+audio_frame_t * audio_cbuf_get_read_buffer()
 {
 	audio_frame_t *r = NULL;
-	if (me->full || (me->head != me->tail))	// not empty
+	if (cbuf.full || (cbuf.head != cbuf.tail))	// not empty
 	{
-		r = &(me->buffer[me->tail]);
+		r = &(cbuf.buffer[cbuf.tail]);
 	}
 	return r;
 }
 
 
-void audio_cbuf_finish_read(audio_cbuf_t *me)
+void audio_cbuf_finish_read()
 {
-	critical_section_enter_blocking(&(me->lock));
-	if (++(me->tail) == me->max) me->tail = 0;
-	me->full = false;
-	critical_section_exit(&(me->lock));
+	critical_section_enter_blocking(&(cbuf.lock));
+	if (++(cbuf.tail) == AUDIO_CBUF_LENGTH) cbuf.tail = 0;
+	cbuf.full = false;
+	critical_section_exit(&(cbuf.lock));
 }

@@ -3,6 +3,7 @@ add_library(audio INTERFACE)
 target_sources(audio INTERFACE
     wm8978.c
     i2s.c
+    audio_memory.c
     audio_buffer.c
     audio.c
 )
@@ -18,6 +19,7 @@ target_link_libraries(audio INTERFACE
     hardware_dma
     hardware_irq
     hardware_pio
+    umm_malloc
 )
 
 target_include_directories(audio INTERFACE ${CMAKE_CURRENT_LIST_DIR})

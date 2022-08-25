@@ -1,7 +1,7 @@
 #include <string.h>
 #include "my_debug.h"
 #include "my_mem.h"
-#include "sw_conf.h"
+#include "audio.h"
 #include "decoder_s16.h"
 
 
@@ -28,7 +28,7 @@
 
 uint32_t decoder_s16_get_samples(decoder_s16_t *me, uint32_t *buf, uint32_t len)
 {
-    uint16_t buffer[AUDIO_MAX_BUFFER_LENGTH];
+    uint16_t buffer[AUDIO_FRAME_LENGTH];
     // For len uint32_t samples, we need to read len uint16_t data, or len * 2 uint8_t data
     FRESULT fr;
     UINT ret = 0;
