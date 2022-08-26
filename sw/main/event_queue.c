@@ -178,3 +178,29 @@ bool event_queue_peek(event_t* e)
     spin_unlock(_event_queue.core.spin_lock, save);
     return ret;
 }
+
+
+void event_queue_clear()
+{
+    uint32_t save = spin_lock_blocking(_event_queue.core.spin_lock);
+    while (_event_queue.head != 0)
+    {
+        event_node_t* t = _event_queue.head;
+        if (t->next == 0)
+        {
+            // t is the only one node in the list
+            _event_queue.head = 0;
+            _event_queue.tail = 0;
+        }
+        else
+        {
+            // update head
+            _event_queue.head = t->next;
+            _event_queue.head->prev = 0;
+        }
+        // return t to unused
+        t->next = _event_queue.unused;
+        _event_queue.unused = t;
+    }
+    spin_unlock(_event_queue.core.spin_lock, save);
+}

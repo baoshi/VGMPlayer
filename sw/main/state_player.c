@@ -168,6 +168,7 @@ static void player_on_exit(player_t *ctx)
     tick_disarm_timer_event(ctx->timer_ui_update);
     ctx->timer_ui_update = 0;
     input_delete_buttons();
+    event_queue_clear();
 }
 
 
@@ -448,15 +449,15 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         break;
     case EVT_START:
         PL_LOGD("Player_S16: start\n");
-    MY_ASSERT(ctx->decoder == 0);
+        MY_ASSERT(ctx->decoder == 0);
         ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
         // TODO: Handle error here
         MY_ASSERT(ctx->decoder != 0);
-        audio_setup_playback(ctx->decoder);
-        audio_start_playback();
+        audio_start_playback(ctx->decoder);
         ctx->playing = true;
         ctx->nav_dir = 1;   // default next song direction
         app->busy = true;
+        break;
     case EVT_EXIT:
         audio_finish_playback();
         if (ctx->decoder)
@@ -573,8 +574,7 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
             //lv_label_set_text(ctx->lbl_bottom, vgm->vgm->track_name_en);
         }
         // TODO: Handle error here?
-        audio_setup_playback(ctx->decoder);
-        audio_start_playback();
+        audio_start_playback(ctx->decoder);
         ctx->playing = true;
         ctx->nav_dir = 1;   // default next song direction
         app->busy = true;

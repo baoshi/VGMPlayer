@@ -1,6 +1,8 @@
-#include <pico/multicore.h>
-#include <hardware/gpio.h>
+#include <string.h>
 #include <hardware/structs/bus_ctrl.h>
+#include <hardware/gpio.h>
+#include <pico/multicore.h>
+#include <pico/util/queue.h>
 #include "hw_conf.h"
 #include "sw_conf.h"
 #include "my_debug.h"
@@ -33,36 +35,34 @@
 
 
 // Playback states
-typedef enum playback_states
+typedef enum
 {
+    PLAY_NONE = 0,
     PLAY_NORMAL,
-    PLAY_RAMPDOWN,
     PLAY_SILENCE,
-    PLAY_RAMPUP,
-    PLAY_STOPPING
+    PLAY_GAP,
+    PLAY_GAP_PAUSED
 } playback_state_t;
-static playback_state_t _play_state;
 
 
-// context used during playback, shared by audio_xxx and decoder_entry on core 1
+// command send to playback_proc
+enum
+{
+    CMD_NONE = 0,
+    CMD_STOP,
+    CMD_PAUSE,
+    CMD_RESUME
+};
+
+
+// context used during playback, shared by audio_xxx and playback_proc on core 1
 typedef struct playback_ctx_s
 {
-    decoder_t *decoder;
+    decoder_t *decoder;         // decoder interface
+    playback_state_t state;     // playing state
+    queue_t cmd_queue;          // for command byte send from audio_xxx to playback_proc
 } playback_ctx_t;
-static playback_ctx_t playback_ctx;
-
-
-// Commands send to decoding thread
-enum decoder_cmds
-{
-    DECODER_GET_SAMPLE_BLOCKING = 1,
-    DECODER_GET_SAMPLE,
-    DECODER_GEN_RAMPDOWN,
-    DECODER_GEN_RAMPUP,
-    DECODER_GEN_SILENCE,
-    DECODER_STOP,
-    DECODER_FINISH,
-};
+static playback_ctx_t __audio_ram("audio") _playback;
 
 
 // Jack detection fsm
@@ -83,6 +83,8 @@ void audio_preinit()
     AUD_LOGD("Audio: PreInit @ %d\n", tick_millis());
     audio_mem_init();
     audio_cbuf_init();
+    memset(&_playback, 0, sizeof(playback_ctx_t));
+    queue_init(&(_playback.cmd_queue), sizeof(uint8_t), 2);
     // Disable jack output at beginning
     gpio_init(JACK_OUTEN_PIN);
     gpio_put(JACK_OUTEN_PIN, false);
@@ -118,21 +120,29 @@ void audio_close()
 }
 
 
-void decoder_entry()
+static void playback_proc()
 {
-    AUD_LOGD("Audoo: core1: entry\n");
-    decoder_t *decoder = playback_ctx.decoder;
-    // 1st audio buffer is a ramp up from 0 to first sound sample
-    audio_cbuf_reset();
+    AUD_LOGD("Audio: core1: playback entry\n");
+    decoder_t *decoder = _playback.decoder;
     uint32_t sample, num_samples;
+    register int16_t l, ll, r, rr;
+    register int x, i;
+    bool finished = false;
+    uint8_t cmd;
+    // number of silence buffer to send before finish the song
+    int gaps = AUDIO_SONG_GAP_MS * AUDIO_SAMPLE_RATE / AUDIO_FRAME_LENGTH / 1000;
+
+    audio_cbuf_reset();
+    while (queue_try_remove(&(_playback.cmd_queue), &cmd)) { tight_loop_contents(); };   // empty command queue
+    _playback.state = PLAY_NORMAL;
+    // first audio buffer is a ramp up from 0 to first sound sample
     num_samples = decoder->get_samples(decoder, &sample, 1);
     if (num_samples == 0) sample = 0;   // no sample from decoder, just make a buffer of 0 and let playing finish by itself
     audio_frame_t *frame = audio_cbuf_get_write_buffer();
     MY_ASSERT(frame != NULL);
-    int16_t l = (int16_t)(sample >> 16);
-    int16_t r = (int16_t)(sample & 0xffff);
-    int16_t ll, rr;
-    for (int i = 0; i < AUDIO_FRAME_LENGTH -1; ++i)
+    l = (int16_t)(sample >> 16);
+    r = (int16_t)(sample & 0xffff);
+    for (int i = 0; i < AUDIO_FRAME_LENGTH - 1; ++i)
     {
         ll = l * i / (AUDIO_FRAME_LENGTH - 2);
         rr = r * i / (AUDIO_FRAME_LENGTH - 2);
@@ -154,33 +164,225 @@ void decoder_entry()
     AUD_LOGD("Audio: core1: init I2S\n");
     i2s_init();
     wm8978_mute(false);
-    i2s_start_playback(NULL, 0);
-    bool finished = false;
+    i2s_start_playback();
+    // play loop
+    AUD_LOGD("Audio: core1: enter play loop\n");
     while (!finished)
     {
         audio_frame_t *frame = audio_cbuf_get_write_buffer();
-        if (NULL == frame) continue;    // circular buffer full, wait.
-        while (frame)
+        if (NULL == frame)  // audio circular buffer full, wait.
         {
-            num_samples = decoder->get_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
-            frame->length = num_samples;
-            audio_cbuf_finish_write();
-            // If I2S buffer underrun occurred, kick start again.
-            if (i2s_buffer_underrun)
-                i2s_resume_playback();
-            if (0 == num_samples)
+            tight_loop_contents();
+            continue;    
+        }
+        // we have empty frame now, see if we received any command
+        if (!queue_try_remove(&(_playback.cmd_queue), (void *)&cmd))
+            cmd = CMD_NONE;
+        switch (_playback.state)
+        {
+
+        case PLAY_NORMAL:
+            // PLAY_NORMAL:
+            // cmd == CMD_NONE   :  Continue generate sample buffer, if no more buffer, send ramp down then enter PLAY_GAP
+            // cmd == CMD_STOP   :  Generate 0 length buffer and set finished to true
+            // cmd == CMD_PAUSE  :  Generate ramp down buffer and set state to PLAY_SILENCE
+            // cmd == CMD_RESUME :  Do nothing
+            switch (cmd)
             {
+            case CMD_NONE:
+                num_samples = decoder->get_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
+                frame->length = num_samples;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
+                if (num_samples != 0)
+                {
+                    sample = frame->data[num_samples - 1];  // save last sample for ramp use
+                } 
+                else
+                {
+                    // no more samples from decoder, send ramp down then enter PLAY_GAP
+                    AUD_LOGD("Audio: core1: decoding finished, sending gap\n");
+                    l = (int16_t)(sample >> 16);
+                    r = (int16_t)(sample & 0xffff);
+                    for (i = 0; i < AUDIO_FRAME_LENGTH; ++i)
+                    {
+                        x = AUDIO_FRAME_LENGTH - 1 - i;
+                        ll = l * x / (AUDIO_FRAME_LENGTH - 1);
+                        rr = r * x / (AUDIO_FRAME_LENGTH - 1);
+                        frame->data[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
+                    }
+                    frame->length = AUDIO_FRAME_LENGTH;
+                    audio_cbuf_finish_write();
+                    if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                        i2s_resume_playback();
+                    --gaps;
+                    _playback.state = PLAY_GAP;
+                    break;
+                }
+                break;
+            case CMD_STOP:
+                AUD_LOGD("Audio: core1: CMD_STOP\n");
+                frame->length = 0;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
                 finished = true;
                 break;
+            case CMD_PAUSE:
+                AUD_LOGD("Audio: core1: CMD_PAUSE\n");
+                l = (int16_t)(sample >> 16);
+                r = (int16_t)(sample & 0xffff);
+                for (i = 0; i < AUDIO_FRAME_LENGTH; ++i)
+                {
+                    x = AUDIO_FRAME_LENGTH - 1 - i;
+                    ll = l * x / (AUDIO_FRAME_LENGTH - 1);
+                    rr = r * x / (AUDIO_FRAME_LENGTH - 1);
+                    frame->data[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
+                }
+                frame->length = AUDIO_FRAME_LENGTH;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
+                _playback.state = PLAY_SILENCE;
+                break;
             }
-            frame = audio_cbuf_get_write_buffer();
-        }
-    }
-    AUD_LOGD("Audio: core1: decoding finished\n");
+            break;
+
+        case PLAY_SILENCE:
+            // PLAY_SILENCE:
+            // cmd == CMD_NONE   :  Continue generate silence
+            // cmd == CMD_STOP   :  Generate 0 length sample and set finished to true
+            // cmd == CMD_PAUSE  :  Do nothing
+            // cmd == CMD_RESUME :  Generate ramp up buffer and set state to PLAY_NORMAL
+            switch (cmd)
+            {
+            case CMD_NONE:
+                memset(frame->data, 0, AUDIO_FRAME_LENGTH * sizeof(uint32_t));
+                frame->length = AUDIO_FRAME_LENGTH;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
+                break;
+            case CMD_STOP:
+                AUD_LOGD("Audio: core1: CMD_STOP\n");
+                frame->length = 0;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
+                finished = true;
+                break;
+            case CMD_RESUME:
+                l = (int16_t)(sample >> 16);
+                r = (int16_t)(sample & 0xffff);
+                for (i = 0; i < AUDIO_FRAME_LENGTH; ++i)
+                {
+                    ll = l * i / (AUDIO_FRAME_LENGTH - 1);
+                    rr = r * i / (AUDIO_FRAME_LENGTH - 1);
+                    frame->data[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
+                }
+                frame->length = AUDIO_FRAME_LENGTH;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
+                _playback.state = PLAY_NORMAL;
+                break;
+            }
+            break;
+
+        case PLAY_GAP:
+            // PLAY_GAP:
+            // cmd == CMD_NONE   :  Continue generate silence and decrease gap. If gap==0 send 0 length buffer and set finished to true
+            // cmd == CMD_STOP   :  Generate 0 length sample and set finished to true
+            // cmd == CMD_PAUSE  :  Generate silence and enter PLAY_GAP_PAUSED
+            // cmd == CMD_RESUME :  Do nothing
+            switch (cmd)
+            {
+            case CMD_NONE:
+                if (gaps > 0)
+                {
+                    memset(frame->data, 0, AUDIO_FRAME_LENGTH * sizeof(uint32_t));
+                    frame->length = AUDIO_FRAME_LENGTH;
+                    audio_cbuf_finish_write();
+                    if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                        i2s_resume_playback();
+                    --gaps;
+                }
+                else
+                {
+                    AUD_LOGD("Audio: core1: gap finished\n");
+                    frame->length = 0;
+                    audio_cbuf_finish_write();
+                    if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                        i2s_resume_playback();
+                    finished = true;
+                }
+                break;
+            case CMD_STOP:
+                AUD_LOGD("Audio: core1: CMD_STOP\n");
+                frame->length = 0;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
+                finished = true;
+                break;
+            case CMD_PAUSE:
+                memset(frame->data, 0, AUDIO_FRAME_LENGTH * sizeof(uint32_t));
+                frame->length = AUDIO_FRAME_LENGTH;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
+                --gaps;
+                _playback.state = PLAY_GAP_PAUSED;
+                break;
+            }
+            break;
+
+        case PLAY_GAP_PAUSED:
+            // PLAY_GAP:
+            // cmd == CMD_NONE   :  Continue generate silence
+            // cmd == CMD_STOP   :  Generate 0 length sample and set finished to true
+            // cmd == CMD_PAUSE  :  Do nothing
+            // cmd == CMD_RESUME :  Generate silence and enter PLAY_GAP
+            switch (cmd)
+            {
+            case CMD_NONE:
+                memset(frame->data, 0, AUDIO_FRAME_LENGTH * sizeof(uint32_t));
+                frame->length = AUDIO_FRAME_LENGTH;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
+                break;
+            case CMD_STOP:
+                AUD_LOGD("Audio: core1: CMD_STOP\n");
+                frame->length = 0;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
+                finished = true;
+                break;
+            case CMD_RESUME:
+                memset(frame->data, 0, AUDIO_FRAME_LENGTH * sizeof(uint32_t));
+                frame->length = AUDIO_FRAME_LENGTH;
+                audio_cbuf_finish_write();
+                if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
+                    i2s_resume_playback();
+                --gaps;
+                _playback.state = PLAY_GAP;
+                break;
+            }
+            break;
+
+        }   // switch (_playback.state)
+    }   // while (!finished)
     i2s_stop_playback();
     i2s_deinit();
     wm8978_mute(true);
-    EQ_QUICK_PUSH(EVT_AUDIO_SONG_FINISHED);
+    if (CMD_STOP == cmd)    // if we reach here because CMD_STOP was received
+        EQ_QUICK_PUSH(EVT_AUDIO_SONG_TERMINATED);
+    else
+        EQ_QUICK_PUSH(EVT_AUDIO_SONG_FINISHED);
+    AUD_LOGD("Audio: core1: playback exit\n");
 }
 
 /*
@@ -323,89 +525,49 @@ void decoder_entry()
 */
 
 
-void audio_setup_playback(decoder_t *decoder)
+void audio_start_playback(decoder_t *decoder)
 {
+    uint8_t cmd;
     AUD_LOGD("Audio: core0: setup\n");
-    playback_ctx.decoder = decoder;
-    bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC1_BITS;
+    _playback.decoder = decoder;
+    bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC1_BITS;        // bring up core1 bus priority
     multicore_reset_core1();
-    multicore_launch_core1(decoder_entry);
-}
-
-
-void audio_start_playback()
-{
-    AUD_LOGD("Audio: core0: start playback\n");
-    /*
-    _play_state = PLAY_NORMAL;
-    audio_cur_tx_buf = false; // Cause the next DECODER_GET_SAMPLE_BLOCKING to fetch sample in audio_tx_buf1
-    multicore_fifo_push_blocking(DECODER_GET_SAMPLE_BLOCKING);
-    multicore_fifo_pop_blocking();  // wait decoding thread to unblock when finish receive one buffer
-    if (audio_tx_buf1_len > 0)
-    {
-        // Prepare a ramp-up sample buffer in audio_tx_buf0
-        uint32_t first_sample = audio_tx_buf1[0];
-        int16_t l = (int16_t)(first_sample >> 16);
-        int16_t r = (int16_t)(first_sample & 0xffff);
-        register int16_t ll, rr;
-        for (register int i = 0; i < AUDIO_MAX_BUFFER_LENGTH; ++i)
-        {
-            ll = l * i / (AUDIO_MAX_BUFFER_LENGTH - 1);
-            rr = r * i / (AUDIO_MAX_BUFFER_LENGTH - 1);
-            audio_tx_buf0[i] = ((uint32_t)ll) << 16 | (uint16_t)rr;
-        }
-        audio_tx_buf0_len = AUDIO_MAX_BUFFER_LENGTH;
-        wm8978_mute(false);
-        // Send rampup buffer
-        i2s_send_buffer_blocking(audio_tx_buf0, audio_tx_buf0_len);
-        // Start auto sending from audio_tx_buf1
-        audio_cur_tx_buf = true;
-        i2s_start_playback(NULL, 0);
-        // Meanwhile get more samples in audio_tx_buf0
-        multicore_fifo_push_blocking(DECODER_GET_SAMPLE);
-    }
-    else
-    {
-        // first buffer is 0 length. Just send a silent buffer and let i2s finish on its own
-        memset(audio_tx_buf0, 0, AUDIO_MAX_BUFFER_LENGTH * sizeof(uint32_t));
-        audio_tx_buf0_len = AUDIO_MAX_BUFFER_LENGTH;
-        wm8978_mute(false);
-        i2s_start_playback(i2s_notify_cb, 0);
-        multicore_fifo_push_blocking(DECODER_GET_SAMPLE);   // This will receive 0 length buffer again and finish
-    }
-    */
+    multicore_launch_core1(playback_proc);
 }
 
 
 void audio_stop_playback()
 {
+    uint8_t cmd = CMD_STOP;
+    queue_add_blocking(&(_playback.cmd_queue), (void *)&cmd);
     AUD_LOGD("Audio: core0: stop playback\n");
-    _play_state = PLAY_STOPPING;
 }
 
 
 void audio_finish_playback()
 {
-    // wait decoding join, flush I2S FIFO
-    //multicore_fifo_pop_blocking();
-    AUD_LOGD("Audio: core0: core1 joined\n");
-    //i2s_stop_playback();
-    //wm8978_mute(true);
+    uint8_t cmd;
+    multicore_reset_core1();
+    _playback.decoder = NULL;
+    _playback.state = PLAY_NONE;
+    while (queue_try_remove(&(_playback.cmd_queue), (void *)&cmd)) {};   // empty command queue
 }
 
 
 void audio_pause_playback()
 {
+    uint8_t cmd = CMD_PAUSE;
+    queue_add_blocking(&(_playback.cmd_queue), (void *)&cmd);
     AUD_LOGD("Audio: core0: pause playback\n");
-    if (_play_state == PLAY_NORMAL)
-        _play_state = PLAY_RAMPDOWN;
 }
 
 
 void audio_resume_playback()
 {
+    uint8_t cmd = CMD_RESUME;
+    queue_add_blocking(&(_playback.cmd_queue), (void *)&cmd);
     AUD_LOGD("Audio: core0: resume\n");
-    _play_state = PLAY_RAMPUP;
+
 }
 
 

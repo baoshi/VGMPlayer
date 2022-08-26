@@ -114,6 +114,7 @@ static void browser_on_exit(browser_t *ctx)
     tick_disarm_timer_event(ctx->timer_ui_update);
     ctx->timer_ui_update = 0;
     input_delete_buttons();
+    event_queue_clear();
 }
 
 

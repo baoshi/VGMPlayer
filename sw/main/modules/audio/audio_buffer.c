@@ -12,21 +12,23 @@ struct audio_cbuf_s
 };
 
 
-static audio_cbuf_t __audio_ram("cbuf") cbuf;
+static audio_cbuf_t __audio_ram("audio") cbuf;
 
 
 void audio_cbuf_init()
 {
 	critical_section_init(&(cbuf.lock));
-	audio_cbuf_reset(&cbuf);
+	audio_cbuf_reset();
 }
 
 
 void audio_cbuf_reset()
 {
+	critical_section_enter_blocking(&(cbuf.lock));
 	cbuf.head = 0;
 	cbuf.tail = 0;
 	cbuf.full = false;
+	critical_section_exit(&(cbuf.lock));
 }
 
 

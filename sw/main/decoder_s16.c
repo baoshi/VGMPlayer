@@ -29,12 +29,12 @@ uint32_t decoder_s16_get_samples(decoder_s16_t *me, uint32_t *buf, uint32_t len)
     uint16_t *buf16 = (uint16_t *)buf;
     uint8_t *buf8 = (uint8_t *)buf;
     // For len uint32_t samples, we need to read len uint16_t data, or len * 2 uint8_t data
-    size_t read8 = me->reader->read(me->reader, buf8, (size_t)-1, len + len);
-    size_t read16 = read8 >> 1;
+    int read8 = (int)me->reader->read(me->reader, buf8, (size_t)-1, len + len);
+    int read16 = (int)(read8 >> 1);
     // extend u16 to u32
     // u16: |AA|BB|CC|DD|EE|  (len: read16 (5))
     // u16: |AA|AA|BB|BB|CC|CC|DD|DD|EE|EE|  (len: read8 (10))
-    for (size_t i = read16 - 1; i >= 0; --i)
+    for (int i = read16 - 1; i >= 0; --i)
     {
         buf16[i + i + 1] = buf16[i];
         buf16[i + i] = buf16[i];

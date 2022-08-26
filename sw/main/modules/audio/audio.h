@@ -24,8 +24,7 @@ void audio_preinit();
 void audio_postinit();
 void audio_close();
 
-void audio_setup_playback(decoder_t *decoder);
-void audio_start_playback();
+void audio_start_playback(decoder_t *decoder);
 void audio_pause_playback();
 void audio_resume_playback();
 void audio_stop_playback();
