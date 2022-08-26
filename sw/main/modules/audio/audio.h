@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <umm_malloc_cfg.h>
+#include <umm_malloc.h>
 #include "decoder.h"
 
 
@@ -36,21 +38,22 @@ bool audio_get_jack_state();
 void audio_jack_enable(bool enable);
 
 
-/* find in audio_memory.c */
-
+//
+// Audio memory management
+//
 void audio_mem_init();
 #define audio_malloc    umm_malloc
 #define audio_calloc    umm_calloc
 #define audio_realloc   umm_realloc
 #define audio_free      umm_free
-
-/* use this to define variable in audio heap. e.g
- * static uint32_t __audio_ram("my_group_name") array[3];
- */
+// use this to define variable in audio heap. e.g
+// static uint32_t __audio_ram("my_group_name") array[3];
 #define __audio_ram(group) __attribute__((section(".core1mem." group)))
 
-/* find in audio_buffer.c */
 
+//
+// Audio circular buffer
+//
 typedef struct audio_frame_s
 {
     uint32_t data[AUDIO_FRAME_LENGTH];
@@ -68,7 +71,23 @@ void audio_cbuf_finish_write();
 audio_frame_t * audio_cbuf_get_read_buffer();
 void audio_cbuf_finish_read();
 
-extern audio_cbuf_t *audio_buffer;
+
+//
+// Audio file reader
+//
+typedef struct audio_file_reader_s audio_file_reader_t;
+struct audio_file_reader_s
+{
+    audio_file_reader_t *self;
+    size_t (*read)(audio_file_reader_t *self, uint8_t* out, size_t offset, size_t length);
+    size_t (*size)(audio_file_reader_t *self);
+};
+// Direct file reader
+audio_file_reader_t * dfreader_create(const char* fn);
+void dfreader_destroy(audio_file_reader_t* cfr);
+// Cached file reader
+audio_file_reader_t * cfreader_create(const char* fn, size_t cache_size);
+void cfreader_destroy(audio_file_reader_t* cfr);
 
 
 

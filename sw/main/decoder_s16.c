@@ -1,9 +1,7 @@
 #include <string.h>
 #include "my_debug.h"
-#include "my_mem.h"
 #include "audio.h"
 #include "decoder_s16.h"
-
 
 
 #ifndef S16_DEBUG
@@ -28,52 +26,62 @@
 
 uint32_t decoder_s16_get_samples(decoder_s16_t *me, uint32_t *buf, uint32_t len)
 {
-    uint16_t buffer[AUDIO_FRAME_LENGTH];
+    uint16_t *buf16 = (uint16_t *)buf;
+    uint8_t *buf8 = (uint8_t *)buf;
     // For len uint32_t samples, we need to read len uint16_t data, or len * 2 uint8_t data
-    FRESULT fr;
-    UINT ret = 0;
-    fr = f_read(&(me->fd), buffer, len * 2, &ret);
-    ret = ret / 2;
-    for (int i = 0; i < ret; ++i)
+    size_t read8 = me->reader->read(me->reader, buf8, (size_t)-1, len + len);
+    size_t read16 = read8 >> 1;
+    // extend u16 to u32
+    // u16: |AA|BB|CC|DD|EE|  (len: read16 (5))
+    // u16: |AA|AA|BB|BB|CC|CC|DD|DD|EE|EE|  (len: read8 (10))
+    for (size_t i = read16 - 1; i >= 0; --i)
     {
-        buf[i] = (((uint32_t)(buffer[i])) << 16) | (buffer[i]);
+        buf16[i + i + 1] = buf16[i];
+        buf16[i + i] = buf16[i];
     }
-    S16_LOGD("S16: return %d samples\n", ret);
-    return (uint32_t)ret;
+    S16_LOGD("S16: return %d samples\n", read16);
+    return (uint32_t)read16;
 }
 
 
 decoder_s16_t * decoder_s16_create(char const *file)
 {
-    decoder_s16_t *decoder = MY_MALLOC(sizeof(decoder_s16_t));
-    if (decoder)
+    decoder_s16_t *decoder = NULL;
+    
+    do 
     {
-        memset(decoder, 0, sizeof(decoder_s16_t));
-        if (FR_OK == f_open(&(decoder->fd), file, FA_READ))
+        decoder = audio_malloc(sizeof(decoder_s16_t));
+        if (NULL == decoder)
         {
-            decoder->samples = f_size(&(decoder->fd)) / 2;
-            decoder->super.get_samples = (get_samples_t)decoder_s16_get_samples;
+            S16_LOGW("S16: out of memory\n");
+            break;
         }
-        else
+        memset(decoder, 0, sizeof(decoder_s16_t));
+        decoder->reader = dfreader_create(file);
+        if (NULL == decoder->reader)
         {
             S16_LOGW("S16: open %s failed\n", file);
-            MY_FREE(decoder);
-            decoder = 0;
+            break;
         }
-    }
-    else
+        decoder->samples = (unsigned int)(decoder->reader->size(decoder->reader));
+        decoder->super.get_samples = (get_samples_t)decoder_s16_get_samples;
+        return decoder;
+    } while (0);
+
+    if (decoder)
     {
-        S16_LOGW("S16: out of memory\n");
+        if (decoder->reader) dfreader_destroy(decoder->reader);
+        audio_free(decoder);
     }
-    return decoder;
+    return NULL;
 }
 
 
-void decoder_s16_destroy(decoder_s16_t* me)
+void decoder_s16_destroy(decoder_s16_t* decoder)
 {
-    if (me)
+    if (decoder)
     {
-        f_close(&(me->fd));
-        MY_FREE(me);
+        if (decoder->reader) dfreader_destroy(decoder->reader);
+        audio_free(decoder);
     }
 }

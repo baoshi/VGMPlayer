@@ -1,4 +1,3 @@
-#include <memory.h>
 #include <pico/multicore.h>
 #include <hardware/gpio.h>
 #include <hardware/structs/bus_ctrl.h>

@@ -1,6 +1,4 @@
 #include <stdint.h>
-#include <umm_malloc_cfg.h>
-#include <umm_malloc.h>
 #include "audio.h"
 
 

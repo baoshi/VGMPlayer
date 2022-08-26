@@ -1,15 +1,13 @@
 #pragma once
 
-#include <ff.h>
 #include "audio.h"
 #include "decoder.h"
 
 typedef struct decoder_s16_s
 {
     decoder_t super;
-    char const *fn;
-    FIL fd;
-    uint32_t samples;
+    audio_file_reader_t *reader;
+    unsigned int samples;
 } decoder_s16_t;
 
 
