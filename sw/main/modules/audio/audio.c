@@ -402,7 +402,7 @@ static void playback_proc()
     wm8978_mute(true);
     if (CMD_STOP == cmd) 
         EQ_QUICK_PUSH(EVT_AUDIO_SONG_TERMINATED);
-    else if (CMD_TERM != CMD_TERM)
+    else if (CMD_TERM != cmd)
         EQ_QUICK_PUSH(EVT_AUDIO_SONG_FINISHED);
     multicore_fifo_push_blocking(0);    // audio_finish will wait for this
     AUD_LOGD("Audio/core1: playback exit\n");
