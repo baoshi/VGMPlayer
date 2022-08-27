@@ -1,21 +1,22 @@
 #include <string.h>
 #include <ff.h>
-#include "my_debug.h"
 #include "audio.h"
+#include "direct_file_reader.h"
 
-// Cached File Reader
+
+// Direct File Reader
 typedef struct dfr_s
 {
     // super class
-    audio_file_reader_t super;
-    // Private fields
+    file_reader_t super;
+    // private fields
     FIL fd;
     bool fd_valid;
 } dfr_t;
 
 
 
-static size_t read(audio_file_reader_t *self, uint8_t *out, size_t offset, size_t length)
+static size_t read(file_reader_t *self, uint8_t *out, size_t offset, size_t length)
 {
     dfr_t *ctx = (dfr_t*)self;
     MY_ASSERT(ctx != NULL && ctx->fd_valid);
@@ -37,15 +38,14 @@ static size_t read(audio_file_reader_t *self, uint8_t *out, size_t offset, size_
 }
 
 
-static size_t size(audio_file_reader_t *self)
+static size_t size(file_reader_t *self)
 {
     dfr_t *ctx = (dfr_t*)self;
-    MY_ASSERT(ctx != NULL && ctx->fd_valid);
     return (size_t)f_size(&(ctx->fd));
 }
 
 
-audio_file_reader_t * dfreader_create(const char* fn)
+file_reader_t * dfreader_create(const char* fn)
 {
     FRESULT fr;
     FIL fd;
@@ -65,11 +65,11 @@ audio_file_reader_t * dfreader_create(const char* fn)
         
         memcpy(&(ctx->fd), &fd, sizeof(fd));
         ctx->fd_valid = true;
-        ctx->super.self = (audio_file_reader_t*)ctx;
+        ctx->super.self = (file_reader_t*)ctx;
         ctx->super.read = read;
         ctx->super.size = size;
 
-        return (audio_file_reader_t*)ctx;
+        return (file_reader_t*)ctx;
 
     } while (0);
 
@@ -81,7 +81,7 @@ audio_file_reader_t * dfreader_create(const char* fn)
 }
 
 
-void dfreader_destroy(audio_file_reader_t *dfr)
+void dfreader_destroy(file_reader_t *dfr)
 {
     dfr_t* ctx = (dfr_t*)dfr;
     if (0 == ctx)

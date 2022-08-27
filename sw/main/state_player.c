@@ -14,7 +14,7 @@
 #include "path_utils.h"
 #include "audio.h"
 #include "decoder_s16.h"
-//#include "decoder_vgm.h"
+#include "decoder_vgm.h"
 #include "catalog.h"
 #include "popup.h"
 #include "app.h"
@@ -452,7 +452,7 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         MY_ASSERT(ctx->decoder == 0);
         ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
         // TODO: Handle error here
-        MY_ASSERT(ctx->decoder != 0);
+        MY_ASSERT(ctx->decoder != NULL);
         audio_start_playback(ctx->decoder);
         ctx->playing = true;
         ctx->nav_dir = 1;   // default next song direction
@@ -567,13 +567,9 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
     case EVT_START:
         PL_LOGD("Player_VGM: start\n");
         MY_ASSERT(ctx->decoder == 0);
-        {
-            //decoder_vgm_t *vgm = decoder_vgm_create(ctx->file);
-            //ctx->decoder = (decoder_t *)vgm;
-            //MY_ASSERT(ctx->decoder != 0);
-            //lv_label_set_text(ctx->lbl_bottom, vgm->vgm->track_name_en);
-        }
-        // TODO: Handle error here?
+        ctx->decoder = (decoder_t *) decoder_vgm_create(ctx->file);
+        MY_ASSERT(ctx->decoder != NULL);
+        lv_label_set_text(ctx->lbl_bottom, ((decoder_vgm_t *)(ctx->decoder))->vgm->track_name_en);
         audio_start_playback(ctx->decoder);
         ctx->playing = true;
         ctx->nav_dir = 1;   // default next song direction
@@ -583,7 +579,7 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
         audio_finish_playback();
         if (ctx->decoder)
         {
-            //decoder_vgm_destroy((decoder_vgm_t *)(ctx->decoder));
+            decoder_vgm_destroy((decoder_vgm_t *)(ctx->decoder));
             ctx->decoder = 0;
         }
         app->busy = false;

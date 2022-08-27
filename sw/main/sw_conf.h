@@ -17,8 +17,6 @@
 
 #define POPUP_AUTO_CLOSE_MS             5000
 
-#define VGM_CACHE_SIZE                  2048
-
 
 union nvram_t
 {

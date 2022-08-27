@@ -1,50 +1,30 @@
 #include <string.h>
 #include <pico/time.h>
 #include <inttypes.h>
-#include "my_debug.h"
 #include "audio.h"
-#include "sw_conf.h"
-#include "audio.h"
-#include "file_reader_cached_fatfs.h"
+#include "cached_file_reader.h"
+#include "vgm_conf.h"
 #include "decoder_vgm.h"
-
-
-#ifndef VGM_DEBUG
-#  define VGM_DEBUG 1
-#endif
-
-// Debug log
-#if VGM_DEBUG
-#define VGM_LOGD(x, ...)      MY_LOGD(x, ##__VA_ARGS__)
-#define VGM_LOGW(x, ...)      MY_LOGW(x, ##__VA_ARGS__)
-#define VGM_LOGE(x, ...)      MY_LOGE(x, ##__VA_ARGS__)
-#define VGM_LOGI(x, ...)      MY_LOGI(x, ##__VA_ARGS__)
-#define VGM_DEBUGF(x, ...)    MY_DEBUGF(x, ##__VA_ARGS__)
-#else
-#define VGM_LOGD(x, ...)
-#define VGM_LOGW(x, ...)
-#define VGM_LOGE(x, ...)
-#define VGM_LOGI(x, ...)
-#define VGM_DEBUGF(x, ...)
-#endif
 
 
 static uint32_t decoder_vgm_get_samples(decoder_vgm_t *ctx, uint32_t *buf, uint32_t len)
 {
-    int16_t samples;
-    uint16_t nibble;
-    MY_ASSERT(len <= AUDIO_MAX_BUFFER_LENGTH);
+    int16_t *buf16 = (uint16_t *)buf;
+    int samples;
+    MY_ASSERT(len <= AUDIO_FRAME_LENGTH);
     absolute_time_t start = get_absolute_time();
-    samples = vgm_get_samples(ctx->vgm, ctx->buffer, len);
-    for (int16_t i = 0; i < samples; ++i)
+    // caller requested for len samples of uint32_t. we ask len samples of int16_t from vgm, then extend i16 to u32
+    samples = vgm_get_samples(ctx->vgm, buf16, len);
+    // |AA|BB|CC|DD|EE| --> |AA|AA|BB|BB|CC|CC|DD|DD|EE|EE|  (view as int16_t)
+    for (int i = samples - 1; i >= 0; --i)
     {
-        nibble = (uint16_t)(ctx->buffer[i]);
-        buf[i] = (((uint32_t)nibble) << 16) | nibble;
+        buf16[i + i + 1] = buf16[i];
+        buf16[i + i] = buf16[i];
     }
     absolute_time_t end = get_absolute_time();
     int64_t us = absolute_time_diff_us(start, end);
     if (us > 1000000 * len / 44100)
-        VGM_LOGD("VGM: %d samples in %" PRId64 " us\n", samples, us);
+        AUD_LOGD("Audio/vgm: %d samples in %" PRId64 " us\n", samples, us);
     return (uint32_t)samples;
 }
 
@@ -54,26 +34,26 @@ decoder_vgm_t * decoder_vgm_create(char const *file)
     decoder_vgm_t *decoder = NULL;
     do
     {
-        decoder = C1_MALLOC(sizeof(decoder_vgm_t));
-        if (0 == decoder)
-            break;
-        memset(decoder, 0, sizeof(decoder_vgm_t));
-        // create nsf reader
-        decoder->reader = cfr_create(file, VGM_CACHE_SIZE);
-        if (0 == decoder->reader)
+        decoder = audio_malloc(sizeof(decoder_vgm_t));
+        if (NULL == decoder)
         {
-            VGM_LOGW("VGM: file reader creation failed\n");
-            C1_FREE(decoder);
-            decoder = NULL;
+            AUD_LOGW("Audio/vgm: out of memory\n");
             break;
         }
-        // create nsf emulator
-        decoder->vgm = vgm_create(decoder->reader);
-        if (0 == decoder->vgm)
+        memset(decoder, 0, sizeof(decoder_vgm_t));
+        decoder->reader = cfreader_create(file, VGM_FILE_CACHE_SIZE);
+        if (NULL == decoder->reader)
         {
-            VGM_LOGW("VGM: vgm creation failed\n");
-            cfr_destroy(decoder->reader);
-            C1_FREE(decoder);
+            AUD_LOGW("Audio/vgm: file reader creation failed\n");
+            audio_free(decoder);
+            break;
+        }
+        decoder->vgm = vgm_create(decoder->reader);
+        if (NULL == decoder->vgm)
+        {
+            AUD_LOGW("Audio/vgm: vgm creation failed\n");
+            cfreader_destroy(decoder->reader);
+            audio_free(decoder);
             decoder = NULL;
             break;
         }
@@ -88,13 +68,16 @@ void decoder_vgm_destroy(decoder_vgm_t *ctx)
 {
     if (ctx)
     {
-        if (ctx->vgm) vgm_destroy(ctx->vgm);
+        if (ctx->vgm) 
+        {
+            vgm_destroy(ctx->vgm);
+        }
         if (ctx->reader)
         {
-            cfr_show_cache_status(ctx->reader);
-            cfr_destroy(ctx->reader);
+            cfreader_show_cache_status(ctx->reader);
+            cfreader_destroy(ctx->reader);
         }
-        C1_FREE(ctx);
+        audio_free(ctx);
     }
 }
 

@@ -106,7 +106,8 @@
         "mutex.h": "c",
         "core1_mem.h": "c",
         "memory.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "vgm_conf.h": "c"
     },
     "cmake.configureOnOpen": true,
     "cortex-debug.variableUseNaturalFormat": false

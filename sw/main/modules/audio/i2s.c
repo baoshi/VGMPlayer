@@ -13,26 +13,6 @@
 #include "i2s.h"
 
 
-#ifndef I2S_DEBUG
-#  define I2S_DEBUG 1
-#endif
-
-// Debug log
-#if I2S_DEBUG
-#define I2S_LOGD(x, ...)      MY_LOGD(x, ##__VA_ARGS__)
-#define I2S_LOGW(x, ...)      MY_LOGW(x, ##__VA_ARGS__)
-#define I2S_LOGE(x, ...)      MY_LOGE(x, ##__VA_ARGS__)
-#define I2S_LOGI(x, ...)      MY_LOGI(x, ##__VA_ARGS__)
-#define I2S_DEBUGF(x, ...)    MY_DEBUGF(x, ##__VA_ARGS__)
-#else
-#define I2S_LOGD(x, ...)
-#define I2S_LOGW(x, ...)
-#define I2S_LOGE(x, ...)
-#define I2S_LOGI(x, ...)
-#define I2S_DEBUGF(x, ...)
-#endif
-
-
 // flag if buffer underrun happened
 bool i2s_buffer_underrun = false;
 
@@ -41,9 +21,6 @@ extern audio_cbuf_t *audio_buffer;
 
 // i2s PIO program offset for cleanup
 static uint pio_i2s_offset = 0;
-
-
-
 
 
 static void i2s_dma_channel_irq_enable()
@@ -86,13 +63,13 @@ static void i2s_dma_isr()
             else
             {
                 // No more data, no need DMA irq anymore
-                I2S_LOGD("I2S: no more samples\n");
+                AUD_LOGD("Audio/i2s: no more samples\n");
                 i2s_dma_channel_irq_disable();
             }
         }
         else
         {
-            I2S_LOGW("I2S: buffer underrun\n");
+            AUD_LOGW("Audio/i2s: buffer underrun\n");
             i2s_buffer_underrun = true; // audio module will detect this flag and resume playback
         }
     }
@@ -135,7 +112,7 @@ static void pio_i2s_flush()
 
 void i2s_init()
 {
-    I2S_LOGD("I2S: init\n");
+    AUD_LOGD("Audio/i2s: init\n");
     // Set up I2S PIO program
     pio_sm_claim(I2S_PIO, I2S_PIO_SM);
     pio_i2s_offset = pio_add_program(I2S_PIO, &pio_i2s_program);
@@ -188,7 +165,7 @@ void i2s_init()
 
 void i2s_deinit()
 {
-    I2S_LOGD("I2S: deinit\n");
+    AUD_LOGD("Audio/i2s: deinit\n");
     // Disable DMA irq
     i2s_dma_channel_irq_disable();
     // remove IRQ handler (internally will disable IRQ before removing then restore)
