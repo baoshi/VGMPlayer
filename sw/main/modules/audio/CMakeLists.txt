@@ -7,6 +7,7 @@ target_sources(audio INTERFACE
     audio_buffer.c
     audio.c
     direct_file_reader.c
+    decoder_s16.c
 )
 
 pico_generate_pio_header(audio ${CMAKE_CURRENT_LIST_DIR}/i2s.pio)

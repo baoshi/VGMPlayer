@@ -51,7 +51,6 @@ add_executable(${PROJ_NAME}
     popup_brightness.c
     popup_volume.c
     popup_alert.c
-    decoder_s16.c
     main.c
 )
 
@@ -60,7 +59,6 @@ target_link_libraries(${PROJ_NAME}
     hardware_gpio
     hardware_pwm
     hardware_i2c
-    umm_malloc
     ec
     backlight
     display
