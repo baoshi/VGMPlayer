@@ -11,3 +11,6 @@
 [submodule "sw/tests/fsdev/lib/umm_malloc/umm_malloc"]
 	path = sw/tests/fsdev/lib/umm_malloc/umm_malloc
 	url = https://github.com/rhempel/umm_malloc.git
+[submodule "sw/main/modules/audio/vgm"]
+	path = sw/main/modules/audio/vgm
+	url = http://baoshi@192.168.1.3:680/baoshi/vgmcore.git
