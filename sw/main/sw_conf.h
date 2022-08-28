@@ -4,10 +4,10 @@
 #include <stdint.h>
 #include "eeprom.h"
 
-#define SUPERLOOP_UPDATE_INTERVAL_MS    40
+#define SUPERLOOP_UPDATE_INTERVAL_MS    10
 #define BACKLIGHT_IDLE_DIM_MS           10000
 
-#define TICK_GRANULARITY_MS             10
+#define TICK_GRANULARITY_MS             1
 
 
 // Maximun files listed per page.

@@ -29,8 +29,8 @@
 #endif
 
 
-// audio frame length. 1470 is 1/30s in 44100 sample rate
-#define AUDIO_FRAME_LENGTH              1470
+// audio frame length. make it 2's power for easy FFT. also NESAPU_MAX_SAMPLE_SIZE in vgm_conf.h need to be larger than this.
+#define AUDIO_FRAME_LENGTH              2048
 // audio circular buffer length, we will statically allocate AUDIO_CBUF_LENGTH or AUDIO_FRAME_LENGTH samples
 #define AUDIO_CBUF_LENGTH               3
 // audio sample rate
