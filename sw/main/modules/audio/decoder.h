@@ -14,4 +14,5 @@ typedef uint32_t     (*get_samples_t)(decoder_t *me, uint32_t *buf, uint32_t len
 struct decoder_s
 {
     get_samples_t  get_samples;
+    unsigned long  total_samples;
 };

@@ -1,8 +1,10 @@
 #include <string.h>
+#include <inttypes.h>
 #include <hardware/structs/bus_ctrl.h>
 #include <hardware/gpio.h>
 #include <pico/multicore.h>
 #include <pico/util/queue.h>
+#include <pico/time.h>
 #include "hw_conf.h"
 #include "sw_conf.h"
 #include "my_debug.h"
@@ -99,6 +101,15 @@ void audio_close()
 }
 
 
+static inline void notify_progress(audio_progress_t *progress)
+{
+    event_t e;
+    e.code = EVT_AUDIO_PROGRESS;
+    e.param = (void *)progress;
+    event_queue_push_back(&e, true);
+}
+
+
 static void playback_proc()
 {
     AUD_LOGD("Audio/core1: playback entry\n");
@@ -108,15 +119,18 @@ static void playback_proc()
     register int x, i;
     bool finished = false;
     uint32_t cmd;
-    // number of silence buffer to send before finish the song
-    int gaps = AUDIO_SONG_GAP_MS * AUDIO_SAMPLE_RATE / AUDIO_FRAME_LENGTH / 1000;
+    int gaps = AUDIO_SONG_GAP_MS * AUDIO_SAMPLE_RATE / AUDIO_FRAME_LENGTH / 1000; // number of silence buffer to send before finish the song
+    audio_progress_t progress;
 
     audio_cbuf_reset();
     multicore_fifo_drain();
     _playback.state = PLAY_NORMAL;
+    progress.total_samples = decoder->total_samples;
+    progress.played_samples = 0;
     // first audio buffer is a ramp up from 0 to first sound sample
     num_samples = decoder->get_samples(decoder, &sample, 1);
     if (num_samples == 0) sample = 0;   // no sample from decoder, just make a buffer of 0 and let playing finish by itself
+    progress.played_samples += num_samples;
     audio_frame_t *frame = audio_cbuf_get_write_buffer();
     MY_ASSERT(frame != NULL);
     l = (int16_t)(sample >> 16);
@@ -137,6 +151,7 @@ static void playback_proc()
         if (NULL == frame) break;
         num_samples = decoder->get_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
         frame->length = num_samples;
+        progress.played_samples += num_samples;
         audio_cbuf_finish_write();
         if (0 == num_samples) break;
     }
@@ -185,6 +200,8 @@ static void playback_proc()
                 if (num_samples != 0)
                 {
                     sample = frame->data[num_samples - 1];  // save last sample for ramp use
+                    progress.played_samples += num_samples;
+                    notify_progress(&progress);
                 } 
                 else
                 {

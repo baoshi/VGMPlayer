@@ -42,7 +42,7 @@ decoder_s16_t * decoder_s16_create(char const *file)
             AUD_LOGW("Audio/s16: open %s failed\n", file);
             break;
         }
-        decoder->samples = (unsigned int)(decoder->reader->size(decoder->reader));
+        decoder->super.total_samples = (unsigned long)(decoder->reader->size(decoder->reader) / 2);
         decoder->super.get_samples = (get_samples_t)decoder_s16_get_samples;
         return decoder;
     } while (0);

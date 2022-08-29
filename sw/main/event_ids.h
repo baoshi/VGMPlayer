@@ -22,7 +22,7 @@ enum
 
     EVT_CLOSE_ALERT,                // Alert popup ask to close by timer or manually
 
-    EVT_AUDIO_SAMPLE_READY,         // Audio samples are ready. Parameter is audio_buffer_t pointer
+    EVT_AUDIO_PROGRESS,             // Audio progress, parameter is pointer to audio_progress_t
     EVT_AUDIO_SONG_TERMINATED,      // Audio decoding ended (application need call audio_finish_playback())
     EVT_AUDIO_SONG_FINISHED,
 

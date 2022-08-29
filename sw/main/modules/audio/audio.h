@@ -81,8 +81,8 @@ typedef struct audio_frame_s
     unsigned int length;
 } audio_frame_t;
 
-/// Opaque circular buffer structure
 typedef struct audio_cbuf_s audio_cbuf_t;
+extern audio_cbuf_t *audio_buffer;
 
 void audio_cbuf_init();
 void audio_cbuf_reset();
@@ -91,6 +91,16 @@ audio_frame_t * audio_cbuf_get_write_buffer();
 void audio_cbuf_finish_write();
 audio_frame_t * audio_cbuf_get_read_buffer();
 void audio_cbuf_finish_read();
+
+
+//
+// Playing process reporting block
+//
+typedef struct audio_progress_s
+{
+    unsigned long total_samples;
+    unsigned long played_samples;
+} audio_progress_t;
 
 
 #ifdef __cplusplus

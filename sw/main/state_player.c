@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
+#include <pico/time.h>
 #include "sw_conf.h"
 #include "my_debug.h"
 #include "lvstyle.h"
@@ -177,6 +179,7 @@ static void player_on_ui_update(player_t *ctx)
     char buf[32];
     sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
     lv_label_set_text(ctx->lbl_top, buf);
+    /*
     ctx->chart_series[0].y_points[0] = rand() % 100;
     ctx->chart_series[0].y_points[1] = rand() % 100;
     ctx->chart_series[0].y_points[2] = rand() % 100;
@@ -188,6 +191,7 @@ static void player_on_ui_update(player_t *ctx)
     ctx->chart_series[0].y_points[8] = rand() % 100;
     ctx->chart_series[0].y_points[9] = rand() % 100;
     lv_chart_refresh(ctx->chart);
+    */
 }
 
 
@@ -397,17 +401,11 @@ event_t const *player_handler(app_t *app, event_t const *evt)
             volume_popup_refresh(app);
         }
         break;
-    case EVT_AUDIO_SAMPLE_READY:
-        if ((bool)(evt->param))
+    case EVT_AUDIO_PROGRESS:
+        if (evt->param)
         {
-            // samples in buf1
-            // PL_LOGD("Player: buf1 %d samples\n", audio_tx_buf1_len);
-            
-        }
-        else
-        {
-            // samples in buf0
-            //lv_label_set_text(ctx->lbl_status, txt);
+            audio_progress_t *progress = (audio_progress_t *)(evt->param);
+            PL_LOGD("Player: %lu / %lu\n", progress->played_samples, progress->total_samples);
         }
         break;
     default:

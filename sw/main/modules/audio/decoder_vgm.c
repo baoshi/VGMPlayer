@@ -59,6 +59,7 @@ decoder_vgm_t * decoder_vgm_create(char const *file)
         }
         vgm_prepare_playback(decoder->vgm, AUDIO_SAMPLE_RATE, true);
         decoder->super.get_samples = (get_samples_t)decoder_vgm_get_samples;
+        decoder->super.total_samples = (unsigned int)(decoder->vgm->complete_samples);
     } while (0);
     return decoder;
 }

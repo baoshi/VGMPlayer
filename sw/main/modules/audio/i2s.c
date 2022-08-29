@@ -16,8 +16,6 @@
 // flag if buffer underrun happened
 bool i2s_buffer_underrun = false;
 
-// defined in audio.c
-extern audio_cbuf_t *audio_buffer;
 
 // i2s PIO program offset for cleanup
 static uint pio_i2s_offset = 0;
