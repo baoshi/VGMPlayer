@@ -2,15 +2,14 @@
 #include "audio.h"
 
 
-struct audio_cbuf_s
+typedef struct audio_cbuf_s
 {
 	audio_frame_t buffer[AUDIO_CBUF_LENGTH];
 	unsigned int head;
 	unsigned int tail;
 	bool full;
 	critical_section_t lock;
-};
-
+} audio_cbuf_t;
 
 static audio_cbuf_t __audio_ram("audio") cbuf;
 

@@ -47,6 +47,10 @@ typedef struct playback_ctx_s
 static playback_ctx_t __audio_ram("audio") _playback;
 
 
+// "sampling" buffer for UI access, not in "audio" ram
+audio_sampling_buffer_t audio_sampling_buffer;
+
+
 // Jack detection fsm
 #define JACK_DEBOUNCE_MS 100
 static uint32_t _jack_timestamp = 0;
@@ -66,6 +70,8 @@ void audio_preinit()
     audio_mem_init();
     audio_cbuf_init();
     memset(&_playback, 0, sizeof(playback_ctx_t));
+    memset(&audio_sampling_buffer, 0, sizeof(audio_sampling_buffer_t));
+    mutex_init(&(audio_sampling_buffer.lock));
     // Disable jack output at beginning
     gpio_init(JACK_OUTEN_PIN);
     gpio_put(JACK_OUTEN_PIN, false);
@@ -106,6 +112,7 @@ static inline unsigned int decode_samples(decoder_t *decoder, uint32_t *buf, uns
     int samples = 0;
     if (decoder->get_sample_s16)
     {
+        absolute_time_t start = get_absolute_time();
         // decoder will return int16_t samples, need to expand to uint32_t
         int16_t *buf16 = (uint16_t *)buf;
         samples = decoder->get_sample_s16(decoder, buf16, len);
@@ -115,6 +122,17 @@ static inline unsigned int decode_samples(decoder_t *decoder, uint32_t *buf, uns
             buf16[i + i + 1] = buf16[i];
             buf16[i + i] = buf16[i];
         }
+        // fill sampling buffer 
+        if (mutex_try_enter(&(audio_sampling_buffer.lock), NULL))
+        {
+            memcpy(audio_sampling_buffer.buffer, buf16, samples);
+            audio_sampling_buffer.length = samples;
+            mutex_exit(&(audio_sampling_buffer.lock));
+        }
+        absolute_time_t end = get_absolute_time();
+        int64_t us = absolute_time_diff_us(start, end);
+        if ((samples > 0) && (us > 1000000 * samples / 44100))
+            AUD_LOGD("Audio/core1: %d samples in %" PRId64 " us\n", samples, us);
     }
     return (unsigned int)samples;
 }

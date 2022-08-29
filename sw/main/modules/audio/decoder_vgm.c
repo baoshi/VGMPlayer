@@ -1,6 +1,4 @@
 #include <string.h>
-#include <pico/time.h>
-#include <inttypes.h>
 #include "audio.h"
 #include "cached_file_reader.h"
 #include "vgm_conf.h"
@@ -12,12 +10,7 @@ static unsigned int decoder_vgm_get_samples(decoder_t *me, int16_t *buf, unsigne
     decoder_vgm_t *ctx = (decoder_vgm_t *)me;
     int samples;
     MY_ASSERT(len <= AUDIO_FRAME_LENGTH);
-    absolute_time_t start = get_absolute_time();
     samples = vgm_get_samples(ctx->vgm, buf, len);
-    absolute_time_t end = get_absolute_time();
-    int64_t us = absolute_time_diff_us(start, end);
-    if (us > 1000000 * len / 44100)
-        AUD_LOGD("Audio/vgm: %d samples in %" PRId64 " us\n", samples, us);
     return (unsigned int)samples;
 }
 

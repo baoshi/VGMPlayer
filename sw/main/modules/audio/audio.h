@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <umm_malloc_cfg.h>
 #include <umm_malloc.h>
+#include <pico/mutex.h>
 #include "my_debug.h"
 #include "file_reader.h"
 #include "decoder.h"
@@ -81,8 +82,7 @@ typedef struct audio_frame_s
     unsigned int length;
 } audio_frame_t;
 
-typedef struct audio_cbuf_s audio_cbuf_t;
-extern audio_cbuf_t *audio_buffer;
+
 
 void audio_cbuf_init();
 void audio_cbuf_reset();
@@ -101,6 +101,19 @@ typedef struct audio_progress_s
     unsigned long total_samples;
     unsigned long played_samples;
 } audio_progress_t;
+
+
+//
+// Audio sampling buffer (for FFT, etc)
+//
+typedef struct audio_sampling_buffer_s
+{
+    mutex_t lock;
+    int16_t buffer[AUDIO_FRAME_LENGTH];
+    unsigned int length;
+} audio_sampling_buffer_t;
+
+extern audio_sampling_buffer_t audio_sampling_buffer;
 
 
 #ifdef __cplusplus

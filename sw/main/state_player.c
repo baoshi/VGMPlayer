@@ -404,8 +404,8 @@ event_t const *player_handler(app_t *app, event_t const *evt)
     case EVT_AUDIO_PROGRESS:
         if (evt->param)
         {
-            audio_progress_t *progress = (audio_progress_t *)(evt->param);
-            PL_LOGD("Player: %lu / %lu\n", progress->played_samples, progress->total_samples);
+            //audio_progress_t *progress = (audio_progress_t *)(evt->param);
+            //PL_LOGD("Player: %lu / %lu\n", progress->played_samples, progress->total_samples);
         }
         break;
     default:
