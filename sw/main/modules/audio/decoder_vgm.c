@@ -7,25 +7,18 @@
 #include "decoder_vgm.h"
 
 
-static uint32_t decoder_vgm_get_samples(decoder_vgm_t *ctx, uint32_t *buf, uint32_t len)
+static unsigned int decoder_vgm_get_samples(decoder_t *me, int16_t *buf, unsigned int len)
 {
-    int16_t *buf16 = (uint16_t *)buf;
+    decoder_vgm_t *ctx = (decoder_vgm_t *)me;
     int samples;
     MY_ASSERT(len <= AUDIO_FRAME_LENGTH);
     absolute_time_t start = get_absolute_time();
-    // caller requested for len samples of uint32_t. we ask len samples of int16_t from vgm, then extend i16 to u32
-    samples = vgm_get_samples(ctx->vgm, buf16, len);
-    // |AA|BB|CC|DD|EE| --> |AA|AA|BB|BB|CC|CC|DD|DD|EE|EE|  (view as int16_t)
-    for (int i = samples - 1; i >= 0; --i)
-    {
-        buf16[i + i + 1] = buf16[i];
-        buf16[i + i] = buf16[i];
-    }
+    samples = vgm_get_samples(ctx->vgm, buf, len);
     absolute_time_t end = get_absolute_time();
     int64_t us = absolute_time_diff_us(start, end);
     if (us > 1000000 * len / 44100)
         AUD_LOGD("Audio/vgm: %d samples in %" PRId64 " us\n", samples, us);
-    return (uint32_t)samples;
+    return (unsigned int)samples;
 }
 
 
@@ -58,7 +51,7 @@ decoder_vgm_t * decoder_vgm_create(char const *file)
             break;
         }
         vgm_prepare_playback(decoder->vgm, AUDIO_SAMPLE_RATE, true);
-        decoder->super.get_samples = (get_samples_t)decoder_vgm_get_samples;
+        decoder->super.get_sample_s16 = (get_sample_s16_t)decoder_vgm_get_samples;
         decoder->super.total_samples = (unsigned int)(decoder->vgm->complete_samples);
     } while (0);
     return decoder;

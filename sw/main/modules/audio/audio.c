@@ -101,26 +101,38 @@ void audio_close()
 }
 
 
-static inline void notify_progress(audio_progress_t *progress)
+static inline unsigned int decode_samples(decoder_t *decoder, uint32_t *buf, unsigned int len)
 {
-    event_t e;
-    e.code = EVT_AUDIO_PROGRESS;
-    e.param = (void *)progress;
-    event_queue_push_back(&e, true);
+    int samples = 0;
+    if (decoder->get_sample_s16)
+    {
+        // decoder will return int16_t samples, need to expand to uint32_t
+        int16_t *buf16 = (uint16_t *)buf;
+        samples = decoder->get_sample_s16(decoder, buf16, len);
+        // |AA|BB|CC|DD|EE| --> |AA|AA|BB|BB|CC|CC|DD|DD|EE|EE|  (view as int16_t)
+        for (int i = samples - 1; i >= 0; --i)
+        {
+            buf16[i + i + 1] = buf16[i];
+            buf16[i + i] = buf16[i];
+        }
+    }
+    return (unsigned int)samples;
 }
 
 
 static void playback_proc()
 {
+    static audio_progress_t progress;
+
     AUD_LOGD("Audio/core1: playback entry\n");
     decoder_t *decoder = _playback.decoder;
-    uint32_t sample, num_samples;
+    uint32_t sample;
+    unsigned int num_samples;
     register int16_t l, ll, r, rr;
     register int x, i;
     bool finished = false;
     uint32_t cmd;
     int gaps = AUDIO_SONG_GAP_MS * AUDIO_SAMPLE_RATE / AUDIO_FRAME_LENGTH / 1000; // number of silence buffer to send before finish the song
-    audio_progress_t progress;
 
     audio_cbuf_reset();
     multicore_fifo_drain();
@@ -128,7 +140,7 @@ static void playback_proc()
     progress.total_samples = decoder->total_samples;
     progress.played_samples = 0;
     // first audio buffer is a ramp up from 0 to first sound sample
-    num_samples = decoder->get_samples(decoder, &sample, 1);
+    num_samples = decode_samples(decoder, &sample, 1);
     if (num_samples == 0) sample = 0;   // no sample from decoder, just make a buffer of 0 and let playing finish by itself
     progress.played_samples += num_samples;
     audio_frame_t *frame = audio_cbuf_get_write_buffer();
@@ -149,7 +161,7 @@ static void playback_proc()
     {
         frame = audio_cbuf_get_write_buffer();
         if (NULL == frame) break;
-        num_samples = decoder->get_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
+        num_samples = decode_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
         frame->length = num_samples;
         progress.played_samples += num_samples;
         audio_cbuf_finish_write();
@@ -192,16 +204,21 @@ static void playback_proc()
             switch (cmd)
             {
             case CMD_NONE:
-                num_samples = decoder->get_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
+                num_samples = decode_samples(decoder, frame->data, AUDIO_FRAME_LENGTH);
                 frame->length = num_samples;
                 audio_cbuf_finish_write();
                 if (i2s_buffer_underrun)    // If I2S buffer underrun occurred, resume sending
                     i2s_resume_playback();
                 if (num_samples != 0)
                 {
-                    sample = frame->data[num_samples - 1];  // save last sample for ramp use
+                    // notify UI 
                     progress.played_samples += num_samples;
-                    notify_progress(&progress);
+                    event_t e;
+                    e.code = EVT_AUDIO_PROGRESS;
+                    e.param = (void *)(&progress);
+                    event_queue_push_back(&e, true);
+                    // save last sample for ramp use
+                    sample = frame->data[num_samples - 1];
                 } 
                 else
                 {

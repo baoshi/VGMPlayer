@@ -9,10 +9,10 @@
 
 typedef struct decoder_s decoder_t;
 
-typedef uint32_t     (*get_samples_t)(decoder_t *me, uint32_t *buf, uint32_t len);
+typedef int16_t  (*get_sample_s16_t)(decoder_t *me, int16_t *buf, unsigned int len);
 
 struct decoder_s
 {
-    get_samples_t  get_samples;
-    unsigned long  total_samples;
+    get_sample_s16_t get_sample_s16;
+    unsigned long    total_samples;
 };
