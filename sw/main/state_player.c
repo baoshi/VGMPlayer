@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pico/mutex.h>
 #include <inttypes.h>
 #include <pico/time.h>
 #include "sw_conf.h"
@@ -17,6 +18,7 @@
 #include "audio.h"
 #include "decoder_s16.h"
 #include "decoder_vgm.h"
+#include "fft_q15.h"
 #include "catalog.h"
 #include "popup.h"
 #include "app.h"
@@ -150,12 +152,6 @@ static void player_on_entry(player_t *ctx)
     lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    // Create chart
-    ctx->chart = lv_chart_create(ctx->screen);
-    lv_obj_set_size(ctx->chart, 240, 200);
-    lv_obj_center(ctx->chart);
-    lv_chart_set_type(ctx->chart, LV_CHART_TYPE_LINE);
-    ctx->chart_series = lv_chart_add_series(ctx->chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Load screen
@@ -179,19 +175,20 @@ static void player_on_ui_update(player_t *ctx)
     char buf[32];
     sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
     lv_label_set_text(ctx->lbl_top, buf);
-    /*
-    ctx->chart_series[0].y_points[0] = rand() % 100;
-    ctx->chart_series[0].y_points[1] = rand() % 100;
-    ctx->chart_series[0].y_points[2] = rand() % 100;
-    ctx->chart_series[0].y_points[3] = rand() % 100;
-    ctx->chart_series[0].y_points[4] = rand() % 100;
-    ctx->chart_series[0].y_points[5] = rand() % 100;
-    ctx->chart_series[0].y_points[6] = rand() % 100;
-    ctx->chart_series[0].y_points[7] = rand() % 100;
-    ctx->chart_series[0].y_points[8] = rand() % 100;
-    ctx->chart_series[0].y_points[9] = rand() % 100;
-    lv_chart_refresh(ctx->chart);
-    */
+    // Test FFT
+    if (mutex_try_enter(&(audio_sampling_buffer.lock), NULL))
+    {
+        absolute_time_t start = get_absolute_time();
+        if (AUDIO_FRAME_LENGTH == audio_sampling_buffer.length)
+        {
+            fft_q15(audio_sampling_buffer.buffer, audio_sampling_buffer.length);
+        }
+        absolute_time_t end = get_absolute_time();
+        int64_t us = absolute_time_diff_us(start, end);
+        PL_LOGD("Player: FFT finished in %" PRId64 " us\n", us);
+        mutex_exit(&(audio_sampling_buffer.lock));
+    }
+   
 }
 
 

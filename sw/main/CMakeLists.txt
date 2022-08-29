@@ -24,6 +24,7 @@ include_directories(${PROJECT_SOURCE_DIR})
 add_subdirectory(lib/umm_malloc)
 add_subdirectory(lib/lvgl)
 add_subdirectory(lib/fatfs)
+add_subdirectory(lib/fft_q15)
 
 # modules
 add_subdirectory(modules/ec)
@@ -65,6 +66,7 @@ target_link_libraries(${PROJ_NAME}
     disk
     audio
     eeprom
+    fft_q15
 )
 
 #target_compile_definitions(${PROJ_NAME} PRIVATE PICO_DEBUG_MALLOC=1)
