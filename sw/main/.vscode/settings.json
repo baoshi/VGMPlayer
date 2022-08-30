@@ -107,7 +107,12 @@
         "core1_mem.h": "c",
         "memory.h": "c",
         "string.h": "c",
-        "vgm_conf.h": "c"
+        "vgm_conf.h": "c",
+        "cinttypes": "c",
+        "cstdbool": "c",
+        "cstdint": "c",
+        "cwchar": "c",
+        "cwctype": "c"
     },
     "cmake.configureOnOpen": true,
     "cortex-debug.variableUseNaturalFormat": false

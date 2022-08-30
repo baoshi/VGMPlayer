@@ -122,12 +122,15 @@ static inline unsigned int decode_samples(decoder_t *decoder, uint32_t *buf, uns
             buf16[i + i + 1] = buf16[i];
             buf16[i + i] = buf16[i];
         }
-        // fill sampling buffer 
-        if (mutex_try_enter(&(audio_sampling_buffer.lock), NULL))
+        // fill sampling buffer only if it is a complete buffer
+        if (len == AUDIO_FRAME_LENGTH)
         {
-            memcpy(audio_sampling_buffer.buffer, buf16, samples);
-            audio_sampling_buffer.length = samples;
-            mutex_exit(&(audio_sampling_buffer.lock));
+            if (mutex_try_enter(&(audio_sampling_buffer.lock), NULL))
+            {
+                memcpy(audio_sampling_buffer.buffer, buf16, samples);
+                audio_sampling_buffer.good = true;
+                mutex_exit(&(audio_sampling_buffer.lock));
+            }
         }
         absolute_time_t end = get_absolute_time();
         int64_t us = absolute_time_diff_us(start, end);

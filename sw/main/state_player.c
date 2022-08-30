@@ -13,6 +13,7 @@
 #include "event_queue.h"
 #include "ec.h"
 #include "input.h"
+#include "backlight.h"
 #include "disk.h"
 #include "path_utils.h"
 #include "audio.h"
@@ -152,6 +153,10 @@ static void player_on_entry(player_t *ctx)
     lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    // Spectrum
+    ctx->spectrum = lv_spectrum_create(ctx->screen, 32);
+    lv_obj_set_size(ctx->spectrum, 240, 200);
+    lv_obj_center(ctx->spectrum);
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Load screen
@@ -175,20 +180,6 @@ static void player_on_ui_update(player_t *ctx)
     char buf[32];
     sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
     lv_label_set_text(ctx->lbl_top, buf);
-    // Test FFT
-    if (mutex_try_enter(&(audio_sampling_buffer.lock), NULL))
-    {
-        absolute_time_t start = get_absolute_time();
-        if (AUDIO_FRAME_LENGTH == audio_sampling_buffer.length)
-        {
-            fft_q15(audio_sampling_buffer.buffer, audio_sampling_buffer.length);
-        }
-        absolute_time_t end = get_absolute_time();
-        int64_t us = absolute_time_diff_us(start, end);
-        PL_LOGD("Player: FFT finished in %" PRId64 " us\n", us);
-        mutex_exit(&(audio_sampling_buffer.lock));
-    }
-   
 }
 
 
@@ -292,6 +283,95 @@ static void player_on_play_next(app_t *app, player_t *ctx, bool alert_or_back)
         break;
     }
 }
+
+
+// Fit FFT result into bins.
+// Check vgmdec project on how these numbers are obtained.
+static const struct spectrum_bin_param_q15_s
+{
+    int base_bin;
+    q15_t scale;
+} spectrum_bin_param_q15[PLAYER_SPECTRUM_BINS] = 
+{
+    {2, 1154},
+    {2, 9455},
+    {2, 19789},
+    {2, 32651},
+    {3, 15893},
+    {4, 3053},
+    {4, 27858},
+    {5, 25965},
+    {6, 31629},
+    {8, 13930},
+    {10, 7937},
+    {12, 16517},
+    {15, 10467},
+    {18, 26994},
+    {23, 6087},
+    {28, 20160},
+    {35, 12238},
+    {43, 25743},
+    {54, 8403},
+    {67, 9495},
+    {83, 16800},
+    {103, 23129},
+    {128, 27551},
+    {160, 4160},
+    {199, 2285},
+    {247, 17789},
+    {307, 28794},
+    {382, 32127},
+    {476, 15126},
+    {592, 26877},
+    {737, 21462},
+    {917, 30632}
+};
+
+
+static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *progress)
+{
+    //PL_LOGD("Player: %lu / %lu\n", progress->played_samples, progress->total_samples);
+    backlight_keepalive(tick_millis());
+    // "Trying" FFT on the sampling buffer for spectrum display
+    // We lock the sampling buffer here for long time so audio module won't overwrite the samples.
+    // It doesn't matter some buffer are lost since we only use these for fancy visual effects.
+    if (mutex_try_enter(&(audio_sampling_buffer.lock), NULL))
+    {
+        if (audio_sampling_buffer.good)
+        {
+            int32_t temp;
+            int16_t s0, s1;
+            absolute_time_t start = get_absolute_time();
+            // audio sample is in int16_t, can be treated as q15_t [-1..1) without conversion
+            // FFT
+            fft_q15(audio_sampling_buffer.buffer, AUDIO_FRAME_LENGTH);
+            PL_LOGD("32: ");
+            for (int bin = 0; bin < PLAYER_SPECTRUM_BINS; ++bin)
+            {
+                s0 = audio_sampling_buffer.buffer[spectrum_bin_param_q15[bin].base_bin - 1];
+                s1 = audio_sampling_buffer.buffer[spectrum_bin_param_q15[bin].base_bin];
+                temp = spectrum_bin_param_q15[bin].scale * (s1 - s0);
+                temp = s0 + (temp >> 15);   // q15
+                PL_LOGD("%04d ", temp);
+                ctx->spectrum_bin[bin] = temp / 5;
+                if (ctx->spectrum_bin[bin] > 190) ctx->spectrum_bin[bin] = 190;
+            }
+            PL_LOGD("\n08: ");
+            for (int bin = 0; bin < PLAYER_SPECTRUM_BINS; ++bin)
+            {
+                PL_LOGD("%04d ", ctx->spectrum_bin[bin]);
+            }
+            PL_LOGD("\n");
+            absolute_time_t end = get_absolute_time();
+            int64_t us = absolute_time_diff_us(start, end);
+            lv_spectrum_set_bin_values(ctx->spectrum, ctx->spectrum_bin);
+            audio_sampling_buffer.good = false;
+            //PL_LOGD("Player: FFT finished in %" PRId64 " us\n", us);
+        }
+        mutex_exit(&(audio_sampling_buffer.lock));
+    }
+}
+
 
 
 event_t const *player_handler(app_t *app, event_t const *evt)
@@ -399,11 +479,8 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         }
         break;
     case EVT_AUDIO_PROGRESS:
-        if (evt->param)
-        {
-            //audio_progress_t *progress = (audio_progress_t *)(evt->param);
-            //PL_LOGD("Player: %lu / %lu\n", progress->played_samples, progress->total_samples);
-        }
+        MY_ASSERT(evt->param != NULL);
+        player_on_progress(app, ctx, (audio_progress_t *)(evt->param));
         break;
     default:
         r = evt;

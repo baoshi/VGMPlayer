@@ -123,7 +123,6 @@ int main()
             lv_timer_handler();
             last_update_tick = now;
         }
-
         // HSM event loop
         while (event_queue_pop(&evt))
         {

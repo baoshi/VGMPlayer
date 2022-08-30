@@ -50,7 +50,7 @@ void lv_sliderbox_close(lv_obj_t *obj);
 void lv_sliderbox_close_async(lv_obj_t *obj);
 
 
- //
+//
 // Alert box
 //
 
@@ -65,6 +65,22 @@ lv_obj_t *lv_alert_create(lv_obj_t *parent, const void *icon, const char *text);
 void lv_alert_close(lv_obj_t *obj);
 void lv_alert_close_async(lv_obj_t *obj);
 
+
+//
+// Spectrum display
+//
+
+typedef struct lv_spectrum_s
+{
+    lv_obj_t obj;
+    int num_bins;
+    uint8_t *bin_height;
+} lv_spectrum_t;
+
+extern const lv_obj_class_t lv_spectrum_class;
+
+lv_obj_t *lv_spectrum_create(lv_obj_t *parent, int num_bins);
+void lv_spectrum_set_bin_values(lv_obj_t *obj, const uint8_t *bvs);
 
 #ifdef __cplusplus
 }

@@ -110,7 +110,7 @@ typedef struct audio_sampling_buffer_s
 {
     mutex_t lock;
     int16_t buffer[AUDIO_FRAME_LENGTH];
-    unsigned int length;
+    bool good;
 } audio_sampling_buffer_t;
 
 extern audio_sampling_buffer_t audio_sampling_buffer;
