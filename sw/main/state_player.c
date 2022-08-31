@@ -327,10 +327,13 @@ static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *prog
             for (int bin = 0; bin < PLAYER_SPECTRUM_BINS; ++bin)
             {
                 temp = 0;
-                for (int i = 0; i < PLAYER_SPECTRUM_AVERAGE_SAMPLES; ++i, index)
+                for (int i = 0; i < PLAYER_SPECTRUM_AVERAGE_SAMPLES; ++i)
                     temp += audio_sampling_buffer.buffer[index++];
-                ctx->spectrum_bin[bin] = temp / PLAYER_SPECTRUM_DIVIDER;
-                if (ctx->spectrum_bin[bin] > PLAYER_SPECTURM_HEIGHT) ctx->spectrum_bin[bin] = PLAYER_SPECTURM_HEIGHT;
+                temp = temp / PLAYER_SPECTRUM_DIVIDER;
+                if (temp > PLAYER_SPECTURM_HEIGHT)
+                    ctx->spectrum_bin[bin] = PLAYER_SPECTURM_HEIGHT;
+                else
+                    ctx->spectrum_bin[bin] = (uint8_t)temp;
             }
             lv_spectrum_set_bin_values(ctx->spectrum, ctx->spectrum_bin);
             audio_sampling_buffer.good = false;
