@@ -1,9 +1,13 @@
+#undef PLAYER_TIMING_MEASUREMENT
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pico/mutex.h>
-#include <inttypes.h>
-#include <pico/time.h>
+#ifdef PLAYER_TIMING_MEASUREMENT
+# include <inttypes.h>
+# include <pico/time.h>
+#endif
 #include "sw_conf.h"
 #include "my_debug.h"
 #include "lvstyle.h"
@@ -61,6 +65,21 @@ enum
     SONG_TYPE_S16,
     SONG_TYPE_VGM
 };
+
+
+// Spectrum related
+#define PLAYER_SPECTRUM_BINS    32      // Do not exceed PLAYER_SPECTRUM_MAX_BINS in app.h
+#if (PLAYER_SPECTRUM_BINS > PLAYER_SPECTRUM_MAX_BINS)
+# error("Too many spectrum bins")
+#endif
+#define PLAYER_SPECTURM_HEIGHT 100      // Height of spectrum object
+// AUDIO_FRAME_LENGTH = 2048
+// AUDIO_SAMPLE_RATE = 44110
+// 2048 FFT points spanning 0-44100 Hz. Useful points is 1024 (0-22050Hz)
+// Accumulate 2 samples for 32 bins, we only take first 64 points (1378Hz)
+#define PLAYER_SPECTRUM_AVERAGE_SAMPLES  2
+// To shrink bin sum to displable range
+#define PLAYER_SPECTRUM_DIVIDER          8
 
 
 // Setup audio and decoder using current selected file
@@ -154,8 +173,8 @@ static void player_on_entry(player_t *ctx)
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
     // Spectrum
-    ctx->spectrum = lv_spectrum_create(ctx->screen, 32);
-    lv_obj_set_size(ctx->spectrum, 240, 200);
+    ctx->spectrum = lv_spectrum_create(ctx->screen, PLAYER_SPECTRUM_BINS);
+    lv_obj_set_size(ctx->spectrum, 240, PLAYER_SPECTURM_HEIGHT);
     lv_obj_center(ctx->spectrum);
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
@@ -285,52 +304,11 @@ static void player_on_play_next(app_t *app, player_t *ctx, bool alert_or_back)
 }
 
 
-// Fit FFT result into bins.
-// Check vgmdec project on how these numbers are obtained.
-static const struct spectrum_bin_param_q15_s
-{
-    int base_bin;
-    q15_t scale;
-} spectrum_bin_param_q15[PLAYER_SPECTRUM_BINS] = 
-{
-    {2, 1154},
-    {2, 9455},
-    {2, 19789},
-    {2, 32651},
-    {3, 15893},
-    {4, 3053},
-    {4, 27858},
-    {5, 25965},
-    {6, 31629},
-    {8, 13930},
-    {10, 7937},
-    {12, 16517},
-    {15, 10467},
-    {18, 26994},
-    {23, 6087},
-    {28, 20160},
-    {35, 12238},
-    {43, 25743},
-    {54, 8403},
-    {67, 9495},
-    {83, 16800},
-    {103, 23129},
-    {128, 27551},
-    {160, 4160},
-    {199, 2285},
-    {247, 17789},
-    {307, 28794},
-    {382, 32127},
-    {476, 15126},
-    {592, 26877},
-    {737, 21462},
-    {917, 30632}
-};
-
 
 static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *progress)
 {
     //PL_LOGD("Player: %lu / %lu\n", progress->played_samples, progress->total_samples);
+    // Do not dim screen when playing
     backlight_keepalive(tick_millis());
     // "Trying" FFT on the sampling buffer for spectrum display
     // We lock the sampling buffer here for long time so audio module won't overwrite the samples.
@@ -339,34 +317,28 @@ static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *prog
     {
         if (audio_sampling_buffer.good)
         {
-            int32_t temp;
-            int16_t s0, s1;
+            int index, temp;
+#ifdef PLAYER_TIMING_MEASUREMENT            
             absolute_time_t start = get_absolute_time();
-            // audio sample is in int16_t, can be treated as q15_t [-1..1) without conversion
-            // FFT
+#endif
+            // audio sample is in int16_t, can be treated as q15_t [-1..1) without conversion for FFT
             fft_q15(audio_sampling_buffer.buffer, AUDIO_FRAME_LENGTH);
-            PL_LOGD("32: ");
+            index = 1; // start from 1, skip DC
             for (int bin = 0; bin < PLAYER_SPECTRUM_BINS; ++bin)
             {
-                s0 = audio_sampling_buffer.buffer[spectrum_bin_param_q15[bin].base_bin - 1];
-                s1 = audio_sampling_buffer.buffer[spectrum_bin_param_q15[bin].base_bin];
-                temp = spectrum_bin_param_q15[bin].scale * (s1 - s0);
-                temp = s0 + (temp >> 15);   // q15
-                PL_LOGD("%04d ", temp);
-                ctx->spectrum_bin[bin] = temp / 5;
-                if (ctx->spectrum_bin[bin] > 190) ctx->spectrum_bin[bin] = 190;
+                temp = 0;
+                for (int i = 0; i < PLAYER_SPECTRUM_AVERAGE_SAMPLES; ++i, index)
+                    temp += audio_sampling_buffer.buffer[index++];
+                ctx->spectrum_bin[bin] = temp / PLAYER_SPECTRUM_DIVIDER;
+                if (ctx->spectrum_bin[bin] > PLAYER_SPECTURM_HEIGHT) ctx->spectrum_bin[bin] = PLAYER_SPECTURM_HEIGHT;
             }
-            PL_LOGD("\n08: ");
-            for (int bin = 0; bin < PLAYER_SPECTRUM_BINS; ++bin)
-            {
-                PL_LOGD("%04d ", ctx->spectrum_bin[bin]);
-            }
-            PL_LOGD("\n");
-            absolute_time_t end = get_absolute_time();
-            int64_t us = absolute_time_diff_us(start, end);
             lv_spectrum_set_bin_values(ctx->spectrum, ctx->spectrum_bin);
             audio_sampling_buffer.good = false;
-            //PL_LOGD("Player: FFT finished in %" PRId64 " us\n", us);
+#ifdef PLAYER_TIMING_MEASUREMENT            
+            absolute_time_t end = get_absolute_time();
+            int64_t us = absolute_time_diff_us(start, end);
+            PL_LOGD("Player: FFT finished in %" PRId64 " us\n", us);
+#endif
         }
         mutex_exit(&(audio_sampling_buffer.lock));
     }
@@ -410,8 +382,10 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         EVT_DISK_EJECTED:
             Sent by play_next or disk module. Transit to browser_nodisk
         EVT_HEADPHONE_PLUGGED:
-        EVT_HEADPHONE_UNPLUGGED
+        EVT_HEADPHONE_UNPLUGGED:
             Refresh volume popup if it is already shown
+        EVT_AUDIO_PROGRESS:
+            Draw spectrum, update play time
     */
     event_t const *r = 0;
     player_t *ctx = &(app->player_ctx);

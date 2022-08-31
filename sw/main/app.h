@@ -41,19 +41,19 @@ event_t const *browser_baddisk_handler(app_t *app, event_t const *evt);
 //
 // Player
 //
-#define PLAYER_SPECTRUM_BINS    32
+#define PLAYER_SPECTRUM_MAX_BINS    64
 typedef struct player_s
 {
     lv_obj_t *screen;
-    lv_obj_t *lbl_top;          // Top indicators
-    lv_obj_t *lbl_bottom;       // Bottom indicators
-    lv_obj_t *spectrum;    // Spectrum
+    lv_obj_t *lbl_top;      // Top indicators
+    lv_obj_t *lbl_bottom;   // Bottom indicators
+    lv_obj_t *spectrum;     // Spectrum
     int timer_ui_update;    // UI update timer
     char file[FF_LFN_BUF + 1];
     bool playing;
     int nav_dir;            // file navigation direction. 1 = next, -1 = previous, 0 = go back to browser_disk
     decoder_t* decoder;
-    uint8_t spectrum_bin[PLAYER_SPECTRUM_BINS];
+    uint8_t spectrum_bin[PLAYER_SPECTRUM_MAX_BINS];
 } player_t;
 
 event_t const *player_handler(app_t *app, event_t const *evt);
