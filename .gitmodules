@@ -10,3 +10,7 @@
 [submodule "sw/main/modules/audio/vgm"]
 	path = sw/main/modules/audio/vgm
 	url = http://baoshi@192.168.1.3:680/baoshi/vgmcore.git
+[submodule "sw/main/lib/lvgl"]
+	path = sw/main/lib/lvgl
+	url = http://baoshi@192.168.1.3:680/baoshi/lvgl.git
+	branch = vgmplayer
