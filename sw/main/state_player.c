@@ -173,8 +173,9 @@ static void player_on_entry(player_t *ctx)
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
     // Spectrum
-    ctx->spectrum = lv_spectrum_create(ctx->screen, PLAYER_SPECTRUM_BINS);
+    ctx->spectrum = lv_spectrum_create(ctx->screen);
     lv_obj_set_size(ctx->spectrum, 240, PLAYER_SPECTURM_HEIGHT);
+    lv_obj_set_style_pad_all(ctx->spectrum, 10, LV_PART_MAIN);
     lv_obj_center(ctx->spectrum);
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
@@ -335,7 +336,7 @@ static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *prog
                 else
                     ctx->spectrum_bin[bin] = (uint8_t)temp;
             }
-            lv_spectrum_set_bin_values(ctx->spectrum, ctx->spectrum_bin);
+            lv_spectrum_set_bin_values(ctx->spectrum, ctx->spectrum_bin, PLAYER_SPECTRUM_BINS);
             audio_sampling_buffer.good = false;
 #ifdef PLAYER_TIMING_MEASUREMENT            
             absolute_time_t end = get_absolute_time();

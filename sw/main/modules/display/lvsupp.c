@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "lvstyle.h"
 #include "lvsupp.h"
 
@@ -220,9 +221,10 @@ void lv_alert_close_async(lv_obj_t *obj)
 static void lv_spectrum_constructor(const lv_obj_class_t *class_p, lv_obj_t *obj)
 {
     lv_spectrum_t *spectrum = (lv_spectrum_t *)obj;
-    lv_obj_remove_style_all(obj);
+    spectrum->num_bins = LV_SPECTRUM_MAX_BINS;
+    lv_memset_00(spectrum->bin_values, spectrum->num_bins * sizeof(uint8_t));
+    //lv_obj_remove_style_all(obj);
     lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
-
 }
 
 
@@ -230,7 +232,6 @@ static void lv_spectrum_destructor(const lv_obj_class_t *class_p, lv_obj_t *obj)
 {
     LV_ASSERT_OBJ(obj, &lv_spectrum_class);
     lv_spectrum_t *spectrum = (lv_spectrum_t *)obj;
-    lv_mem_free(spectrum->bin_height);
 }
 
 
@@ -242,11 +243,33 @@ static void lv_spectrum_event(const lv_obj_class_t *class_p, lv_event_t *e)
     lv_obj_t *obj = lv_event_get_target(e);
     if (code == LV_EVENT_REFR_EXT_DRAW_SIZE) 
     {
-        
+        lv_coord_t indic_size;
+        indic_size = lv_obj_calculate_ext_draw_size(obj, LV_PART_INDICATOR);
+
+        /*Bg size is handled by lv_obj*/
+        lv_coord_t * s = lv_event_get_param(e);
+        *s = LV_MAX(*s, indic_size);
+
+        /*Calculate the indicator area*/
+        lv_coord_t bg_left = lv_obj_get_style_pad_left(obj, LV_PART_MAIN);
+        lv_coord_t bg_right = lv_obj_get_style_pad_right(obj, LV_PART_MAIN);
+        lv_coord_t bg_top = lv_obj_get_style_pad_top(obj, LV_PART_MAIN);
+        lv_coord_t bg_bottom = lv_obj_get_style_pad_bottom(obj, LV_PART_MAIN);
+
+        lv_coord_t pad = LV_MIN4(bg_left, bg_right, bg_top, bg_bottom);
+        if(pad < 0) {
+            *s = LV_MAX(*s, -pad);
+        }
     }
     else if (code == LV_EVENT_COVER_CHECK) 
     {
         lv_event_set_cover_res(e, LV_COVER_RES_NOT_COVER);
+    }
+    else if (code == LV_EVENT_SIZE_CHANGED)
+    {
+        lv_coord_t w = lv_obj_get_content_width(obj);
+        lv_coord_t h = lv_obj_get_content_height(obj);
+        printf("size: %dx%d\n", w, h);
     }
     else if (code == LV_EVENT_DRAW_POST) 
     {
@@ -269,7 +292,7 @@ static void lv_spectrum_event(const lv_obj_class_t *class_p, lv_event_t *e)
             bar_rect.x1 = x_start + bin * (bin_width + LV_SPECTRUM_BIN_GAP);
             bar_rect.x2 = bar_rect.x1 + bin_width - 1;
             bar_rect.y2 = obj->coords.y2;
-            bar_rect.y1 = obj->coords.y2 - spectrum->bin_height[bin];
+            bar_rect.y1 = obj->coords.y2 - spectrum->bin_values[bin];
             lv_draw_rect(draw_ctx, &draw_rect_dsc, &bar_rect);
         }
     }
@@ -286,24 +309,22 @@ const lv_obj_class_t lv_spectrum_class =
 };
 
 
-lv_obj_t * lv_spectrum_create(lv_obj_t *parent, int num_bins)
+lv_obj_t * lv_spectrum_create(lv_obj_t *parent)
 {
     lv_obj_t *obj = lv_obj_class_create_obj(&lv_spectrum_class, parent);
     LV_ASSERT_MALLOC(obj);
     lv_obj_class_init_obj(obj);
-    lv_spectrum_t *spectrum = (lv_spectrum_t *)obj;
-    spectrum->num_bins = num_bins;
-    spectrum->bin_height = lv_mem_alloc(num_bins * sizeof(uint8_t));
-    LV_ASSERT_MALLOC(spectrum->bin_height);
-    lv_memset_00(spectrum->bin_height, num_bins * sizeof(uint8_t));
     return obj;
 }
 
 
-void lv_spectrum_set_bin_values(lv_obj_t *obj, const uint8_t *bvs)
+void lv_spectrum_set_bin_values(lv_obj_t *obj, const uint8_t *bvs, int len)
 {
     LV_ASSERT_OBJ(obj, &lv_spectrum_class);
     lv_spectrum_t *spectrum = (lv_spectrum_t *)obj;
-    memcpy(spectrum->bin_height, bvs, spectrum->num_bins * sizeof(uint8_t));
+    len = LV_MIN(len, LV_SPECTRUM_MAX_BINS);
+    spectrum->num_bins = len;
+    memcpy(spectrum->bin_values, bvs, spectrum->num_bins * sizeof(uint8_t));
     lv_obj_invalidate(obj);
 }
+

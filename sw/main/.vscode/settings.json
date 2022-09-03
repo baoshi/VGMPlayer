@@ -112,7 +112,8 @@
         "cstdbool": "c",
         "cstdint": "c",
         "cwchar": "c",
-        "cwctype": "c"
+        "cwctype": "c",
+        "LV_LOG.H": "cpp"
     },
     "cmake.configureOnOpen": true,
     "cortex-debug.variableUseNaturalFormat": false
