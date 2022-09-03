@@ -79,7 +79,8 @@ enum
 // Accumulate 2 samples for 32 bins, we only take first 64 points (1378Hz)
 #define PLAYER_SPECTRUM_AVERAGE_SAMPLES  2
 // To shrink bin sum to 0-255 range
-#define PLAYER_SPECTRUM_DIVIDER          3
+#define PLAYER_SPECTRUM_MUL          2
+#define PLAYER_SPECTRUM_DIV          7
 
 
 // Setup audio and decoder using current selected file
@@ -323,7 +324,7 @@ static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *prog
 #endif
             // audio sample is in int16_t, can be treated as q15_t [-1..1) without conversion for FFT
             fft_q15(audio_sampling_buffer.buffer, AUDIO_FRAME_LENGTH);
-            index = 1; // start from 1, skip DC
+            index = 2; // start from 1, skip DC-20Hz
             for (int bin = 0; bin < PLAYER_SPECTRUM_BINS; ++bin)
             {
                 temp = 0;
@@ -332,7 +333,7 @@ static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *prog
                     temp += audio_sampling_buffer.buffer[index];
                     ++index;
                 }
-                temp = temp / PLAYER_SPECTRUM_DIVIDER;
+                temp = temp * PLAYER_SPECTRUM_MUL / PLAYER_SPECTRUM_DIV;
                 if (temp > 255)
                     ctx->spectrum_bin[bin] = 255;
                 else

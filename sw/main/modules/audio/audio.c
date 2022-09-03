@@ -114,14 +114,14 @@ static inline unsigned int decode_samples(decoder_t *decoder, uint32_t *buf, uns
     {
         absolute_time_t start = get_absolute_time();
         // get_sample_s16 returns 16bit buffer
-        int16_t *buf16 = (uint16_t *)buf;
+        int16_t *buf16 = (int16_t *)buf;
         samples = decoder->get_sample_s16(decoder, buf16, len);
-        // fill sampling buffer only if it is a complete buffer
+        // fill sampling buffer only if it is complete
         if (samples == AUDIO_FRAME_LENGTH)
         {
             if (mutex_try_enter(&(audio_sampling_buffer.lock), NULL))
             {
-                memcpy(audio_sampling_buffer.buffer, buf16, samples);
+                memcpy(audio_sampling_buffer.buffer, buf16, len * sizeof(int16_t)); // avoid GCC warning, samples == len here
                 audio_sampling_buffer.good = true;
                 mutex_exit(&(audio_sampling_buffer.lock));
             }
