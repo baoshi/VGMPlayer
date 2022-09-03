@@ -113,17 +113,11 @@ static inline unsigned int decode_samples(decoder_t *decoder, uint32_t *buf, uns
     if (decoder->get_sample_s16)
     {
         absolute_time_t start = get_absolute_time();
-        // decoder will return int16_t samples, need to expand to uint32_t
+        // get_sample_s16 returns 16bit buffer
         int16_t *buf16 = (uint16_t *)buf;
         samples = decoder->get_sample_s16(decoder, buf16, len);
-        // |AA|BB|CC|DD|EE| --> |AA|AA|BB|BB|CC|CC|DD|DD|EE|EE|  (view as int16_t)
-        for (int i = samples - 1; i >= 0; --i)
-        {
-            buf16[i + i + 1] = buf16[i];
-            buf16[i + i] = buf16[i];
-        }
         // fill sampling buffer only if it is a complete buffer
-        if (len == AUDIO_FRAME_LENGTH)
+        if (samples == AUDIO_FRAME_LENGTH)
         {
             if (mutex_try_enter(&(audio_sampling_buffer.lock), NULL))
             {
@@ -131,6 +125,13 @@ static inline unsigned int decode_samples(decoder_t *decoder, uint32_t *buf, uns
                 audio_sampling_buffer.good = true;
                 mutex_exit(&(audio_sampling_buffer.lock));
             }
+        }
+        // expand 16bit to 32bit for audio output
+        // |AA|BB|CC|DD|EE| --> |AA|AA|BB|BB|CC|CC|DD|DD|EE|EE|  (view as int16_t)
+        for (int i = samples - 1; i >= 0; --i)
+        {
+            buf16[i + i + 1] = buf16[i];
+            buf16[i + i] = buf16[i];
         }
         absolute_time_t end = get_absolute_time();
         int64_t us = absolute_time_diff_us(start, end);
@@ -188,6 +189,7 @@ static void playback_proc()
         audio_cbuf_finish_write();
         if (0 == num_samples) break;
     }
+    AUD_LOGD("Audio/core1: %d samples in buffer\n", audio_cbuf_size());
     AUD_LOGD("Audio/core1: init I2S\n");
     i2s_init();
     wm8978_mute(false);

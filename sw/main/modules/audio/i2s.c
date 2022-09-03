@@ -181,7 +181,7 @@ void i2s_deinit()
 
 void i2s_start_playback()
 {
-    i2s_dma_channel_irq_enable();
+    AUD_LOGD("Audio/i2s: start playback\n");
     pio_i2s_start();
     i2s_resume_playback();
 }
@@ -189,9 +189,11 @@ void i2s_start_playback()
 
 void i2s_resume_playback()
 {
+    AUD_LOGD("Audio/i2s: resume playback\n");
     audio_frame_t *frame = audio_cbuf_get_read_buffer();
     MY_ASSERT((frame != NULL) && (frame->length != 0));
     dma_channel_transfer_from_buffer_now(DMA_CHANNEL_I2S_TX, frame->data, frame->length);
+    i2s_dma_channel_irq_enable();
     i2s_buffer_underrun = false;
 }
 

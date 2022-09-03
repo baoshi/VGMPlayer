@@ -5,6 +5,7 @@ target_sources(display INTERFACE
     lvtheme.c
     lvstyle.c
     lvsupp.c
+    lvspectrum.c
     img_browser_folder.c
     img_browser_file.c
     img_browser_pageup.c

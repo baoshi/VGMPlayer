@@ -66,24 +66,6 @@ void lv_alert_close(lv_obj_t *obj);
 void lv_alert_close_async(lv_obj_t *obj);
 
 
-//
-// Spectrum display
-//
-
-#define LV_SPECTRUM_MAX_BINS    64
-
-typedef struct lv_spectrum_s
-{
-    lv_obj_t obj;
-    uint8_t bin_values[LV_SPECTRUM_MAX_BINS];
-    int num_bins;
-} lv_spectrum_t;
-
-extern const lv_obj_class_t lv_spectrum_class;
-
-lv_obj_t *lv_spectrum_create(lv_obj_t *parent);
-void lv_spectrum_set_bin_values(lv_obj_t *obj, const uint8_t *bvs, int len);
-
 #ifdef __cplusplus
 }
 #endif

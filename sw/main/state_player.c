@@ -12,6 +12,7 @@
 #include "my_debug.h"
 #include "lvstyle.h"
 #include "lvsupp.h"
+#include "lvspectrum.h"
 #include "tick.h"
 #include "event_ids.h"
 #include "event_queue.h"
@@ -72,14 +73,13 @@ enum
 #if (PLAYER_SPECTRUM_BINS > PLAYER_SPECTRUM_MAX_BINS)
 # error("Too many spectrum bins")
 #endif
-#define PLAYER_SPECTURM_HEIGHT 100      // Height of spectrum object
 // AUDIO_FRAME_LENGTH = 2048
 // AUDIO_SAMPLE_RATE = 44110
 // 2048 FFT points spanning 0-44100 Hz. Useful points is 1024 (0-22050Hz)
 // Accumulate 2 samples for 32 bins, we only take first 64 points (1378Hz)
 #define PLAYER_SPECTRUM_AVERAGE_SAMPLES  2
-// To shrink bin sum to displable range
-#define PLAYER_SPECTRUM_DIVIDER          8
+// To shrink bin sum to 0-255 range
+#define PLAYER_SPECTRUM_DIVIDER          3
 
 
 // Setup audio and decoder using current selected file
@@ -174,8 +174,7 @@ static void player_on_entry(player_t *ctx)
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
     // Spectrum
     ctx->spectrum = lv_spectrum_create(ctx->screen);
-    lv_obj_set_size(ctx->spectrum, 240, PLAYER_SPECTURM_HEIGHT);
-    lv_obj_set_style_pad_all(ctx->spectrum, 10, LV_PART_MAIN);
+    lv_obj_set_size(ctx->spectrum, 240, 100);
     lv_obj_center(ctx->spectrum);
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
@@ -329,10 +328,13 @@ static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *prog
             {
                 temp = 0;
                 for (int i = 0; i < PLAYER_SPECTRUM_AVERAGE_SAMPLES; ++i)
-                    temp += audio_sampling_buffer.buffer[index++];
+                {
+                    temp += audio_sampling_buffer.buffer[index];
+                    ++index;
+                }
                 temp = temp / PLAYER_SPECTRUM_DIVIDER;
-                if (temp > PLAYER_SPECTURM_HEIGHT)
-                    ctx->spectrum_bin[bin] = PLAYER_SPECTURM_HEIGHT;
+                if (temp > 255)
+                    ctx->spectrum_bin[bin] = 255;
                 else
                     ctx->spectrum_bin[bin] = (uint8_t)temp;
             }
