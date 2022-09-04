@@ -12,7 +12,9 @@ lv_style_t lvs_msgbox;
 
 lv_style_t lvs_invisible_btn;
 lv_style_t lvs_recolored_icon;
+lv_style_t lvs_top_bar;
 lv_style_t lvs_browser_file_list;
+lv_style_t lvs_player_spectrum;
 
 
 void lvs_init()
@@ -110,10 +112,28 @@ void lvs_init()
     lv_style_set_img_recolor(&lvs_recolored_icon, COLOR_BORDER);
     lv_style_set_img_recolor_opa(&lvs_recolored_icon, LV_OPA_COVER);
 
+    // Style for top bar
+    lv_style_init(&lvs_top_bar);
+    lv_style_set_text_color(&lvs_top_bar, COLOR_TEXT);              // Forground color
+    lv_style_set_border_width(&lvs_top_bar, 1);
+    lv_style_set_border_color(&lvs_top_bar, COLOR_BORDER);          // 1 pixel border
+    lv_style_set_border_side(&lvs_top_bar, LV_BORDER_SIDE_BOTTOM);
+    
     // Styles for file list in browser screen
     lv_style_init(&lvs_browser_file_list);
-    lv_style_set_border_side(&lvs_browser_file_list, LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM);
+    lv_style_set_border_side(&lvs_browser_file_list, LV_BORDER_SIDE_BOTTOM);
+    lv_style_set_pad_top(&lvs_browser_file_list, 0);
+    lv_style_set_pad_bottom(&lvs_browser_file_list, 5);
     lv_style_set_pad_left(&lvs_browser_file_list, 2);
 
+    // Styles for spectrum in player screen
+    lv_style_init(&lvs_player_spectrum);
+    lv_style_set_border_width(&lvs_player_spectrum, 1);
+    lv_style_set_border_color(&lvs_player_spectrum, COLOR_BORDER);          // 1 pixel border
+    lv_style_set_border_side(&lvs_player_spectrum, LV_BORDER_SIDE_BOTTOM);
+    lv_style_set_pad_top(&lvs_player_spectrum, 2);
+    lv_style_set_pad_left(&lvs_player_spectrum, 4);
+    lv_style_set_pad_right(&lvs_player_spectrum, 2);
+    lv_style_set_pad_bottom(&lvs_player_spectrum, 6);
 }
 

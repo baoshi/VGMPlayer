@@ -189,7 +189,6 @@ static void playback_proc()
         audio_cbuf_finish_write();
         if (0 == num_samples) break;
     }
-    AUD_LOGD("Audio/core1: %d samples in buffer\n", audio_cbuf_size());
     AUD_LOGD("Audio/core1: init I2S\n");
     i2s_init();
     wm8978_mute(false);

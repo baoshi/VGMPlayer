@@ -12,7 +12,7 @@ extern "C" {
 //
 
 #define LV_SPECTRUM_MAX_BINS        32
-#define LV_SPECTRUM_BIN_SEGMENTS    24
+#define LV_SPECTRUM_MAX_SEGMENTS    16
 
 typedef struct lv_spectrum_s
 {
@@ -23,7 +23,10 @@ typedef struct lv_spectrum_s
     int bin_count;
     int bin_segment_count;
     int bin_segment_height;
+    int bin_peak_y1;    // bottom of peak (from top edge) segment when peak = 255
+    int bin_peak_y2;    // bottom of peak (from top edge) segment when peak = 0
     uint8_t bin_values[LV_SPECTRUM_MAX_BINS];
+    uint8_t bin_peak_values[LV_SPECTRUM_MAX_BINS];
 } lv_spectrum_t;
 
 extern const lv_obj_class_t lv_spectrum_class;

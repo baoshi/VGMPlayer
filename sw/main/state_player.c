@@ -69,15 +69,15 @@ enum
 
 
 // Spectrum related
-#define PLAYER_SPECTRUM_BINS    32      // Do not exceed PLAYER_SPECTRUM_MAX_BINS in app.h
+#define PLAYER_SPECTRUM_BINS    16      // Do not exceed PLAYER_SPECTRUM_MAX_BINS in app.h
 #if (PLAYER_SPECTRUM_BINS > PLAYER_SPECTRUM_MAX_BINS)
 # error("Too many spectrum bins")
 #endif
 // AUDIO_FRAME_LENGTH = 2048
 // AUDIO_SAMPLE_RATE = 44110
 // 2048 FFT points spanning 0-44100 Hz. Useful points is 1024 (0-22050Hz)
-// Accumulate 2 samples for 32 bins, we only take first 64 points (1378Hz)
-#define PLAYER_SPECTRUM_AVERAGE_SAMPLES  2
+// Accumulate 4 samples for 16 bins, we only take first 64 points (1378Hz)
+#define PLAYER_SPECTRUM_AVERAGE_SAMPLES  4
 // To shrink bin sum to 0-255 range
 #define PLAYER_SPECTRUM_MUL          2
 #define PLAYER_SPECTRUM_DIV          7
@@ -154,15 +154,15 @@ static void player_on_entry(player_t *ctx)
     ctx->screen = lv_obj_create(NULL);
     // Self-destruction callback
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void*)ctx);
-    // Create virtual buttons
-    input_create_buttons(ctx->screen);
-    // Setup input
-    player_setup_input();
     //
     // UI Elements
     //
-    // Top label
-    ctx->lbl_top = lv_label_create(ctx->screen);
+    // Top bar container then top label
+    lv_obj_t *bar = lv_obj_create(ctx->screen);
+    lv_obj_set_pos(bar, 0, 0);
+    lv_obj_set_size(bar, 240, 23);
+    lv_obj_add_style(bar, &lvs_top_bar, 0);
+    ctx->lbl_top = lv_label_create(bar);
     lv_obj_set_width(ctx->lbl_top, 200);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
@@ -175,10 +175,15 @@ static void player_on_entry(player_t *ctx)
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
     // Spectrum
     ctx->spectrum = lv_spectrum_create(ctx->screen);
+    lv_obj_set_pos(ctx->spectrum, 0, 24);
     lv_obj_set_size(ctx->spectrum, 240, 100);
-    lv_obj_center(ctx->spectrum);
+    lv_obj_add_style(ctx->spectrum, &lvs_player_spectrum, 0);
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
+    // Create virtual buttons
+    input_create_buttons(ctx->screen);
+    // Setup input
+    player_setup_input();
     // Load screen
     lv_scr_load(ctx->screen);
     // Arm update timer    

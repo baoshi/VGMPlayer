@@ -30,8 +30,10 @@ extern lv_style_t lvs_slider_knob;
 extern lv_style_t lvs_msgbox;
 
 // Application specific styles
+extern lv_style_t lvs_top_bar;
 extern lv_style_t lvs_recolored_icon;
 extern lv_style_t lvs_browser_file_list;
+extern lv_style_t lvs_player_spectrum;
 
 void lvs_init();
 

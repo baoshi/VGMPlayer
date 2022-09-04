@@ -75,14 +75,15 @@ static void browser_on_entry(browser_t *ctx)
     ctx->screen = lv_obj_create(NULL);
     // Self-destruction callback
     lv_obj_add_event_cb(ctx->screen, screen_event_handler, LV_EVENT_ALL, (void *)ctx);
-    // Setup input
-    input_create_buttons(ctx->screen);
-    browser_setup_input();
     //
     // UI Elements
     //
-    // Top label
-    ctx->lbl_top = lv_label_create(ctx->screen);
+    // Top bar container then top label
+    lv_obj_t *bar = lv_obj_create(ctx->screen);
+    lv_obj_set_pos(bar, 0, 0);
+    lv_obj_set_size(bar, 240, 23);
+    lv_obj_add_style(bar, &lvs_top_bar, 0);
+    ctx->lbl_top = lv_label_create(bar);
     lv_obj_set_width(ctx->lbl_top, 200);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
@@ -96,12 +97,16 @@ static void browser_on_entry(browser_t *ctx)
     // File list
     ctx->lst_file_list = lv_list_create(ctx->screen);
     lv_obj_add_style(ctx->lst_file_list, &lvs_browser_file_list, 0);
-    lv_obj_set_size(ctx->lst_file_list, 240, 192);
-    lv_obj_set_pos(ctx->lst_file_list, 0, 24);
+    lv_obj_set_size(ctx->lst_file_list, 240, 186);
+    lv_obj_set_pos(ctx->lst_file_list, 0, 26);
     // Other UI elements
     ctx->keypad_group = NULL;
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
+    // Create virtual buttons
+    input_create_buttons(ctx->screen);
+    // Setup input
+    browser_setup_input();
     // Load screen
     lv_scr_load(ctx->screen);
     // Arm update timer
