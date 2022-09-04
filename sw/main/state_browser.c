@@ -305,9 +305,9 @@ static void populate_file_list(app_t *me, int mode)
             char ext[4];
             if (path_get_ext(name + 1, ext, 4))
             {
-                if (0 == strcasecmp(ext, "nsf"))
+                if (0 == strcasecmp(ext, "vgm"))
                 {
-                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_browser_nsf, name + 1, LV_LABEL_LONG_DOT);    
+                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_vgm_nes, name + 1, LV_LABEL_LONG_DOT);    
                 }
                 else
                 {

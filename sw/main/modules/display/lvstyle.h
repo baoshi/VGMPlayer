@@ -41,10 +41,17 @@ LV_IMG_DECLARE(img_browser_folder);
 LV_IMG_DECLARE(img_browser_file);
 LV_IMG_DECLARE(img_browser_pageup);
 LV_IMG_DECLARE(img_browser_pagedown);
-LV_IMG_DECLARE(img_browser_nsf);
 LV_IMG_DECLARE(img_popup_brightness);
 LV_IMG_DECLARE(img_popup_speaker);
 LV_IMG_DECLARE(img_popup_headphone);
+LV_IMG_DECLARE(img_battery_0);
+LV_IMG_DECLARE(img_battery_1);
+LV_IMG_DECLARE(img_battery_2);
+LV_IMG_DECLARE(img_battery_3);
+LV_IMG_DECLARE(img_battery_4);
+LV_IMG_DECLARE(img_charge);
+LV_IMG_DECLARE(img_vgm_nes);
+
 
 
 #ifdef __cplusplus

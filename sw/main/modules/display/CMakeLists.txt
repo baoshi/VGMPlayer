@@ -10,10 +10,16 @@ target_sources(display INTERFACE
     img_browser_file.c
     img_browser_pageup.c
     img_browser_pagedown.c
-    img_browser_nsf.c
     img_popup_brightness.c
     img_popup_speaker.c
     img_popup_headphone.c
+    img_battery_0.c
+    img_battery_1.c
+    img_battery_2.c
+    img_battery_3.c
+    img_battery_4.c
+    img_charge.c
+    img_vgm_nes.c
     display.c
 )
 

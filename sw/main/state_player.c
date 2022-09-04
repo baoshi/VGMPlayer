@@ -162,10 +162,14 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_pos(bar, 0, 0);
     lv_obj_set_size(bar, 240, 23);
     lv_obj_add_style(bar, &lvs_top_bar, 0);
+    // Battery indicator
+    ctx->img_battery = lv_img_create(ctx->screen);
+    lv_obj_align(ctx->img_battery, LV_ALIGN_TOP_RIGHT, 0, 2);
+
     ctx->lbl_top = lv_label_create(bar);
     lv_obj_set_width(ctx->lbl_top, 200);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
+    lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_MID, 0, 0);
     lv_label_set_recolor(ctx->lbl_top, true); // Enable re-coloring by commands in the text
     lv_label_set_text(ctx->lbl_top, "");
     // Spectrum
@@ -210,31 +214,30 @@ static void player_on_exit(player_t *ctx)
 
 static void player_on_ui_update(player_t *ctx)
 {
-    char buf[32];
-    buf[0] = '\0';
     if (ec_charge)
     {
-        strcat(buf, LV_SYMBOL_CHARGE);
-        strcat(buf, " ");
+        lv_img_set_src(ctx->img_battery, &img_charge);
     }
-    if (ec_battery > 4.0f)
-        strcat(buf, LV_SYMBOL_BATTERY_FULL);
+    else if (ec_battery > 4.0f)
+    {
+        lv_img_set_src(ctx->img_battery, &img_battery_4);
+    }
     else if (ec_battery > 3.8f)
     {
-        strcat(buf, "#ff0000 ");
-        strcat(buf, LV_SYMBOL_BATTERY_3);
-        strcat(buf, "#");
+        lv_img_set_src(ctx->img_battery, &img_battery_3);
     }
     else if (ec_battery > 3.6f)
-        strcat(buf, LV_SYMBOL_BATTERY_2);
+    {
+        lv_img_set_src(ctx->img_battery, &img_battery_2);
+    }
     else if (ec_battery > 3.3f)
-        strcat(buf, LV_SYMBOL_BATTERY_1);
+    {
+        lv_img_set_src(ctx->img_battery, &img_battery_1);
+    }
     else
     {
-        strcat(buf, "##ff0000 ");
-        strcat(buf, LV_SYMBOL_BATTERY_EMPTY);
+        lv_img_set_src(ctx->img_battery, &img_battery_0);
     }
-    lv_label_set_text(ctx->lbl_top, buf);
 }
 
 
