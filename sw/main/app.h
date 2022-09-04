@@ -26,8 +26,8 @@ typedef struct browser_s
 {
     lv_obj_t *screen;
     lv_obj_t *lbl_top;          // Top indicators
-    lv_obj_t *lbl_bottom;       // Bottom label
     lv_obj_t *lst_file_list;    // List of files
+    lv_obj_t *lbl_bottom;       // Bottom label
     lv_group_t *keypad_group;   // keypad input group
     int timer_ui_update;
 } browser_t;
@@ -46,8 +46,10 @@ typedef struct player_s
 {
     lv_obj_t *screen;
     lv_obj_t *lbl_top;      // Top indicators
-    lv_obj_t *lbl_bottom;   // Bottom indicators
     lv_obj_t *spectrum;     // Spectrum
+    lv_obj_t *lbl_progress; // Progress Message
+    lv_obj_t *lbl_bottom;   // Bottom indicators
+
     int timer_ui_update;    // UI update timer
     char file[FF_LFN_BUF + 1];
     bool playing;

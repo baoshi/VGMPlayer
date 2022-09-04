@@ -166,18 +166,26 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_width(ctx->lbl_top, 200);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
+    lv_label_set_recolor(ctx->lbl_top, true); // Enable re-coloring by commands in the text
     lv_label_set_text(ctx->lbl_top, "");
+    // Spectrum
+    ctx->spectrum = lv_spectrum_create(ctx->screen);
+    lv_obj_set_pos(ctx->spectrum, 0, 24);
+    lv_obj_set_size(ctx->spectrum, 240, 100);
+    lv_obj_add_style(ctx->spectrum, &lvs_player_spectrum, 0);
+    // Progress
+    ctx->lbl_progress = lv_label_create(ctx->screen);
+    lv_obj_set_width(ctx->lbl_progress, 240);
+    lv_obj_align(ctx->lbl_progress, LV_ALIGN_TOP_MID, 0, 132);
+    lv_obj_set_style_text_align(ctx->lbl_progress, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_label_set_text(ctx->lbl_progress, "0:00/0:00");
     // Create bottom label
     ctx->lbl_bottom = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_bottom, 240);
     lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_label_set_text(ctx->lbl_bottom, "");
     lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    // Spectrum
-    ctx->spectrum = lv_spectrum_create(ctx->screen);
-    lv_obj_set_pos(ctx->spectrum, 0, 24);
-    lv_obj_set_size(ctx->spectrum, 240, 100);
-    lv_obj_add_style(ctx->spectrum, &lvs_player_spectrum, 0);
+
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Create virtual buttons
@@ -203,7 +211,29 @@ static void player_on_exit(player_t *ctx)
 static void player_on_ui_update(player_t *ctx)
 {
     char buf[32];
-    sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
+    buf[0] = '\0';
+    if (ec_charge)
+    {
+        strcat(buf, LV_SYMBOL_CHARGE);
+        strcat(buf, " ");
+    }
+    if (ec_battery > 4.0f)
+        strcat(buf, LV_SYMBOL_BATTERY_FULL);
+    else if (ec_battery > 3.8f)
+    {
+        strcat(buf, "#ff0000 ");
+        strcat(buf, LV_SYMBOL_BATTERY_3);
+        strcat(buf, "#");
+    }
+    else if (ec_battery > 3.6f)
+        strcat(buf, LV_SYMBOL_BATTERY_2);
+    else if (ec_battery > 3.3f)
+        strcat(buf, LV_SYMBOL_BATTERY_1);
+    else
+    {
+        strcat(buf, "##ff0000 ");
+        strcat(buf, LV_SYMBOL_BATTERY_EMPTY);
+    }
     lv_label_set_text(ctx->lbl_top, buf);
 }
 
@@ -312,7 +342,13 @@ static void player_on_play_next(app_t *app, player_t *ctx, bool alert_or_back)
 
 
 static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *progress)
-{
+{   
+    char buf[32];
+    int sec1, sec2;
+    sec1 = progress->played_samples / AUDIO_SAMPLE_RATE;
+    sec2 = progress->total_samples / AUDIO_SAMPLE_RATE;
+    sprintf(buf, "%02d:%02d / %02d:%02d", sec1 / 60, sec1 % 60, sec2 / 60, sec2 % 60);
+    lv_label_set_text(ctx->lbl_progress, buf);
     //PL_LOGD("Player: %lu / %lu\n", progress->played_samples, progress->total_samples);
     // Do not dim screen when playing
     backlight_keepalive(tick_millis());
