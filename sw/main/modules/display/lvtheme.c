@@ -145,10 +145,6 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
         lv_obj_add_style(obj, &lvs_list_btn_focused, LV_STATE_FOCUS_KEY);
         lv_obj_add_style(obj, &lvs_list_btn_pressed, LV_STATE_PRESSED);
     }
-    else if (lv_obj_check_type(obj, &lv_msgbox_class))      // Message box
-    {
-        lv_obj_add_style(obj, &lvs_msgbox, 0);
-    }
     else if(lv_obj_check_type(obj, &lv_bar_class)) 
     {
         lv_obj_add_style(obj, &lvs_bar_bg, 0);
@@ -160,54 +156,6 @@ static void theme_apply(lv_theme_t *th, lv_obj_t *obj)
         lv_obj_add_style(obj, &lvs_bar_ind, LV_PART_INDICATOR);
         lv_obj_add_style(obj, &lvs_slider_knob, LV_PART_KNOB);
     }
-
-    else if(lv_obj_check_type(obj, &lv_chart_class)) 
-    {
-        lv_obj_add_style(obj, &styles.chart_bg, 0);
-        lv_obj_add_style(obj, &lvs_scrollbar, LV_PART_SCROLLBAR);
-        lv_obj_add_style(obj, &lvs_scrollbar, LV_PART_SCROLLBAR | LV_STATE_SCROLLED);
-        lv_obj_add_style(obj, &styles.chart_series, LV_PART_ITEMS);
-        lv_obj_add_style(obj, &styles.chart_indic, LV_PART_INDICATOR);
-        lv_obj_add_style(obj, &styles.chart_ticks, LV_PART_TICKS);
-        lv_obj_add_style(obj, &styles.chart_series, LV_PART_CURSOR);
-    }
-
-#if LV_USE_TEXTAREA
-    else if(lv_obj_check_type(obj, &lv_textarea_class)) {
-        lv_obj_add_style(obj, &styles.white, 0);
-        lv_obj_add_style(obj, &lvs_scrollbar, LV_PART_SCROLLBAR);
-    }
-#endif
-
-
-#if LV_USE_SPINBOX
-    else if(lv_obj_check_type(obj, &lv_spinbox_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-        lv_obj_add_style(obj, &styles.dark, LV_PART_CURSOR);
-    }
-#endif
-#if LV_USE_TILEVIEW
-    else if(lv_obj_check_type(obj, &lv_tileview_class)) {
-        lv_obj_add_style(obj, &styles.scr, 0);
-        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-    }
-    else if(lv_obj_check_type(obj, &lv_tileview_tile_class)) {
-        lv_obj_add_style(obj, &styles.scrollbar, LV_PART_SCROLLBAR);
-    }
-#endif
-
-#if LV_USE_COLORWHEEL
-    else if(lv_obj_check_type(obj, &lv_colorwheel_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-        lv_obj_add_style(obj, &styles.light, LV_PART_KNOB);
-    }
-#endif
-
-#if LV_USE_LED
-    else if(lv_obj_check_type(obj, &lv_led_class)) {
-        lv_obj_add_style(obj, &styles.light, 0);
-    }
-#endif
 }
 
 /**********************
