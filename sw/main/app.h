@@ -29,7 +29,6 @@ typedef struct browser_s
     lv_obj_t *lst_file_list;    // List of files
     lv_obj_t *lbl_bottom;       // Bottom label
     lv_group_t *keypad_group;   // keypad input group
-    int timer_ui_update;
 } browser_t;
 
 event_t const *browser_handler(app_t *app, event_t const *evt);
@@ -49,8 +48,6 @@ typedef struct player_s
     lv_obj_t *spectrum;     // Spectrum
     lv_obj_t *lbl_progress; // Progress Message
     lv_obj_t *lbl_bottom;   // Bottom indicators
-    lv_obj_t *img_battery;  // Battery indicator
-    int timer_ui_update;    // UI update timer
     char file[FF_LFN_BUF + 1];
     bool playing;
     int nav_dir;            // file navigation direction. 1 = next, -1 = previous, 0 = go back to browser_disk
@@ -114,7 +111,12 @@ struct app_s
     brightness_t brightness_ctx;
     volume_t volume_ctx;
     alert_t alert_ctx;
+
+    // on-screen objects
+    lv_obj_t *img_battery;  // Battery indicator
     
+    int timer_ui_update;    // UI update time
+
     // data shared by all states
     catalog_t *catalog;
     int catalog_history_page[CATALOG_HISTORY_DEPTH];

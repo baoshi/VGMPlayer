@@ -30,8 +30,6 @@
 #include "app.h"
 
 
-#define UI_UPDATE_INTERVAL_MS   200
-
 #ifndef PLAYER_DEBUG
 # define PLAYER_DEBUG 1
 #endif
@@ -163,9 +161,7 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_size(bar, 240, 23);
     lv_obj_add_style(bar, &lvs_top_bar, 0);
     // Battery indicator
-    ctx->img_battery = lv_img_create(ctx->screen);
-    lv_obj_align(ctx->img_battery, LV_ALIGN_TOP_RIGHT, 0, 2);
-
+   
     ctx->lbl_top = lv_label_create(bar);
     lv_obj_set_width(ctx->lbl_top, 200);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
@@ -198,46 +194,13 @@ static void player_on_entry(player_t *ctx)
     player_setup_input();
     // Load screen
     lv_scr_load(ctx->screen);
-    // Arm update timer    
-    ctx->timer_ui_update = tick_arm_timer_event(30, true, EVT_PLAYER_UI_UPDATE, true);
 }
 
 
 static void player_on_exit(player_t *ctx)
 {
-    tick_disarm_timer_event(ctx->timer_ui_update);
-    ctx->timer_ui_update = 0;
     input_delete_buttons();
     event_queue_clear();
-}
-
-
-static void player_on_ui_update(player_t *ctx)
-{
-    if (ec_charge)
-    {
-        lv_img_set_src(ctx->img_battery, &img_charge);
-    }
-    else if (ec_battery > 4.0f)
-    {
-        lv_img_set_src(ctx->img_battery, &img_battery_4);
-    }
-    else if (ec_battery > 3.8f)
-    {
-        lv_img_set_src(ctx->img_battery, &img_battery_3);
-    }
-    else if (ec_battery > 3.6f)
-    {
-        lv_img_set_src(ctx->img_battery, &img_battery_2);
-    }
-    else if (ec_battery > 3.3f)
-    {
-        lv_img_set_src(ctx->img_battery, &img_battery_1);
-    }
-    else
-    {
-        lv_img_set_src(ctx->img_battery, &img_battery_0);
-    }
 }
 
 
@@ -406,8 +369,6 @@ event_t const *player_handler(app_t *app, event_t const *evt)
             Disarm UI update timer, disable buttons
         EVT_START:
             Send EVT_PLAY_CLICKED
-        EVT_PLAYER_UI_UPDATE:
-            Update top bar
         EVT_PLAY_CLICKED:
             Play song
         EVT_PLAYER_PLAY_NEXT_OR_ALERT:
@@ -455,9 +416,6 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         break;
     case EVT_START:
         PL_LOGD("Player: start\n");
-        break;
-    case EVT_PLAYER_UI_UPDATE:
-        player_on_ui_update(ctx);
         break;
     case EVT_BUTTON_PLAY_CLICKED:
         player_on_play_clicked(app, ctx);

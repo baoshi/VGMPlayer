@@ -14,7 +14,6 @@
 #include "path_utils.h"
 #include "app.h"
 
-#define UI_UPDATE_INTERVAL_MS 200
 
 #ifndef BROWSER_DEBUG
 #define BROWSER_DEBUG 1
@@ -109,25 +108,13 @@ static void browser_on_entry(browser_t *ctx)
     browser_setup_input();
     // Load screen
     lv_scr_load(ctx->screen);
-    // Arm update timer
-    ctx->timer_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_BROWSER_UI_UPDATE, true);
 }
 
 
 static void browser_on_exit(browser_t *ctx)
 {
-    tick_disarm_timer_event(ctx->timer_ui_update);
-    ctx->timer_ui_update = 0;
     input_delete_buttons();
     event_queue_clear();
-}
-
-
-static void browser_on_ui_update(browser_t *ctx)
-{
-    char buf[32];
-    sprintf(buf, "C=%d B=%.1fv", ec_charge, ec_battery);
-    lv_label_set_text(ctx->lbl_top, buf);
 }
 
 
@@ -140,8 +127,6 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
             Delete buttons, disarm UI update timer
         EVT_START:
             Start browser_nodisk
-        EVT_BROWSER_UI_UPDATE:
-            Update top bar
     */
     event_t const *r = 0;
     browser_t *ctx = &(me->browser_ctx);
@@ -158,9 +143,6 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
     case EVT_START:
         // default to nodisk state and wait card insertion
         STATE_START(me, &me->browser_nodisk);
-        break;
-    case EVT_BROWSER_UI_UPDATE:
-        browser_on_ui_update(ctx);
         break;
     default:
         r = evt;

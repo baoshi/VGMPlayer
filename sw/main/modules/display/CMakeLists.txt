@@ -14,11 +14,12 @@ target_sources(display INTERFACE
     img_popup_speaker.c
     img_popup_headphone.c
     img_battery_0.c
-    img_battery_1.c
-    img_battery_2.c
-    img_battery_3.c
-    img_battery_4.c
-    img_charge.c
+    img_battery_25.c
+    img_battery_50.c
+    img_battery_75.c
+    img_battery_100.c
+    img_battery_charging.c
+    img_battery_unknown.c
     img_vgm_nes.c
     display.c
 )
