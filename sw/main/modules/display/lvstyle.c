@@ -114,10 +114,7 @@ void lvs_init()
 
     // Style for top bar
     lv_style_init(&lvs_top_bar);
-    lv_style_set_text_color(&lvs_top_bar, COLOR_TEXT);              // Forground color
-    //lv_style_set_border_width(&lvs_top_bar, 1);
-    //lv_style_set_border_color(&lvs_top_bar, COLOR_BORDER);          // 1 pixel border
-    //lv_style_set_border_side(&lvs_top_bar, LV_BORDER_SIDE_BOTTOM);
+    lv_style_set_text_color(&lvs_top_bar, COLOR_TEXT);            // Forground color
     
     // Styles for file list in browser screen
     lv_style_init(&lvs_browser_file_list);
