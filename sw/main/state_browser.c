@@ -78,15 +78,15 @@ static void browser_on_entry(browser_t *ctx)
     // UI Elements
     //
     // Top bar:
-    // Font line height is 21. pad 2 pixel top down, top bar is 25 pixel
+    // Font line height is 21. pad 2 pixel top down, top bar is 26 pixel high
     // Icon is 20x17
     ctx->img_top = lv_img_create(ctx->screen);
     lv_obj_set_pos(ctx->img_top, 2, 5);
     ctx->lbl_top = lv_label_create(ctx->screen);
-    lv_obj_set_width(ctx->lbl_top, 170);    // folder image: w20, battery image: w26
+    lv_obj_set_width(ctx->lbl_top, 180);    // folder image: w20, battery image: w26
     lv_obj_set_pos(ctx->lbl_top, 28, 3);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_LEFT, 0);
-    lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_SCROLL);
+    lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_label_set_text(ctx->lbl_top, "");
     // File list
     ctx->lst_file_list = lv_list_create(ctx->screen);

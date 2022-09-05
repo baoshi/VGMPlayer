@@ -27,11 +27,11 @@ battery_state_t battery_get_state()
             else if (ec_battery > BATTERY_LEVEL_75)
                 state = BATTERY_STATE_75;
             else if (ec_battery > BATTERY_LEVEL_50)
-                state = BATTERY_LEVEL_50;
+                state = BATTERY_STATE_50;
             else if (ec_battery > BATTERY_LEVEL_25)
-                state = BATTERY_LEVEL_25;
+                state = BATTERY_STATE_25;
             else if (ec_battery > BATTERY_LEVEL_0)
-                state = BATTERY_LEVEL_0;
+                state = BATTERY_STATE_0;
         }
         break;
     case BATTERY_STATE_CHARGING:
@@ -42,11 +42,13 @@ battery_state_t battery_get_state()
             else if (ec_battery > BATTERY_LEVEL_75)
                 state = BATTERY_STATE_75;
             else if (ec_battery > BATTERY_LEVEL_50)
-                state = BATTERY_LEVEL_50;
+                state = BATTERY_STATE_50;
             else if (ec_battery > BATTERY_LEVEL_25)
-                state = BATTERY_LEVEL_25;
+                state = BATTERY_STATE_25;
             else if (ec_battery > BATTERY_LEVEL_0)
-                state = BATTERY_LEVEL_0;
+                state = BATTERY_STATE_0;
+            else
+                state = BATTERY_STATE_UNKNOWN;
         }
         break;
     case BATTERY_STATE_100:

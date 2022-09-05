@@ -6,6 +6,7 @@ extern "C" {
 
 typedef enum 
 {
+    BATTERY_STATE_NONE,
     BATTERY_STATE_UNKNOWN,
     BATTERY_STATE_CHARGING,
     BATTERY_STATE_100,
