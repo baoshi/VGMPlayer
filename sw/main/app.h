@@ -25,9 +25,9 @@ event_t const *top_handler(app_t *app, event_t const *evt);
 typedef struct browser_s
 {
     lv_obj_t *screen;
+    lv_obj_t *img_top;          // Top image
     lv_obj_t *lbl_top;          // Top indicators
     lv_obj_t *lst_file_list;    // List of files
-    lv_obj_t *lbl_bottom;       // Bottom label
     lv_group_t *keypad_group;   // keypad input group
 } browser_t;
 

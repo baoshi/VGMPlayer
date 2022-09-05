@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define COLOR_BACKGROUND            lv_color_make(0, 0, 0)
+#define COLOR_BACKGROUND            lv_color_make(10, 10, 10)
 #define COLOR_TEXT                  lv_color_make(225, 217, 210)
 #define COLOR_DARK                  lv_color_make(44, 102, 132)
 #define COLOR_LIGHT                 lv_color_make(61, 174, 233)
@@ -51,9 +51,10 @@ LV_IMG_DECLARE(img_battery_75);
 LV_IMG_DECLARE(img_battery_100);
 LV_IMG_DECLARE(img_battery_charging);
 LV_IMG_DECLARE(img_battery_unknown);
+LV_IMG_DECLARE(img_microsd);
+LV_IMG_DECLARE(img_microsd_bad);
+LV_IMG_DECLARE(img_microsd_empty);
 LV_IMG_DECLARE(img_vgm_nes);
-
-
 
 #ifdef __cplusplus
 }

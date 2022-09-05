@@ -20,6 +20,9 @@ target_sources(display INTERFACE
     img_battery_100.c
     img_battery_charging.c
     img_battery_unknown.c
+    img_microsd.c
+    img_microsd_bad.c
+    img_microsd_empty.c
     img_vgm_nes.c
     display.c
 )

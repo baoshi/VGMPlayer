@@ -77,26 +77,21 @@ static void browser_on_entry(browser_t *ctx)
     //
     // UI Elements
     //
-    // Top bar container then top label
-    lv_obj_t *bar = lv_obj_create(ctx->screen);
-    lv_obj_set_pos(bar, 0, 0);
-    lv_obj_set_size(bar, 240, 23);
-    lv_obj_add_style(bar, &lvs_top_bar, 0);
-    ctx->lbl_top = lv_label_create(bar);
-    lv_obj_set_width(ctx->lbl_top, 200);
-    lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_obj_align(ctx->lbl_top, LV_ALIGN_TOP_RIGHT, 0, 0);
+    // Top bar:
+    // Font line height is 21. pad 2 pixel top down, top bar is 25 pixel
+    // Icon is 20x17
+    ctx->img_top = lv_img_create(ctx->screen);
+    lv_obj_set_pos(ctx->img_top, 2, 5);
+    ctx->lbl_top = lv_label_create(ctx->screen);
+    lv_obj_set_width(ctx->lbl_top, 170);    // folder image: w20, battery image: w26
+    lv_obj_set_pos(ctx->lbl_top, 28, 3);
+    lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_LEFT, 0);
+    lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_SCROLL);
     lv_label_set_text(ctx->lbl_top, "");
-    // Status label
-    ctx->lbl_bottom = lv_label_create(ctx->screen);
-    lv_obj_set_width(ctx->lbl_bottom, 240);
-    lv_obj_align(ctx->lbl_bottom, LV_ALIGN_BOTTOM_LEFT, 0, 0);
-    lv_label_set_text(ctx->lbl_bottom, "");
-    lv_label_set_long_mode(ctx->lbl_bottom, LV_LABEL_LONG_SCROLL_CIRCULAR);
     // File list
     ctx->lst_file_list = lv_list_create(ctx->screen);
     lv_obj_add_style(ctx->lst_file_list, &lvs_browser_file_list, 0);
-    lv_obj_set_size(ctx->lst_file_list, 240, 186);
+    lv_obj_set_size(ctx->lst_file_list, 240, 214);
     lv_obj_set_pos(ctx->lst_file_list, 0, 26);
     // Other UI elements
     ctx->keypad_group = NULL;
@@ -330,8 +325,8 @@ static void populate_file_list(app_t *me, int mode)
     {
         lv_group_focus_obj(focus);
     }
-    // Update status bar
-    lv_label_set_text(ctx->lbl_bottom, me->catalog->dir);
+    // Update top bar
+    lv_label_set_text(ctx->lbl_top, me->catalog->dir);
 }
 
 
@@ -373,13 +368,15 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
 {
     // Setup keypad
     browser_disk_setup_input(ctx);
+    // Show icon
+    lv_img_set_src(ctx->img_top, &img_microsd);
     // build up file list box
     int t;
     if (0 == me->catalog)
     {
         // no directory catalog available, we must be entering from nodisk state
         ec_pause_watchdog();
-        lv_label_set_text(ctx->lbl_bottom, "Loading...");
+        lv_label_set_text(ctx->lbl_top, "Loading...");
         lv_refr_now(NULL);
         t = disk_check_dir("/");
         ec_resume_watchdog();
@@ -498,7 +495,7 @@ static void browser_disk_on_play(app_t *me, browser_t *ctx, event_t const *evt)
             int save_page = me->catalog->cur_page;
             catalog_close(me->catalog);
             me->catalog = 0;
-            lv_label_set_text(ctx->lbl_bottom, "Loading...");
+            lv_label_set_text(ctx->lbl_top, "Loading...");
             lv_refr_now(NULL);
             ec_pause_watchdog();
             t = catalog_open_dir(path, 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
@@ -552,7 +549,7 @@ static void browser_disk_on_back(app_t *me, browser_t *ctx)
         catalog_close(me->catalog);
         me->catalog = 0;
         int t;
-        lv_label_set_text(ctx->lbl_bottom, "Loading...");
+        lv_label_set_text(ctx->lbl_top, "Loading...");
         lv_refr_now(NULL);
         ec_pause_watchdog();
         t = catalog_open_dir(path, 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
@@ -672,7 +669,8 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
     case EVT_ENTRY:
         BR_LOGD("Browser_Nodisk: entry\n");
         browser_nodisk_setup_input();
-        lv_label_set_text(ctx->lbl_bottom, "No card");
+        lv_img_set_src(ctx->img_top, &img_microsd_empty);
+        lv_label_set_text(ctx->lbl_top, "No card");
         break;
     case EVT_EXIT:
         BR_LOGD("Browser_Nodisk: exit\n");
@@ -726,7 +724,8 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
     case EVT_ENTRY:
         BR_LOGD("Browser_Baddisk: entry\n");
         browser_baddisk_setup_input();
-        lv_label_set_text(ctx->lbl_bottom, "Card error");
+        lv_img_set_src(ctx->img_top, &img_microsd_bad);
+        lv_label_set_text(ctx->lbl_top, "Card error");
         break;
     case EVT_EXIT:
         BR_LOGD("Browser_Baddisk: exit\n");

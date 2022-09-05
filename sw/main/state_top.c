@@ -78,7 +78,7 @@ event_t const *top_handler(app_t *app, event_t const *evt)
     case EVT_ENTRY:
         lv_obj_clear_flag(lv_layer_top(), LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
         app->img_battery = lv_img_create(lv_layer_top());
-        lv_obj_align(app->img_battery, LV_ALIGN_TOP_RIGHT, 0, 2);
+        lv_obj_align(app->img_battery, LV_ALIGN_TOP_RIGHT, 0, 3);   // battery image height 19, top bar has 25 pixels
         app->timer_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_APP_UI_UPDATE, true);
         break;
     case EVT_EXIT:

@@ -115,15 +115,15 @@ void lvs_init()
     // Style for top bar
     lv_style_init(&lvs_top_bar);
     lv_style_set_text_color(&lvs_top_bar, COLOR_TEXT);              // Forground color
-    lv_style_set_border_width(&lvs_top_bar, 1);
-    lv_style_set_border_color(&lvs_top_bar, COLOR_BORDER);          // 1 pixel border
-    lv_style_set_border_side(&lvs_top_bar, LV_BORDER_SIDE_BOTTOM);
+    //lv_style_set_border_width(&lvs_top_bar, 1);
+    //lv_style_set_border_color(&lvs_top_bar, COLOR_BORDER);          // 1 pixel border
+    //lv_style_set_border_side(&lvs_top_bar, LV_BORDER_SIDE_BOTTOM);
     
     // Styles for file list in browser screen
     lv_style_init(&lvs_browser_file_list);
-    lv_style_set_border_side(&lvs_browser_file_list, LV_BORDER_SIDE_BOTTOM);
-    lv_style_set_pad_top(&lvs_browser_file_list, 0);
-    lv_style_set_pad_bottom(&lvs_browser_file_list, 5);
+    lv_style_set_border_side(&lvs_browser_file_list, LV_BORDER_SIDE_TOP);
+    lv_style_set_pad_top(&lvs_browser_file_list, 3);
+    lv_style_set_pad_bottom(&lvs_browser_file_list, 3);
     lv_style_set_pad_left(&lvs_browser_file_list, 2);
 
     // Styles for spectrum in player screen
