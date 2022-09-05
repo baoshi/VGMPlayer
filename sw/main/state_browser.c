@@ -617,11 +617,9 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         browser_disk_on_back(me, ctx);
         break;
     case EVT_DISK_ERROR:
-        clean_file_list(me, ctx);
         STATE_TRAN((hsm_t *)me, &me->browser_baddisk);
         break;
     case EVT_DISK_EJECTED:
-        clean_file_list(me, ctx);
         STATE_TRAN((hsm_t *)me, &me->browser_nodisk);
         break;
     default:
@@ -671,6 +669,7 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
         browser_nodisk_setup_input();
         lv_img_set_src(ctx->img_top, &img_microsd_empty);
         lv_label_set_text(ctx->lbl_top, "No card");
+        clean_file_list(me, ctx);
         break;
     case EVT_EXIT:
         BR_LOGD("Browser_Nodisk: exit\n");
@@ -726,6 +725,7 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
         browser_baddisk_setup_input();
         lv_img_set_src(ctx->img_top, &img_microsd_bad);
         lv_label_set_text(ctx->lbl_top, "Card error");
+        clean_file_list(me, ctx);
         break;
     case EVT_EXIT:
         BR_LOGD("Browser_Baddisk: exit\n");
