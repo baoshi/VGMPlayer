@@ -23,7 +23,8 @@ target_sources(display INTERFACE
     img_microsd.c
     img_microsd_bad.c
     img_microsd_empty.c
-    img_vgm_nes.c
+    img_browser_file_vgm.c
+    img_browser_file_raw.c
     display.c
 )
 

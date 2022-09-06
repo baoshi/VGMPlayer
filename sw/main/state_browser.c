@@ -284,7 +284,11 @@ static void populate_file_list(app_t *me, int mode)
             {
                 if (0 == strcasecmp(ext, "vgm"))
                 {
-                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_vgm_nes, name + 1, LV_LABEL_LONG_DOT);    
+                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_browser_file_vgm, name + 1, LV_LABEL_LONG_DOT);    
+                }
+                else if (0 == strcasecmp(ext, "s16"))
+                {
+                    btn = lv_list_add_btn_ex(ctx->lst_file_list, &img_browser_file_raw, name + 1, LV_LABEL_LONG_DOT);    
                 }
                 else
                 {

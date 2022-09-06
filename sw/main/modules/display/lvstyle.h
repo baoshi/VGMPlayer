@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define COLOR_BACKGROUND            lv_color_make(10, 10, 10)
+#define COLOR_BACKGROUND            lv_color_make(0, 0, 0)
 #define COLOR_TEXT                  lv_color_make(225, 217, 210)
 #define COLOR_DARK                  lv_color_make(44, 102, 132)
 #define COLOR_LIGHT                 lv_color_make(61, 174, 233)
@@ -39,6 +39,8 @@ void lvs_init();
 
 LV_IMG_DECLARE(img_browser_folder);
 LV_IMG_DECLARE(img_browser_file);
+LV_IMG_DECLARE(img_browser_file_vgm);
+LV_IMG_DECLARE(img_browser_file_raw);
 LV_IMG_DECLARE(img_browser_pageup);
 LV_IMG_DECLARE(img_browser_pagedown);
 LV_IMG_DECLARE(img_popup_brightness);
@@ -54,7 +56,7 @@ LV_IMG_DECLARE(img_battery_unknown);
 LV_IMG_DECLARE(img_microsd);
 LV_IMG_DECLARE(img_microsd_bad);
 LV_IMG_DECLARE(img_microsd_empty);
-LV_IMG_DECLARE(img_vgm_nes);
+
 
 #ifdef __cplusplus
 }
