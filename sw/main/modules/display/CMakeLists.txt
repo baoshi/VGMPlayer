@@ -8,6 +8,8 @@ target_sources(display INTERFACE
     lvspectrum.c
     img_browser_folder.c
     img_browser_file.c
+    img_browser_file_vgm.c
+    img_browser_file_raw.c
     img_browser_pageup.c
     img_browser_pagedown.c
     img_popup_brightness.c
@@ -23,8 +25,8 @@ target_sources(display INTERFACE
     img_microsd.c
     img_microsd_bad.c
     img_microsd_empty.c
-    img_browser_file_vgm.c
-    img_browser_file_raw.c
+    img_player_top_nes.c
+    img_player_top_s16.c
     display.c
 )
 

@@ -56,6 +56,8 @@ LV_IMG_DECLARE(img_battery_unknown);
 LV_IMG_DECLARE(img_microsd);
 LV_IMG_DECLARE(img_microsd_bad);
 LV_IMG_DECLARE(img_microsd_empty);
+LV_IMG_DECLARE(img_player_top_nes);
+LV_IMG_DECLARE(img_player_top_s16);
 
 
 #ifdef __cplusplus

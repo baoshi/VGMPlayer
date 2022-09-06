@@ -157,25 +157,21 @@ static void player_on_entry(player_t *ctx)
     //
     // Top bar: 26px high, right side has battery icon (26 pixels wide, leave 30 pixels at least)
     // Font line height is 21, pad 2 pixel top down.
+    // Top bar icon is 32x15
+    ctx->img_top = lv_img_create(ctx->screen);
+    lv_obj_set_pos(ctx->img_top, 0, 6);
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_top, 200);
-    lv_obj_set_width(ctx->lbl_top, 180);
-    lv_obj_set_pos(ctx->lbl_top, 2, 3);
+    lv_obj_set_width(ctx->lbl_top, 166);
+    lv_obj_set_pos(ctx->lbl_top, 37, 3);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_LEFT, 0);
-    lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_DOT);
     lv_label_set_text(ctx->lbl_top, "");
     // Spectrum
     ctx->spectrum = lv_spectrum_create(ctx->screen);
     lv_obj_set_pos(ctx->spectrum, 0, 26);
     lv_obj_set_size(ctx->spectrum, 240, 100);
     lv_obj_add_style(ctx->spectrum, &lvs_player_spectrum, 0);
-    // Title
-    ctx->lbl_title = lv_label_create(ctx->screen);
-    lv_obj_set_width(ctx->lbl_title, 240);
-    lv_obj_align(ctx->lbl_title, LV_ALIGN_TOP_MID, 0, 132);
-    lv_obj_set_style_text_align(ctx->lbl_title, LV_TEXT_ALIGN_CENTER, 0);
-    lv_label_set_long_mode(ctx->lbl_title, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_label_set_text(ctx->lbl_title, "");
     // 154 and below for individual file type handler to use
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
@@ -214,6 +210,7 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
             break;
         }
         path_get_leaf(ctx->file, ctx->name);
+        lv_label_set_text(ctx->lbl_top, ctx->name);
         // save history
         app->catalog_history_page[app->catalog_history_index] = app->catalog->cur_page;
         app->catalog_history_selection[app->catalog_history_index] = app->catalog->cur_index;
@@ -311,7 +308,7 @@ static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *prog
     sec1 = progress->played_samples / AUDIO_SAMPLE_RATE;
     sec2 = progress->total_samples / AUDIO_SAMPLE_RATE;
     sprintf(buf, "%02d:%02d / %02d:%02d", sec1 / 60, sec1 % 60, sec2 / 60, sec2 % 60);
-    lv_label_set_text(ctx->lbl_top, buf);
+    //lv_label_set_text(ctx->lbl_top, buf);
     //PL_LOGD("Player: %lu / %lu\n", progress->played_samples, progress->total_samples);
     // Do not dim screen when playing
     backlight_keepalive(tick_millis());
@@ -504,6 +501,7 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
     {
     case EVT_ENTRY:
         PL_LOGD("Player_S16: entry\n");
+        lv_img_set_src(ctx->img_top, &img_player_top_s16);
         player_s16_setup_input();
         ctx->playing = false;
         app->busy = false;
@@ -514,7 +512,7 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
         // TODO: Handle error here
         MY_ASSERT(ctx->decoder != NULL);
-        lv_label_set_text(ctx->lbl_title, ctx->name);
+        //lv_label_set_text(ctx->lbl_title, ctx->name);
         audio_start_playback(ctx->decoder);
         ++ctx->played;
         ctx->playing = true;
@@ -624,6 +622,7 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
     case EVT_ENTRY:
         PL_LOGD("Player_VGM: entry\n");
         player_vgm_setup_input();
+        lv_img_set_src(ctx->img_top, &img_player_top_nes);
         ctx->playing = false;
         app->busy = false;
         break;
@@ -632,7 +631,7 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
         MY_ASSERT(ctx->decoder == 0);
         ctx->decoder = (decoder_t *) decoder_vgm_create(ctx->file);
         MY_ASSERT(ctx->decoder != NULL);
-        lv_label_set_text(ctx->lbl_title, ((decoder_vgm_t *)(ctx->decoder))->vgm->track_name_en);
+        //lv_label_set_text(ctx->lbl_title, ((decoder_vgm_t *)(ctx->decoder))->vgm->track_name_en);
         audio_start_playback(ctx->decoder);
         ++ctx->played;
         ctx->playing = true;

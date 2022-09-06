@@ -44,9 +44,11 @@ event_t const *browser_baddisk_handler(app_t *app, event_t const *evt);
 typedef struct player_s
 {
     lv_obj_t *screen;
+    lv_obj_t *img_top;          // Top image
     lv_obj_t *lbl_top;          // Top indicators
     lv_obj_t *spectrum;         // Spectrum
-    lv_obj_t *lbl_title;        // Title of song
+    lv_obj_t *play_time;        // Play time label
+    lv_obj_t *remaining_time;   // Remaining time label
     char file[FF_LFN_BUF + 1];  // Complete path of file to play
     char name[FF_LFN_BUF + 1];  // Bare name of the file
     int played;                 // Number of songs played

@@ -127,7 +127,7 @@ void lvs_init()
     lv_style_init(&lvs_player_spectrum);
     lv_style_set_border_width(&lvs_player_spectrum, 1);
     lv_style_set_border_color(&lvs_player_spectrum, COLOR_BORDER);          // 1 pixel border
-    lv_style_set_border_side(&lvs_player_spectrum, LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_BOTTOM);
+    lv_style_set_border_side(&lvs_player_spectrum, LV_BORDER_SIDE_BOTTOM);
     lv_style_set_pad_top(&lvs_player_spectrum, 3);
     lv_style_set_pad_left(&lvs_player_spectrum, 5);
     lv_style_set_pad_right(&lvs_player_spectrum, 5);
