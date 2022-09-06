@@ -44,14 +44,14 @@ event_t const *browser_baddisk_handler(app_t *app, event_t const *evt);
 typedef struct player_s
 {
     lv_obj_t *screen;
-    lv_obj_t *lbl_top;      // Top indicators
-    lv_obj_t *spectrum;     // Spectrum
-    lv_obj_t *lbl_progress; // Progress Message
-    lv_obj_t *lbl_bottom;   // Bottom indicators
-    char file[FF_LFN_BUF + 1];
-    int played;             // Number of songs played
+    lv_obj_t *lbl_top;          // Top indicators
+    lv_obj_t *spectrum;         // Spectrum
+    lv_obj_t *lbl_title;        // Title of song
+    char file[FF_LFN_BUF + 1];  // Complete path of file to play
+    char name[FF_LFN_BUF + 1];  // Bare name of the file
+    int played;                 // Number of songs played
     bool playing;
-    int nav_dir;            // file navigation direction. 1 = next, -1 = previous, 0 = go back to browser_disk
+    int nav_dir;                // file navigation direction. 1 = next, -1 = previous, 0 = go back to browser_disk
     decoder_t* decoder;
     uint8_t spectrum_bin[PLAYER_SPECTRUM_MAX_BINS];
 } player_t;

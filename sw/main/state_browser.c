@@ -77,8 +77,8 @@ static void browser_on_entry(browser_t *ctx)
     //
     // UI Elements
     //
-    // Top bar:
-    // Font line height is 21. pad 2 pixel top down, top bar is 26 pixel high
+    // Top bar: 26px high, right side has battery icon (26 pixels wide, leave 30 pixels at least)
+    // Font line height is 21, pad 2 pixel top down
     // Icon is 20x17
     ctx->img_top = lv_img_create(ctx->screen);
     lv_obj_set_pos(ctx->img_top, 2, 5);

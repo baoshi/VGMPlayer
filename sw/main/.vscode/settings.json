@@ -113,7 +113,15 @@
         "cstdint": "c",
         "cwchar": "c",
         "cwctype": "c",
-        "LV_LOG.H": "cpp"
+        "LV_LOG.H": "cpp",
+        "atomic": "c",
+        "cerrno": "c",
+        "clocale": "c",
+        "cstddef": "c",
+        "initializer_list": "c",
+        "ios": "c",
+        "queue": "c",
+        "stdexcept": "c"
     },
     "cmake.configureOnOpen": true,
     "cortex-debug.variableUseNaturalFormat": false
