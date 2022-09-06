@@ -161,9 +161,8 @@ static void player_on_entry(player_t *ctx)
     ctx->img_top = lv_img_create(ctx->screen);
     lv_obj_set_pos(ctx->img_top, 0, 6);
     ctx->lbl_top = lv_label_create(ctx->screen);
-    lv_obj_set_width(ctx->lbl_top, 200);
-    lv_obj_set_width(ctx->lbl_top, 166);
-    lv_obj_set_pos(ctx->lbl_top, 37, 3);
+    lv_obj_set_width(ctx->lbl_top, 160);
+    lv_obj_set_pos(ctx->lbl_top, 40, 3);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_LEFT, 0);
     lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_DOT);
     lv_label_set_text(ctx->lbl_top, "");
@@ -172,7 +171,29 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_pos(ctx->spectrum, 0, 26);
     lv_obj_set_size(ctx->spectrum, 240, 100);
     lv_obj_add_style(ctx->spectrum, &lvs_player_spectrum, 0);
-    // 154 and below for individual file type handler to use
+    // Progress bar
+    ctx->bar_progress = lv_bar_create(ctx->screen);
+    lv_obj_remove_style_all(ctx->bar_progress);
+    lv_obj_set_size(ctx->bar_progress, 230, 5);
+    lv_obj_set_pos(ctx->bar_progress, 5, 126);
+    lv_obj_add_style(ctx->bar_progress, &lvs_player_process_bar_bg, 0);
+    lv_obj_add_style(ctx->bar_progress, &lvs_player_process_bar_ind, LV_PART_INDICATOR);
+    lv_bar_set_range(ctx->bar_progress, 0, 100);
+    // Play time label
+    ctx->lbl_play_time = lv_label_create(ctx->screen);
+    lv_obj_set_width(ctx->lbl_play_time, 80);
+    lv_obj_set_pos(ctx->lbl_play_time, 5, 136);
+    lv_obj_set_style_text_align(ctx->lbl_play_time, LV_TEXT_ALIGN_LEFT, 0);
+    lv_label_set_long_mode(ctx->lbl_play_time, LV_LABEL_LONG_DOT);
+    lv_label_set_text(ctx->lbl_play_time, "");
+    // Remain time label
+    ctx->lbl_remaining_time = lv_label_create(ctx->screen);
+    lv_obj_set_width(ctx->lbl_remaining_time, 80);
+    lv_obj_set_pos(ctx->lbl_remaining_time, 155, 136);
+    lv_obj_set_style_text_align(ctx->lbl_remaining_time, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_label_set_long_mode(ctx->lbl_remaining_time, LV_LABEL_LONG_DOT);
+    lv_label_set_text(ctx->lbl_remaining_time, "");
+    // Finish at 136+21 
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Create virtual buttons
@@ -304,11 +325,18 @@ static void player_on_play_next(app_t *app, player_t *ctx, bool stay)
 static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *progress)
 {   
     char buf[32];
-    int sec1, sec2;
+    int sec1, sec2, percent;
     sec1 = progress->played_samples / AUDIO_SAMPLE_RATE;
-    sec2 = progress->total_samples / AUDIO_SAMPLE_RATE;
-    sprintf(buf, "%02d:%02d / %02d:%02d", sec1 / 60, sec1 % 60, sec2 / 60, sec2 % 60);
-    //lv_label_set_text(ctx->lbl_top, buf);
+    sec2 = (progress->total_samples - progress->played_samples) / AUDIO_SAMPLE_RATE;
+    sprintf(buf, "%02d:%02d", sec1 / 60, sec1 % 60);
+    lv_label_set_text(ctx->lbl_play_time, buf);
+    if (progress->total_samples > progress->played_samples)
+        sprintf(buf, "-%02d:%02d", sec2 / 60, sec2 % 60);
+    else
+        sprintf(buf, "%02d:%02d", sec2 / 60, sec2 % 60);
+    lv_label_set_text(ctx->lbl_remaining_time, buf);
+    percent = progress->played_samples * 100 / progress->total_samples;
+    lv_bar_set_value(ctx->bar_progress, percent, LV_ANIM_OFF);
     //PL_LOGD("Player: %lu / %lu\n", progress->played_samples, progress->total_samples);
     // Do not dim screen when playing
     backlight_keepalive(tick_millis());
