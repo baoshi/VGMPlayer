@@ -13,7 +13,7 @@ void volume_close(app_t *app);
 void volume_popup_refresh(app_t *app);
 
 
-void alert_popup(app_t *app, const void *icon, const char *text, int auto_close);
+void alert_popup(app_t *app, const void *icon, const char *text, int auto_close, int exit_event);
 void alert_close(app_t *app);
 
 

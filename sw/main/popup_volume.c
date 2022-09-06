@@ -93,7 +93,7 @@ void volume_popup(app_t *app)
     // Button
     input_disable_button_dev();
     input_map_button(-1, 0, 0);
-    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_CLOSE_VOLUME_POPUP_NEXT);
+    input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_CLOSE_VOLUME_POPUP_CONT);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_CLOSE_VOLUME_POPUP);
     input_enable_button_dev();
     // Keypad

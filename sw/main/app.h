@@ -49,6 +49,7 @@ typedef struct player_s
     lv_obj_t *lbl_progress; // Progress Message
     lv_obj_t *lbl_bottom;   // Bottom indicators
     char file[FF_LFN_BUF + 1];
+    int played;             // Number of songs played
     bool playing;
     int nav_dir;            // file navigation direction. 1 = next, -1 = previous, 0 = go back to browser_disk
     decoder_t* decoder;
@@ -93,6 +94,7 @@ typedef struct alert_s
     lv_group_t *keypad_group;   // keypad input group
     void *prev_input;           // to save/restore input config 
     int timer_auto_close;
+    int exit_event;
 } alert_t;
 
 

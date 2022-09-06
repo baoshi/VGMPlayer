@@ -59,18 +59,16 @@ static void key_enter_handler(lv_event_t *e)
  * @param icon          Icon displayed besides alert message
  * @param text          Alert message
  * @param auto_close    Time (in ms) the alert will auto close. Set to 0 to disable
+ * @param exit_event    Event to be posted in event queue when alert popup is closed
  */
-void alert_popup(app_t *app, const void *icon, const char *text, int auto_close)
+void alert_popup(app_t *app, const void *icon, const char *text, int auto_close, int exit_event)
 {
     ALT_LOGD("Alert: popup\n");
-    
     alert_t *ctx = &(app->alert_ctx);
     MY_ASSERT(NULL == ctx->popup);
     memset(ctx, 0, sizeof(alert_t));
-
     // Save previous input config
     ctx->prev_input = input_save();
-
     // Setup own input
     input_disable_button_dev();
     input_map_button(-1, 0, 0);
@@ -81,15 +79,14 @@ void alert_popup(app_t *app, const void *icon, const char *text, int auto_close)
     ctx->keypad_group = lv_group_create();
     lv_indev_set_group(indev_keypad, ctx->keypad_group);
     input_enable_keypad_dev();
-
     // create alert popup
     ctx->popup = lv_alert_create(lv_scr_act(), icon, text);
     lv_group_add_obj(ctx->keypad_group, ctx->popup);
     lv_obj_add_event_cb(ctx->popup, key_enter_handler, LV_EVENT_ALL, (void *)ctx);
-
     // auto close event
     if (auto_close > 0)
         ctx->timer_auto_close = tick_arm_timer_event(auto_close, false, EVT_CLOSE_ALERT, true);
+    ctx->exit_event = exit_event;
 }
 
 
@@ -111,5 +108,10 @@ void alert_close(app_t *app)
     // restore previous input
     input_load(ctx->prev_input);
     ctx->prev_input = NULL;
+    if (ctx->exit_event != 0)
+    {
+        EQ_QUICK_PUSH(ctx->exit_event);
+        ctx->exit_event = 0;
+    }
     ALT_LOGD("Alert: closed\n");
 }

@@ -18,9 +18,9 @@ enum
     EVT_CLOSE_BRIGHTNESS_POPUP,     // User pressed [BACK] to close brightness popup
     EVT_OPEN_VOLUME_POPUP,          // User pressed [SETTING] in player state
     EVT_CLOSE_VOLUME_POPUP,         // User pressed [BACK] to close volume popup
-    EVT_CLOSE_VOLUME_POPUP_NEXT,    // User pressed [SETTING] when volume popup is active
+    EVT_CLOSE_VOLUME_POPUP_CONT,    // User pressed [SETTING] when volume popup is active, continue next popup
 
-    EVT_CLOSE_ALERT,                // Alert popup ask to close by timer or manually
+    EVT_CLOSE_ALERT,                // Alert popup asked to close by auto close timer or manually
 
     EVT_AUDIO_PROGRESS,             // Audio progress, parameter is pointer to audio_progress_t
     EVT_AUDIO_SONG_TERMINATED,      // Audio decoding ended (application need call audio_finish_playback())
@@ -31,6 +31,7 @@ enum
     
     EVT_BROWSER_PLAY_CLICKED,
 
-    EVT_PLAYER_PLAY_NEXT_OR_ALERT,
-    EVT_PLAYER_PLAY_NEXT_OR_BACK
+    EVT_PLAYER_PLAY_NEXT_OR_STAY,   // Ask Player to navigate to the next song. If no more songs, alert user and stay in Player state
+    EVT_PLAYER_PLAY_NEXT_OR_BACK,   // Ask Player to navigate to the next song. If no more songs, back to Browser_Disk state
+    EVT_PLAYER_ALERT_CLOSED,        // Alert popup closed in Player/Player_Xxx state
 };

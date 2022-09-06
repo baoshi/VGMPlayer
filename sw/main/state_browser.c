@@ -117,9 +117,9 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
-            Create screen, buttons, arm UI update timer
+            Create screen, buttons
         EVT_EXIT:
-            Delete buttons, disarm UI update timer
+            Delete buttons
         EVT_START:
             Start browser_nodisk
     */
