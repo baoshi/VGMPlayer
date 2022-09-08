@@ -50,6 +50,7 @@ typedef struct player_s
     lv_obj_t *bar_progress;         // Progress bar
     lv_obj_t *lbl_play_time;        // Play time label
     lv_obj_t *lbl_remaining_time;   // Remaining time label
+    lv_obj_t *pnl_custom_ctrls;     // Object to put format specfic controls
     char file[FF_LFN_BUF + 1];      // Complete path of file to play
     char name[FF_LFN_BUF + 1];      // Bare name of the file
     int played;                     // Number of songs played

@@ -1,10 +1,10 @@
 #include "ec.h"
 #include "battery.h"
 
-#define BATTERY_LEVEL_100   4.0f
-#define BATTERY_LEVEL_75    3.8f
-#define BATTERY_LEVEL_50    3.6f
-#define BATTERY_LEVEL_25    3.4f
+#define BATTERY_LEVEL_100   3.8f
+#define BATTERY_LEVEL_75    3.6f
+#define BATTERY_LEVEL_50    3.4f
+#define BATTERY_LEVEL_25    3.3f
 #define BATTERY_LEVEL_0     3.2f
 #define BATTERY_LEVEL_BAD   2.0f
 #define BATTERY_LEVEL_HYST  0.05f

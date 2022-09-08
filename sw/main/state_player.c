@@ -162,39 +162,45 @@ static void player_on_entry(player_t *ctx)
     ctx->img_top = lv_img_create(ctx->screen);
     lv_obj_set_pos(ctx->img_top, 1, 7);
     ctx->lbl_top = lv_label_create(ctx->screen);
-    lv_obj_set_width(ctx->lbl_top, 160);
     lv_obj_set_pos(ctx->lbl_top, 20, 3);
+    lv_obj_set_width(ctx->lbl_top, 160);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_LEFT, 0);
     lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_DOT);
     lv_label_set_text(ctx->lbl_top, "");
     // Spectrum
     ctx->spectrum = lv_spectrum_create(ctx->screen);
     lv_obj_set_pos(ctx->spectrum, 0, 26);
-    lv_obj_set_size(ctx->spectrum, 240, 100);
-    lv_obj_add_style(ctx->spectrum, &lvs_player_spectrum, 0);
+    lv_obj_set_size(ctx->spectrum, 240, 90);
+    lv_obj_set_style_pad_top(ctx->spectrum, 3, 0);
+    lv_obj_set_style_pad_left(ctx->spectrum, 5, 0);
+    lv_obj_set_style_pad_right(ctx->spectrum, 5, 0);
+    lv_obj_set_style_pad_bottom(ctx->spectrum, 0, 0);
+    // Custom controls container (26 + 90 + 5) -- (218 - 5 - 1) -> 121-212
+    ctx->pnl_custom_ctrls = lv_obj_create(ctx->screen);
+    lv_obj_set_pos(ctx->pnl_custom_ctrls, 5, 121);
+    lv_obj_set_size(ctx->pnl_custom_ctrls, 230, 92);
     // Progress bar
     ctx->bar_progress = lv_bar_create(ctx->screen);
-    lv_obj_remove_style_all(ctx->bar_progress);
+    lv_obj_set_pos(ctx->bar_progress, 5, 218);
     lv_obj_set_size(ctx->bar_progress, 230, 5);
-    lv_obj_set_pos(ctx->bar_progress, 5, 126);
-    lv_obj_add_style(ctx->bar_progress, &lvs_player_process_bar_bg, 0);
-    lv_obj_add_style(ctx->bar_progress, &lvs_player_process_bar_ind, LV_PART_INDICATOR);
+    lv_obj_set_style_pad_all(ctx->bar_progress, 0, 0);
+    lv_obj_set_style_border_width(ctx->bar_progress, 0, 0);
+    lv_obj_set_style_radius(ctx->bar_progress, 0, 0);
     lv_bar_set_range(ctx->bar_progress, 0, 100);
     // Play time label
     ctx->lbl_play_time = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_play_time, 80);
-    lv_obj_set_pos(ctx->lbl_play_time, 5, 136);
+    lv_obj_set_pos(ctx->lbl_play_time, 5, 223); // Y=223, bottom pixel of text (numbers) just touch LCD bottom
     lv_obj_set_style_text_align(ctx->lbl_play_time, LV_TEXT_ALIGN_LEFT, 0);
     lv_label_set_long_mode(ctx->lbl_play_time, LV_LABEL_LONG_DOT);
     lv_label_set_text(ctx->lbl_play_time, "");
     // Remain time label
     ctx->lbl_remaining_time = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_remaining_time, 80);
-    lv_obj_set_pos(ctx->lbl_remaining_time, 155, 136);
+    lv_obj_set_pos(ctx->lbl_remaining_time, 155, 223);
     lv_obj_set_style_text_align(ctx->lbl_remaining_time, LV_TEXT_ALIGN_RIGHT, 0);
     lv_label_set_long_mode(ctx->lbl_remaining_time, LV_LABEL_LONG_DOT);
     lv_label_set_text(ctx->lbl_remaining_time, "");
-    // Finish at 136+21 
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Create virtual buttons
@@ -541,7 +547,6 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         ctx->decoder = (decoder_t *)decoder_s16_create(ctx->file);
         // TODO: Handle error here
         MY_ASSERT(ctx->decoder != NULL);
-        //lv_label_set_text(ctx->lbl_title, ctx->name);
         audio_start_playback(ctx->decoder);
         ++ctx->played;
         ctx->playing = true;
@@ -555,6 +560,7 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
             decoder_s16_destroy((decoder_s16_t *)(ctx->decoder));
             ctx->decoder = 0;
         }
+        lv_obj_clean(ctx->pnl_custom_ctrls);
         app->busy = false;
         if (config_is_dirty())
         {
@@ -644,6 +650,79 @@ static void player_vgm_setup_input()
 }
 
 
+static void player_vgm_on_entry(app_t *app, player_t *ctx)
+{
+    decoder_vgm_t *vd = NULL;
+    PL_LOGD("Player_VGM: entry\n");
+    player_vgm_setup_input();
+    ctx->playing = false;
+    app->busy = false;
+    MY_ASSERT(ctx->decoder == 0);
+    vd = decoder_vgm_create(ctx->file);
+    MY_ASSERT(vd != NULL);
+    //TODO: Handle error
+    // space for VGM controls in pnl_custom_ctrls (230x92)
+    // track name label
+    lv_obj_t *lbl_vgm_track = lv_label_create(ctx->pnl_custom_ctrls);
+    lv_obj_set_size(lbl_vgm_track, 230, 23);    // full width, font line height + 2
+    lv_obj_set_pos(lbl_vgm_track, 0, 0);
+    lv_obj_set_style_pad_all(lbl_vgm_track, 1, 0);
+    lv_obj_set_style_bg_color(lbl_vgm_track, COLOR_DARK, 0);
+    lv_obj_set_style_bg_opa(lbl_vgm_track, LV_OPA_COVER, 0);
+    lv_obj_set_style_text_align(lbl_vgm_track, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_long_mode(lbl_vgm_track, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_text(lbl_vgm_track, vd->vgm->track_name_en);
+    // game name label, have space 92-23=69, minus gap 5 at top, 64
+    lv_obj_t *space = lv_obj_create(ctx->pnl_custom_ctrls);
+    lv_obj_set_size(space, 230, 64);
+    lv_obj_set_pos(space, 0, 23 + 5);
+    lv_obj_set_scrollbar_mode(space, LV_SCROLLBAR_MODE_OFF);    // never show scrollbar
+    lv_obj_t *lbl_vgm_game = lv_label_create(space);
+    lv_obj_set_width(lbl_vgm_game, 230);
+    lv_obj_set_style_text_align(lbl_vgm_game, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_long_mode(lbl_vgm_game, LV_LABEL_LONG_WRAP);
+    lv_label_set_text(lbl_vgm_game, vd->vgm->game_name_en);
+    lv_obj_align(lbl_vgm_game, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_refr_size(space);
+    // Check if game name label exceed game name panel. If true, cut game name text to fit
+    int hl = lv_obj_get_height(lbl_vgm_game);
+    int hr = lv_obj_get_height(space);
+    if (hl > hr)
+    {
+        lv_point_t pos;
+        pos.x = 0; pos.y = hr;
+        uint32_t index = lv_label_get_letter_on(lbl_vgm_game, &pos);
+        lv_label_cut_text(lbl_vgm_game, index, UINT32_MAX);   // Undocumented! pass in max number so lvgl will cut till end
+    }
+    // start play
+    ++ctx->played;
+    ctx->playing = true;
+    ctx->nav_dir = 1;   // default next song direction
+    app->busy = true;
+    ctx->decoder = (decoder_t *)vd;
+    audio_start_playback(ctx->decoder);
+}
+
+
+static void player_vgm_on_exit(app_t *app, player_t *ctx)
+{
+    audio_finish_playback();
+    if (ctx->decoder)
+    {
+        decoder_vgm_destroy((decoder_vgm_t *)(ctx->decoder));
+        ctx->decoder = 0;
+    }
+    lv_obj_clean(ctx->pnl_custom_ctrls);
+    app->busy = false;
+    if (config_is_dirty())
+    {
+        config_save();
+    }
+    PL_LOGD("Player_VGM: audio finished\n");
+    PL_LOGD("Player_VGM: exit\n");
+}
+
+
 event_t const *player_vgm_handler(app_t *app, event_t const *evt)
 {
     event_t const *r = 0;
@@ -651,36 +730,10 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
     switch (evt->code)
     {
     case EVT_ENTRY:
-        PL_LOGD("Player_VGM: entry\n");
-        player_vgm_setup_input();
-        ctx->playing = false;
-        app->busy = false;
-        break;
-    case EVT_START:
-        PL_LOGD("Player_VGM: start\n");
-        MY_ASSERT(ctx->decoder == 0);
-        ctx->decoder = (decoder_t *) decoder_vgm_create(ctx->file);
-        MY_ASSERT(ctx->decoder != NULL);
-        audio_start_playback(ctx->decoder);
-        ++ctx->played;
-        ctx->playing = true;
-        ctx->nav_dir = 1;   // default next song direction
-        app->busy = true;
+        player_vgm_on_entry(app, ctx);
         break;
     case EVT_EXIT:
-        audio_finish_playback();
-        if (ctx->decoder)
-        {
-            decoder_vgm_destroy((decoder_vgm_t *)(ctx->decoder));
-            ctx->decoder = 0;
-        }
-        app->busy = false;
-        if (config_is_dirty())
-        {
-            config_save();
-        }
-        PL_LOGD("Player_VGM: audio finished\n");
-        PL_LOGD("Player_VGM: exit\n");
+        player_vgm_on_exit(app, ctx);
         break;
     case EVT_BUTTON_PLAY_CLICKED:
         PL_LOGD("Player_VGM: play clicked\n");

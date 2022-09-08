@@ -34,8 +34,8 @@ extern lv_style_t lvs_top_bar;
 extern lv_style_t lvs_recolored_icon;
 extern lv_style_t lvs_browser_file_list;
 extern lv_style_t lvs_player_spectrum;
-extern lv_style_t lvs_player_process_bar_bg;
-extern lv_style_t lvs_player_process_bar_ind;
+extern lv_style_t lvs_player_progress_bar_bg;
+extern lv_style_t lvs_player_progress_bar_ind;
 
 void lvs_init();
 

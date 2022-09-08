@@ -121,7 +121,8 @@
         "initializer_list": "c",
         "ios": "c",
         "queue": "c",
-        "stdexcept": "c"
+        "stdexcept": "c",
+        "lv_txt.h": "c"
     },
     "cmake.configureOnOpen": true,
     "cortex-debug.variableUseNaturalFormat": false

@@ -15,9 +15,9 @@ lv_style_t lvs_recolored_icon;
 lv_style_t lvs_top_bar;
 lv_style_t lvs_browser_file_list;
 lv_style_t lvs_player_spectrum;
-lv_style_t lvs_player_process_bar_bg;
-lv_style_t lvs_player_process_bar_ind;
-
+lv_style_t lvs_player_progress_bar_bg;
+lv_style_t lvs_player_progress_bar_ind;
+lv_style_t lvs_player_label_track;
 
 void lvs_init()
 {
@@ -133,14 +133,14 @@ void lvs_init()
     lv_style_set_pad_bottom(&lvs_player_spectrum, 6);
 
     // Style for progress bar in player screen
-    lv_style_init(&lvs_player_process_bar_bg);
-    lv_style_set_bg_opa(&lvs_player_process_bar_bg, LV_OPA_COVER);
-    lv_style_set_bg_color(&lvs_player_process_bar_bg, COLOR_DARK);
-    lv_style_set_radius(&lvs_player_process_bar_bg, LV_RADIUS_CIRCLE);
-    lv_style_set_border_width(&lvs_player_process_bar_bg, 0);
-    lv_style_init(&lvs_player_process_bar_ind);
-    lv_style_set_bg_opa(&lvs_player_process_bar_ind, LV_OPA_COVER);
-    lv_style_set_bg_color(&lvs_player_process_bar_ind, COLOR_LIGHT);
-    lv_style_set_radius(&lvs_player_process_bar_ind, LV_RADIUS_CIRCLE);
+    lv_style_init(&lvs_player_progress_bar_bg);
+    lv_style_set_bg_opa(&lvs_player_progress_bar_bg, LV_OPA_COVER);
+    lv_style_set_bg_color(&lvs_player_progress_bar_bg, COLOR_DARK);
+    lv_style_set_radius(&lvs_player_progress_bar_bg, LV_RADIUS_CIRCLE);
+    lv_style_set_border_width(&lvs_player_progress_bar_bg, 0);
+    lv_style_init(&lvs_player_progress_bar_ind);
+    lv_style_set_bg_opa(&lvs_player_progress_bar_ind, LV_OPA_COVER);
+    lv_style_set_bg_color(&lvs_player_progress_bar_ind, COLOR_LIGHT);
+    lv_style_set_radius(&lvs_player_progress_bar_ind, LV_RADIUS_CIRCLE);
 }
 
