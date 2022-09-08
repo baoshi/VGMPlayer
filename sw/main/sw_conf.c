@@ -55,3 +55,11 @@ bool config_is_dirty()
 {
     return config_dirty;
 }
+
+
+const char * const config_supported_file_exts[] =
+{
+    "vgm",
+    "s16",
+    "\0"
+};

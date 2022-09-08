@@ -391,7 +391,7 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
             me->catalog_history_selection[0] = 0;
             me->catalog_history_index = 0;
             ec_pause_watchdog();
-            t = catalog_open_dir("/", 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
+            t = catalog_open_dir("/", config_supported_file_exts, CATALOG_PAGER_SIZE, true, &(me->catalog));
             ec_resume_watchdog();
             if (CAT_OK == t)
             {
@@ -434,7 +434,7 @@ static void browser_disk_on_entry(app_t *me, browser_t *ctx)
             me->catalog_history_selection[0] = 0;
             me->catalog_history_index = 0;
             ec_pause_watchdog();
-            t = catalog_open_dir("/", 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
+            t = catalog_open_dir("/", config_supported_file_exts, CATALOG_PAGER_SIZE, true, &(me->catalog));
             ec_resume_watchdog();
             if (CAT_OK == t)
             {
@@ -503,7 +503,7 @@ static void browser_disk_on_play(app_t *me, browser_t *ctx, event_t const *evt)
             lv_label_set_text(ctx->lbl_top, "Loading...");
             lv_refr_now(NULL);
             ec_pause_watchdog();
-            t = catalog_open_dir(path, 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
+            t = catalog_open_dir(path, config_supported_file_exts, CATALOG_PAGER_SIZE, true, &(me->catalog));
             ec_resume_watchdog();
             if (CAT_OK == t)
             {
@@ -557,7 +557,7 @@ static void browser_disk_on_back(app_t *me, browser_t *ctx)
         lv_label_set_text(ctx->lbl_top, "Loading...");
         lv_refr_now(NULL);
         ec_pause_watchdog();
-        t = catalog_open_dir(path, 0, CATALOG_PAGER_SIZE, true, &(me->catalog));
+        t = catalog_open_dir(path, config_supported_file_exts, CATALOG_PAGER_SIZE, true, &(me->catalog));
         ec_resume_watchdog();
         if (CAT_OK == t)
         {

@@ -9,7 +9,6 @@
 
 #define TICK_GRANULARITY_MS             1
 
-
 // Maximun files listed per page.
 #define CATALOG_PAGER_SIZE              32
 // Remember # levels of history in file navigation
@@ -17,6 +16,8 @@
 
 #define POPUP_AUTO_CLOSE_MS             5000
 
+// supported file ext
+extern const char * const config_supported_file_exts[];
 
 union nvram_t
 {
