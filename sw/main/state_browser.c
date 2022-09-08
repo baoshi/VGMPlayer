@@ -4,6 +4,7 @@
 #include "my_debug.h"
 #include "lvstyle.h"
 #include "lvsupp.h"
+#include "lvassets.h"
 #include "tick.h"
 #include "event_ids.h"
 #include "event_queue.h"

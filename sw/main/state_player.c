@@ -12,6 +12,7 @@
 #include "my_debug.h"
 #include "lvstyle.h"
 #include "lvsupp.h"
+#include "lvassets.h"
 #include "lvspectrum.h"
 #include "tick.h"
 #include "event_ids.h"
@@ -157,12 +158,12 @@ static void player_on_entry(player_t *ctx)
     //
     // Top bar: 26px high, right side has battery icon (26 pixels wide, leave 30 pixels at least)
     // Font line height is 21, pad 2 pixel top down.
-    // Top bar icon is 32x15
+    // Top bar icon is 13x13
     ctx->img_top = lv_img_create(ctx->screen);
-    lv_obj_set_pos(ctx->img_top, 0, 6);
+    lv_obj_set_pos(ctx->img_top, 1, 7);
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_top, 160);
-    lv_obj_set_pos(ctx->lbl_top, 40, 3);
+    lv_obj_set_pos(ctx->lbl_top, 20, 3);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_LEFT, 0);
     lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_DOT);
     lv_label_set_text(ctx->lbl_top, "");
@@ -232,6 +233,7 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
         }
         path_get_leaf(ctx->file, ctx->name);
         lv_label_set_text(ctx->lbl_top, ctx->name);
+        lv_img_set_src(ctx->img_top, &img_player_play);
         // save history
         app->catalog_history_page[app->catalog_history_index] = app->catalog->cur_page;
         app->catalog_history_selection[app->catalog_history_index] = app->catalog->cur_index;
@@ -529,7 +531,6 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
     {
     case EVT_ENTRY:
         PL_LOGD("Player_S16: entry\n");
-        lv_img_set_src(ctx->img_top, &img_player_top_s16);
         player_s16_setup_input();
         ctx->playing = false;
         app->busy = false;
@@ -566,11 +567,13 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
         PL_LOGD("Player_S16: play clicked\n");
         if (ctx->playing)
         {
+            lv_img_set_src(ctx->img_top, &img_player_pause);
             audio_pause_playback();
             ctx->playing = false;
         } 
         else
         {
+            lv_img_set_src(ctx->img_top, &img_player_play);
             audio_resume_playback();
             ctx->playing = true;
         }
@@ -650,7 +653,6 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
     case EVT_ENTRY:
         PL_LOGD("Player_VGM: entry\n");
         player_vgm_setup_input();
-        lv_img_set_src(ctx->img_top, &img_player_top_nes);
         ctx->playing = false;
         app->busy = false;
         break;
@@ -659,7 +661,6 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
         MY_ASSERT(ctx->decoder == 0);
         ctx->decoder = (decoder_t *) decoder_vgm_create(ctx->file);
         MY_ASSERT(ctx->decoder != NULL);
-        //lv_label_set_text(ctx->lbl_title, ((decoder_vgm_t *)(ctx->decoder))->vgm->track_name_en);
         audio_start_playback(ctx->decoder);
         ++ctx->played;
         ctx->playing = true;
@@ -685,11 +686,13 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
         PL_LOGD("Player_VGM: play clicked\n");
         if (ctx->playing)
         {
+            lv_img_set_src(ctx->img_top, &img_player_pause);
             audio_pause_playback();
             ctx->playing = false;
         } 
         else
         {
+            lv_img_set_src(ctx->img_top, &img_player_play);
             audio_resume_playback();
             ctx->playing = true;
         }

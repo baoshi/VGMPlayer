@@ -25,8 +25,8 @@ target_sources(display INTERFACE
     img_microsd.c
     img_microsd_bad.c
     img_microsd_empty.c
-    img_player_top_nes.c
-    img_player_top_s16.c
+    img_player_play.c
+    img_player_pause.c
     display.c
 )
 
