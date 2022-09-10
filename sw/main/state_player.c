@@ -163,7 +163,7 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_pos(ctx->img_top, 1, 7);
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_pos(ctx->lbl_top, 20, 3);
-    lv_obj_set_width(ctx->lbl_top, 160);
+    lv_obj_set_size(ctx->lbl_top, 170, 21);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_LEFT, 0);
     lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_DOT);
     lv_label_set_text(ctx->lbl_top, "");
