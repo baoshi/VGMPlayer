@@ -158,13 +158,14 @@ static void player_on_entry(player_t *ctx)
     //
     // ------------------------------------------------------------------------------------------------------------
     //                                                                                                            0
-    // Top bar 26px
+    //  Top bar 26px
     //                                                                                                           25
     // ------------------------------------------------------------------------------------------------------------
     //                                                                                                           26
-    //                                                                                                          125
+    //  Custom Controls 240x120
+    //                                                                                                          145
     // ------------------------------------------------------------------------------------------------------------
-    //                                                                                                          126
+    //                                                                                                          146
     //  Spectrum
     //                                                                                                          217
     // ------------------------------------------------------------------------------------------------------------
@@ -184,19 +185,20 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_pos(ctx->img_top, 1, 7);
     ctx->lbl_top = lv_label_create(ctx->screen);
     lv_obj_set_pos(ctx->lbl_top, 20, 3);
-    lv_obj_set_size(ctx->lbl_top, 170, 21);
+    lv_obj_set_size(ctx->lbl_top, 180, 21);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_LEFT, 0);
-    lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_CLIP);
+    lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_DOT);
     
     // Custom controls container
     ctx->pnl_custom_ctrls = lv_obj_create(ctx->screen);
     lv_obj_set_pos(ctx->pnl_custom_ctrls, 0, 26);
-    lv_obj_set_size(ctx->pnl_custom_ctrls, 240, 100);
-
+    lv_obj_set_size(ctx->pnl_custom_ctrls, 240, 120);
+    lv_obj_set_scrollbar_mode(ctx->pnl_custom_ctrls, LV_SCROLLBAR_MODE_OFF);    // never show scrollbar
+    
     // Spectrum
     ctx->spectrum = lv_spectrum_create(ctx->screen);
-    lv_obj_set_pos(ctx->spectrum, 0, 126);
-    lv_obj_set_size(ctx->spectrum, 240, 92);
+    lv_obj_set_pos(ctx->spectrum, 0, 146);
+    lv_obj_set_size(ctx->spectrum, 240, 72);
     lv_obj_set_style_pad_top(ctx->spectrum, 3, 0);
     lv_obj_set_style_pad_left(ctx->spectrum, 5, 0);
     lv_obj_set_style_pad_right(ctx->spectrum, 5, 0);
@@ -269,8 +271,6 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
             alert_popup(app, NULL, "File not accessible", 2000, EVT_PLAYER_ALERT_CLOSED);
             break;
         }
-        //path_get_leaf(ctx->file, ctx->name);
-        //lv_label_set_text(ctx->lbl_top, ctx->name);
         lv_img_set_src(ctx->img_top, &img_player_play);
         // save history
         app->catalog_history_page[app->catalog_history_index] = app->catalog->cur_page;
@@ -571,6 +571,8 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
     case EVT_ENTRY:
         PL_LOGD("Player_S16: entry\n");
         player_s16_setup_input();
+        path_get_leaf(ctx->file, ctx->name, FF_LFN_BUF);
+        lv_label_set_text(ctx->lbl_top, ctx->name);
         ctx->playing = false;
         app->busy = false;
         break;
@@ -732,13 +734,65 @@ static void player_vgm_on_entry(app_t *app, player_t *ctx)
         lv_label_cut_text(lbl_vgm_game, index, UINT32_MAX);   // Undocumented! pass in max number so lvgl will cut till end
     }
     */
-    lv_obj_t *space = ctx->pnl_custom_ctrls;
-    //lv_obj_set_size(space, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_set_scrollbar_mode(space, LV_SCROLLBAR_MODE_OFF);    // never show scrollbar
-    lv_obj_t *thumb = lv_img_create(space);
-    //lv_img_set_src(thumb, "0:/ddragon.sjpg");
-    lv_obj_align(thumb, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_refr_size(space);
+    // Try find if there is a thumbnail image avaliable
+    char temp[FF_LFN_BUF + 1], sjpg[FF_LFN_BUF + 1];
+    bool have_thumb = false;
+    // 1. If there is a file with same vgm file name but extension is ".sjpg"
+    if (path_concatenate("0:", ctx->file, temp, FF_LFN_BUF + 1, false) && path_change_ext(temp, "sjpg", sjpg, FF_LFN_BUF + 1))
+    {
+        FIL fd;
+        if (FR_OK == f_open(&fd, sjpg, FA_READ | FA_OPEN_EXISTING))
+        {
+            f_close(&fd);
+            have_thumb = true;
+        }
+    }
+    // 2. If there is a file named "thumb.sjpg" in the same folder as the vgm file
+    if (!have_thumb)
+    {
+        if (path_concatenate("0:", ctx->file, sjpg, FF_LFN_BUF + 1, false) 
+            &&
+            path_get_parent(sjpg, temp, FF_LFN_BUF + 1)
+            &&
+            path_concatenate(temp, "thumb.sjpg", sjpg, FF_LFN_BUF + 1, false)
+        )
+        {
+            FIL fd;
+            if (FR_OK == f_open(&fd, sjpg, FA_READ | FA_OPEN_EXISTING))
+            {
+                f_close(&fd);
+                have_thumb = true;
+            }  
+        }
+    }
+    if (have_thumb)
+    {
+        lv_obj_t *thumb = lv_img_create(ctx->pnl_custom_ctrls);
+        lv_img_set_src(thumb, sjpg);
+        lv_obj_align(thumb, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_refr_size(ctx->pnl_custom_ctrls);
+    }
+    else
+    {
+        lv_obj_t *space = ctx->pnl_custom_ctrls;
+        lv_obj_t *lbl_vgm_game = lv_label_create(space);
+        lv_obj_set_width(lbl_vgm_game, 230);
+        lv_obj_set_style_text_align(lbl_vgm_game, LV_TEXT_ALIGN_CENTER, 0);
+        lv_label_set_long_mode(lbl_vgm_game, LV_LABEL_LONG_WRAP);
+        lv_label_set_text(lbl_vgm_game, vd->vgm->game_name_en);
+        lv_obj_align(lbl_vgm_game, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_refr_size(space);
+        // If game name label exceed panel, cut short the name
+        int hl = lv_obj_get_height(lbl_vgm_game);
+        int hr = lv_obj_get_height(space);
+        if (hl > hr)
+        {
+            lv_point_t pos;
+            pos.x = 0; pos.y = hr;
+            uint32_t index = lv_label_get_letter_on(lbl_vgm_game, &pos);
+            lv_label_cut_text(lbl_vgm_game, index, UINT32_MAX);   // Undocumented! pass in max number so lvgl will cut till end
+        }
+    }
     // start play
     ++ctx->played;
     ctx->playing = true;

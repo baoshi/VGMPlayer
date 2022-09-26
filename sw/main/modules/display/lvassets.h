@@ -23,3 +23,4 @@ LV_IMG_DECLARE(img_microsd_bad);
 LV_IMG_DECLARE(img_microsd_empty);
 LV_IMG_DECLARE(img_player_play);
 LV_IMG_DECLARE(img_player_pause);
+

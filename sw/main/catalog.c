@@ -627,7 +627,7 @@ int catalog_open_dir(const char *path, const char * const patterns[], int page_s
         c->page_size = page_size;
         c->count = count;
         c->checksum = checksum;
-        path_copy(path, c->dir, FF_LFN_BUF + 1);
+        path_duplicate(path, c->dir, FF_LFN_BUF + 1);
         // try open existing catalog
         r = _open_catalog(c, safe_mode);
         if (r == CAT_OK) // success
@@ -748,12 +748,12 @@ int catalog_get_entry(catalog_t *cat, char *out, int len, bool absolute, uint8_t
         }
         if ('!' == cat->cache[0])
         {
-            if (out != 0) path_copy(&(cat->cache[1]), fn, len);
+            if (out != 0) path_duplicate(&(cat->cache[1]), fn, len);
             if (type != 0) *type = CAT_TYPE_DIRECTORY;
         }
         else
         {
-            if (out != 0) path_copy(cat->cache, fn, len);
+            if (out != 0) path_duplicate(cat->cache, fn, len);
             if (type != 0) *type = CAT_TYPE_FILE;
         }
         // return absolute or relative path

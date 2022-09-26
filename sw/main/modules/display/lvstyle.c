@@ -96,18 +96,11 @@ void lvs_init()
 
      // Popup Box / Msg box
     lv_style_init(&lvs_msgbox);
-    lv_style_set_bg_opa(&lvs_msgbox, LV_OPA_COVER);              // Same opqaue background as screen
-    lv_style_set_bg_color(&lvs_msgbox, COLOR_BACKGROUND);        // Background color
-    lv_style_set_text_color(&lvs_msgbox, COLOR_TEXT);            // Forground color
-    lv_style_set_radius(&lvs_msgbox, CORNER_RADIUS);             // Rounded corner
-    lv_style_set_clip_corner(&lvs_msgbox, true);                 // clip the overflowed content on the rounded corner
-    lv_style_set_border_color(&lvs_msgbox, COLOR_BORDER);        // 2 pixel border width
-    lv_style_set_border_width(&lvs_msgbox, 2);
-    lv_style_set_border_post(&lvs_msgbox, true);                 // border shall draw after children
-    lv_style_set_outline_color(&lvs_msgbox, COLOR_BACKGROUND);   // Outline
-    lv_style_set_outline_opa(&lvs_msgbox, LV_OPA_80);
-    lv_style_set_outline_width(&lvs_msgbox, 4);
-    lv_style_set_pad_all(&lvs_msgbox, 15);                       // Leave some space from border
+    lv_style_set_bg_opa(&lvs_msgbox, COLOR_POPUP_OPACITY);          // Same opqaue background as screen
+    lv_style_set_bg_color(&lvs_msgbox, COLOR_POPUP_BACKGROUND);     // Background color
+    lv_style_set_text_color(&lvs_msgbox, COLOR_TEXT);               // Forground color
+    lv_style_set_radius(&lvs_msgbox, CORNER_RADIUS);                // Rounded corner
+    lv_style_set_pad_all(&lvs_msgbox, 10);                          // Surrounding spaces
 
     // Recolored ALPHA-only channel icon
     lv_style_init(&lvs_recolored_icon);

@@ -15,6 +15,7 @@
 #define CATALOG_HISTORY_DEPTH           10
 
 #define POPUP_AUTO_CLOSE_MS             5000
+#define POPUP_Y_OFFSET                  -35
 
 // supported file ext
 extern const char * const config_supported_file_exts[];

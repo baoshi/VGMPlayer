@@ -64,14 +64,14 @@ static void create_volume_popup(volume_t *ctx)
     lv_obj_t *slider;
     if (audio_get_jack_state())
     {
-        ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_headphone, 0, 63, config.volume_headphone);
+        ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_headphone, 0, 63, config.volume_headphone, LV_ALIGN_BOTTOM_MID, 0, POPUP_Y_OFFSET);
         slider = lv_sliderbox_get_slider(ctx->popup);
         lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, (void *)ctx);
         lv_group_add_obj(ctx->keypad_group, slider);
     }
     else
     {
-        ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_speaker, 0, 63, config.volume_speaker);
+        ctx->popup = lv_sliderbox_create(lv_scr_act(), &img_popup_speaker, 0, 63, config.volume_speaker, LV_ALIGN_BOTTOM_MID, 0, POPUP_Y_OFFSET);
         slider = lv_sliderbox_get_slider(ctx->popup);
         lv_obj_add_event_cb(slider, volume_on_value_changed, LV_EVENT_VALUE_CHANGED, (void *)ctx);
         lv_group_add_obj(ctx->keypad_group, slider);

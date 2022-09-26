@@ -52,7 +52,7 @@ const lv_obj_class_t lv_sliderbox_class =
 };
 
 
-lv_obj_t *lv_sliderbox_create(lv_obj_t *parent, const void *icon, int32_t min, int32_t max, int32_t value)
+lv_obj_t *lv_sliderbox_create(lv_obj_t *parent, const void *icon, int32_t min, int32_t max, int32_t value, lv_align_t align, lv_coord_t x_ofs, lv_coord_t y_ofs)
 {
     lv_obj_t *obj = lv_obj_class_create_obj(&lv_sliderbox_class, parent);
     LV_ASSERT_MALLOC(obj);
@@ -76,8 +76,7 @@ lv_obj_t *lv_sliderbox_create(lv_obj_t *parent, const void *icon, int32_t min, i
     //lv_obj_set_height(sbox->slider, 10);
     lv_slider_set_range(sbox->slider, min, max);
     lv_slider_set_value(sbox->slider, value, false);
-    //lv_obj_center(obj);
-    lv_obj_align(obj, LV_ALIGN_CENTER, 0, 40);
+    lv_obj_align(obj, align, x_ofs, y_ofs);
     return obj;
 }
 
@@ -118,7 +117,7 @@ const lv_obj_class_t lv_alert_class =
 };
 
 
-lv_obj_t *lv_alert_create(lv_obj_t *parent, const void *icon, const char *text)
+lv_obj_t *lv_alert_create(lv_obj_t *parent, const void *icon, const char *text, lv_align_t align, lv_coord_t x_ofs, lv_coord_t y_ofs)
 {
     lv_obj_t *obj = lv_obj_class_create_obj(&lv_alert_class, parent);
     LV_ASSERT_MALLOC(obj);
@@ -141,7 +140,7 @@ lv_obj_t *lv_alert_create(lv_obj_t *parent, const void *icon, const char *text)
         lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
         lv_obj_set_flex_grow(label, 1);
     }
-    lv_obj_center(obj);
+    lv_obj_align(obj, align, x_ofs, y_ofs);
     return obj;
 }
 

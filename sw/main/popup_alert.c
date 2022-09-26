@@ -80,7 +80,7 @@ void alert_popup(app_t *app, const void *icon, const char *text, int auto_close,
     lv_indev_set_group(indev_keypad, ctx->keypad_group);
     input_enable_keypad_dev();
     // create alert popup
-    ctx->popup = lv_alert_create(lv_scr_act(), icon, text);
+    ctx->popup = lv_alert_create(lv_scr_act(), icon, text, LV_ALIGN_CENTER, 0, 0);
     lv_group_add_obj(ctx->keypad_group, ctx->popup);
     lv_obj_add_event_cb(ctx->popup, key_enter_handler, LV_EVENT_ALL, (void *)ctx);
     // auto close event

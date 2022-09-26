@@ -9,6 +9,8 @@ extern "C" {
 #endif
 
 #define COLOR_BACKGROUND            lv_color_make(0, 0, 0)
+#define COLOR_POPUP_BACKGROUND      lv_color_make(32, 32, 32)
+#define COLOR_POPUP_OPACITY         224
 #define COLOR_TEXT                  lv_color_make(225, 217, 210)
 #define COLOR_DARK                  lv_color_make(44, 102, 132)
 #define COLOR_LIGHT                 lv_color_make(61, 174, 233)

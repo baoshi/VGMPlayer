@@ -85,7 +85,7 @@ bool path_get_parent(const char* path, char* parent, int len)
 //  //          ""              false
 //  /abc/       abc             true
 //  /abc/efg    efg             true
-bool path_get_leaf(const char* path, char* leaf)
+bool path_get_leaf(const char *path, char *leaf, int len)
 {
     int i = strlen(path);
     if (i <= 0)                         //  ""
@@ -93,7 +93,7 @@ bool path_get_leaf(const char* path, char* leaf)
     if (i == 1 && path[0] == '/')       // "/"
         return false;
     // copy over first
-    strcpy(leaf, path);
+    path_duplicate(path, leaf, len);
     // remove last '/'
     while (i >= 1 && leaf[i - 1] == '/')
     {
@@ -102,7 +102,7 @@ bool path_get_leaf(const char* path, char* leaf)
     }
     if (i == 0)                         // "//"
         return false;
-    char* slash = strrchr(leaf, '/');
+    char *slash = strrchr(leaf, '/');
     if (slash) strcpy(leaf, slash + 1);
     return true;
 }
@@ -156,23 +156,36 @@ bool path_concatenate(const char* parent, const char* leaf, char* out, int len, 
 
 
 // Given a file name, extract extention. Return false if no extension found
-bool path_get_ext(const char* file, char* ext, int len)
+bool path_get_ext(const char *file, char *ext, int len)
 {
     int l = strlen(file);
     if (l <= 0) return false;
-    char* dot = strrchr(file, '.');
-    if ((dot == 0) || (*(dot + 1) == '\0'))
-    {
-        return false;
-    }
+    char *dot = strrchr(file, '.');
+    if ((dot == 0) || (*(dot + 1) == '\0')) return false;
     strncpy(ext, dot + 1, len - 1);
     ext[len  - 1] = '\0';
     return true;
 }
 
 
+// Change the extension for given file
+bool path_change_ext(const char *file, const char *ext, char *out, int len)
+{
+    if (0 == strlen(file)) return false;
+    char *dot = strrchr(file, '.');
+    if ((dot == 0) || (*(dot + 1) == '\0'))  return false;
+    int pos = dot - file + 1;
+    if (pos >= len - 1) return false;   // no room for output
+    path_duplicate(file, out, len);
+    out[pos] = '\0';    // length of out is now pos
+    strncat(out + pos, ext, len - pos - 1);
+    out[len - 1] = '\0';
+    return true;
+}
+
+
 // copy path
-void path_copy(const char* src, char* dest, int len)
+void path_duplicate(const char *src, char *dest, int len)
 {
     strncpy(dest, src, len - 1);
     dest[len - 1] = '\0';
