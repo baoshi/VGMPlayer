@@ -33,7 +33,7 @@ static const uint32_t lv_spectrum_colors[LV_SPECTRUM_MAX_SEGMENTS][LV_SPECTRUM_M
 static void lv_spectrum_on_size_changed(lv_obj_t *obj)
 {
     // Update spectrum display parameters
-    lv_spectrum_t* spectrum = (lv_spectrum_t *)obj;
+    lv_spectrum_t *spectrum = (lv_spectrum_t *)obj;
     lv_area_t rect;
     lv_obj_get_content_coords(obj, &rect);
     int width = rect.x2 - rect.x1 + 1;
@@ -71,7 +71,7 @@ static void lv_spectrum_on_size_changed(lv_obj_t *obj)
 
 static void lv_spectrum_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
 {
-    lv_spectrum_t* spectrum = (lv_spectrum_t*)obj;
+    lv_spectrum_t *spectrum = (lv_spectrum_t*)obj;
     spectrum->bin_count = LV_SPECTRUM_MAX_BINS;
     lv_memset_00(spectrum->bin_values, spectrum->bin_count * sizeof(uint8_t));
     lv_memset_00(spectrum->bin_peak_values, spectrum->bin_count * sizeof(uint8_t));
@@ -82,7 +82,7 @@ static void lv_spectrum_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj
 static void lv_spectrum_destructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
 {
     LV_ASSERT_OBJ(obj, &lv_spectrum_class);
-    lv_spectrum_t* spectrum = (lv_spectrum_t*)obj;
+    // Nothing to do    
 }
 
 
@@ -91,15 +91,15 @@ static void lv_spectrum_event(const lv_obj_class_t* class_p, lv_event_t* e)
     lv_res_t res = lv_obj_event_base(&lv_spectrum_class, e);
     if (res != LV_RES_OK) return;
     lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t* obj = lv_event_get_target(e);
+    lv_obj_t *obj = lv_event_get_target(e);
     if (code == LV_EVENT_SIZE_CHANGED)
     {
         lv_spectrum_on_size_changed(obj);
     }
     else if (code == LV_EVENT_DRAW_MAIN)
     {
-        lv_spectrum_t* spectrum = (lv_spectrum_t*)obj;
-        lv_draw_ctx_t* draw_ctx = lv_event_get_draw_ctx(e);
+        lv_spectrum_t *spectrum = (lv_spectrum_t *)obj;
+        lv_draw_ctx_t *draw_ctx = lv_event_get_draw_ctx(e);
         lv_opa_t opa = lv_obj_get_style_opa(obj, LV_PART_MAIN);
         if (opa < LV_OPA_MIN) return;
 
@@ -153,9 +153,9 @@ const lv_obj_class_t lv_spectrum_class =
 };
 
 
-lv_obj_t* lv_spectrum_create(lv_obj_t* parent)
+lv_obj_t * lv_spectrum_create(lv_obj_t* parent)
 {
-    lv_obj_t* obj = lv_obj_class_create_obj(&lv_spectrum_class, parent);
+    lv_obj_t *obj = lv_obj_class_create_obj(&lv_spectrum_class, parent);
     LV_ASSERT_MALLOC(obj);
     lv_obj_class_init_obj(obj);
     return obj;
@@ -165,7 +165,7 @@ lv_obj_t* lv_spectrum_create(lv_obj_t* parent)
 void lv_spectrum_set_bin_values(lv_obj_t *obj, const uint8_t *bvs, int len)
 {
     LV_ASSERT_OBJ(obj, &lv_spectrum_class);
-    lv_spectrum_t* spectrum = (lv_spectrum_t*)obj;
+    lv_spectrum_t *spectrum = (lv_spectrum_t *)obj;
     len = LV_MIN(len, LV_SPECTRUM_MAX_BINS);
     bool relayout = (len != spectrum->bin_count);
     spectrum->bin_count = len;
@@ -198,3 +198,12 @@ void lv_spectrum_set_bin_values(lv_obj_t *obj, const uint8_t *bvs, int len)
     lv_obj_invalidate(obj);
 }
 
+
+void lv_spectrum_set_reset(lv_obj_t *obj)
+{
+    LV_ASSERT_OBJ(obj, &lv_spectrum_class);
+    lv_spectrum_t *spectrum = (lv_spectrum_t *)obj;
+    lv_memset_00(spectrum->bin_values, spectrum->bin_count * sizeof(uint8_t));
+    lv_memset_00(spectrum->bin_peak_values, spectrum->bin_count * sizeof(uint8_t));
+    lv_obj_invalidate(obj);
+}

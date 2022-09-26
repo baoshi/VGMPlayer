@@ -33,6 +33,7 @@ extern const lv_obj_class_t lv_spectrum_class;
 
 lv_obj_t* lv_spectrum_create(lv_obj_t* parent);
 void lv_spectrum_set_bin_values(lv_obj_t* obj, const uint8_t* bvs, int len);
+void lv_spectrum_set_reset(lv_obj_t* obj);
 
 #ifdef __cplusplus
 }

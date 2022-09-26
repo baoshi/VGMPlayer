@@ -156,6 +156,27 @@ static void player_on_entry(player_t *ctx)
     //
     // UI Elements
     //
+    // ------------------------------------------------------------------------------------------------------------
+    //                                                                                                            0
+    // Top bar 26px
+    //                                                                                                           25
+    // ------------------------------------------------------------------------------------------------------------
+    //                                                                                                           26
+    //                                                                                                          125
+    // ------------------------------------------------------------------------------------------------------------
+    //                                                                                                          126
+    //  Spectrum
+    //                                                                                                          217
+    // ------------------------------------------------------------------------------------------------------------
+    //                                                                                                          218
+    //  Progress Bar 5px
+    //                                                                                                          222
+    // ------------------------------------------------------------------------------------------------------------
+    //                                                                                                          223
+    //  Progress Text, line_height = 21, base_line = 4, treat as hight 17 since numbers are not below base line
+    //                                                                                                          239
+    // ------------------------------------------------------------------------------------------------------------
+
     // Top bar: 26px high, right side has battery icon (26 pixels wide, leave 30 pixels at least)
     // Font line height is 21, pad 2 pixel top down.
     // Top bar icon is 13x13
@@ -165,20 +186,22 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_pos(ctx->lbl_top, 20, 3);
     lv_obj_set_size(ctx->lbl_top, 170, 21);
     lv_obj_set_style_text_align(ctx->lbl_top, LV_TEXT_ALIGN_LEFT, 0);
-    lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_DOT);
-    lv_label_set_text(ctx->lbl_top, "");
+    lv_label_set_long_mode(ctx->lbl_top, LV_LABEL_LONG_CLIP);
+    
+    // Custom controls container
+    ctx->pnl_custom_ctrls = lv_obj_create(ctx->screen);
+    lv_obj_set_pos(ctx->pnl_custom_ctrls, 0, 26);
+    lv_obj_set_size(ctx->pnl_custom_ctrls, 240, 100);
+
     // Spectrum
     ctx->spectrum = lv_spectrum_create(ctx->screen);
-    lv_obj_set_pos(ctx->spectrum, 0, 26);
-    lv_obj_set_size(ctx->spectrum, 240, 90);
+    lv_obj_set_pos(ctx->spectrum, 0, 126);
+    lv_obj_set_size(ctx->spectrum, 240, 92);
     lv_obj_set_style_pad_top(ctx->spectrum, 3, 0);
     lv_obj_set_style_pad_left(ctx->spectrum, 5, 0);
     lv_obj_set_style_pad_right(ctx->spectrum, 5, 0);
-    lv_obj_set_style_pad_bottom(ctx->spectrum, 0, 0);
-    // Custom controls container (26 + 90 + 5) -- (218 - 5 - 1) -> 121-212
-    ctx->pnl_custom_ctrls = lv_obj_create(ctx->screen);
-    lv_obj_set_pos(ctx->pnl_custom_ctrls, 5, 121);
-    lv_obj_set_size(ctx->pnl_custom_ctrls, 230, 92);
+    lv_obj_set_style_pad_bottom(ctx->spectrum, 3, 0);
+    
     // Progress bar
     ctx->bar_progress = lv_bar_create(ctx->screen);
     lv_obj_set_pos(ctx->bar_progress, 5, 218);
@@ -187,20 +210,19 @@ static void player_on_entry(player_t *ctx)
     lv_obj_set_style_border_width(ctx->bar_progress, 0, 0);
     lv_obj_set_style_radius(ctx->bar_progress, 0, 0);
     lv_bar_set_range(ctx->bar_progress, 0, 100);
+
     // Play time label
     ctx->lbl_play_time = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_play_time, 80);
-    lv_obj_set_pos(ctx->lbl_play_time, 5, 223); // Y=223, bottom pixel of text (numbers) just touch LCD bottom
+    lv_obj_set_pos(ctx->lbl_play_time, 5, 223);
     lv_obj_set_style_text_align(ctx->lbl_play_time, LV_TEXT_ALIGN_LEFT, 0);
     lv_label_set_long_mode(ctx->lbl_play_time, LV_LABEL_LONG_DOT);
-    lv_label_set_text(ctx->lbl_play_time, "");
     // Remain time label
     ctx->lbl_remaining_time = lv_label_create(ctx->screen);
     lv_obj_set_width(ctx->lbl_remaining_time, 80);
     lv_obj_set_pos(ctx->lbl_remaining_time, 155, 223);
     lv_obj_set_style_text_align(ctx->lbl_remaining_time, LV_TEXT_ALIGN_RIGHT, 0);
     lv_label_set_long_mode(ctx->lbl_remaining_time, LV_LABEL_LONG_DOT);
-    lv_label_set_text(ctx->lbl_remaining_time, "");
     // Calculates all coordinates
     lv_obj_update_layout(ctx->screen);
     // Create virtual buttons
@@ -213,6 +235,16 @@ static void player_on_entry(player_t *ctx)
     ctx->played = 0;
     ctx->nav_dir = 1;  // default to play next
     ctx->decoder = 0;
+}
+
+
+static void player_on_start(player_t *ctx)
+{
+    lv_label_set_text(ctx->lbl_top, "");
+    lv_spectrum_set_reset(ctx->spectrum);
+    lv_bar_set_value(ctx->bar_progress, 0, LV_ANIM_OFF);
+    lv_label_set_text(ctx->lbl_play_time, "00:00");
+    lv_label_set_text(ctx->lbl_remaining_time, "00:00");
 }
 
 
@@ -237,8 +269,8 @@ static void player_on_play_clicked(app_t *app, player_t *ctx)
             alert_popup(app, NULL, "File not accessible", 2000, EVT_PLAYER_ALERT_CLOSED);
             break;
         }
-        path_get_leaf(ctx->file, ctx->name);
-        lv_label_set_text(ctx->lbl_top, ctx->name);
+        //path_get_leaf(ctx->file, ctx->name);
+        //lv_label_set_text(ctx->lbl_top, ctx->name);
         lv_img_set_src(ctx->img_top, &img_player_play);
         // save history
         app->catalog_history_page[app->catalog_history_index] = app->catalog->cur_page;
@@ -397,9 +429,9 @@ event_t const *player_handler(app_t *app, event_t const *evt)
             Create screen, setup input
             Send EVT_PLAY_CLICKED
         EVT_EXIT:
-            disable buttons
+            Disable buttons
         EVT_START:
-            Nothing
+            Set UI controls to empty value
         EVT_BUTTON_PLAY_CLICKED:
             Play song
         EVT_PLAYER_PLAY_NEXT_OR_STAY:
@@ -449,6 +481,7 @@ event_t const *player_handler(app_t *app, event_t const *evt)
         break;
     case EVT_START:
         PL_LOGD("Player: start\n");
+        player_on_start(ctx);
         break;
     case EVT_BUTTON_PLAY_CLICKED:
         player_on_play_clicked(app, ctx);
@@ -662,6 +695,7 @@ static void player_vgm_on_entry(app_t *app, player_t *ctx)
     MY_ASSERT(vd != NULL);
     //TODO: Handle error
     // space for VGM controls in pnl_custom_ctrls (230x92)
+    /*
     // track name label
     lv_obj_t *lbl_vgm_track = lv_label_create(ctx->pnl_custom_ctrls);
     lv_obj_set_size(lbl_vgm_track, 230, 23);    // full width, font line height + 2
@@ -672,7 +706,10 @@ static void player_vgm_on_entry(app_t *app, player_t *ctx)
     lv_obj_set_style_text_align(lbl_vgm_track, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(lbl_vgm_track, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_label_set_text(lbl_vgm_track, vd->vgm->track_name_en);
+    */
+    lv_label_set_text(ctx->lbl_top, vd->vgm->track_name_en);
     // game name label, have space 92-23=69, minus gap 5 at top, 64
+    /*
     lv_obj_t *space = lv_obj_create(ctx->pnl_custom_ctrls);
     lv_obj_set_size(space, 230, 64);
     lv_obj_set_pos(space, 0, 23 + 5);
@@ -694,6 +731,14 @@ static void player_vgm_on_entry(app_t *app, player_t *ctx)
         uint32_t index = lv_label_get_letter_on(lbl_vgm_game, &pos);
         lv_label_cut_text(lbl_vgm_game, index, UINT32_MAX);   // Undocumented! pass in max number so lvgl will cut till end
     }
+    */
+    lv_obj_t *space = ctx->pnl_custom_ctrls;
+    //lv_obj_set_size(space, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_scrollbar_mode(space, LV_SCROLLBAR_MODE_OFF);    // never show scrollbar
+    lv_obj_t *thumb = lv_img_create(space);
+    //lv_img_set_src(thumb, "0:/ddragon.sjpg");
+    lv_obj_align(thumb, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_refr_size(space);
     // start play
     ++ctx->played;
     ctx->playing = true;

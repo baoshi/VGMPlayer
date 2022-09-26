@@ -76,7 +76,8 @@ lv_obj_t *lv_sliderbox_create(lv_obj_t *parent, const void *icon, int32_t min, i
     //lv_obj_set_height(sbox->slider, 10);
     lv_slider_set_range(sbox->slider, min, max);
     lv_slider_set_value(sbox->slider, value, false);
-    lv_obj_center(obj);
+    //lv_obj_center(obj);
+    lv_obj_align(obj, LV_ALIGN_CENTER, 0, 40);
     return obj;
 }
 

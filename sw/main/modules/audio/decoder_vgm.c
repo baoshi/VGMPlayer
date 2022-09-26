@@ -11,6 +11,7 @@ static unsigned int decoder_vgm_get_samples(decoder_t *me, int16_t *buf, unsigne
     int samples;
     MY_ASSERT(len <= AUDIO_FRAME_LENGTH);
     samples = vgm_get_samples(ctx->vgm, buf, len);
+    if (samples < 0) return 0;
     return (unsigned int)samples;
 }
 
