@@ -696,44 +696,8 @@ static void player_vgm_on_entry(app_t *app, player_t *ctx)
     vd = decoder_vgm_create(ctx->file);
     MY_ASSERT(vd != NULL);
     //TODO: Handle error
-    // space for VGM controls in pnl_custom_ctrls (230x92)
-    /*
     // track name label
-    lv_obj_t *lbl_vgm_track = lv_label_create(ctx->pnl_custom_ctrls);
-    lv_obj_set_size(lbl_vgm_track, 230, 23);    // full width, font line height + 2
-    lv_obj_set_pos(lbl_vgm_track, 0, 0);
-    lv_obj_set_style_pad_all(lbl_vgm_track, 1, 0);
-    lv_obj_set_style_bg_color(lbl_vgm_track, COLOR_DARK, 0);
-    lv_obj_set_style_bg_opa(lbl_vgm_track, LV_OPA_COVER, 0);
-    lv_obj_set_style_text_align(lbl_vgm_track, LV_TEXT_ALIGN_CENTER, 0);
-    lv_label_set_long_mode(lbl_vgm_track, LV_LABEL_LONG_SCROLL_CIRCULAR);
-    lv_label_set_text(lbl_vgm_track, vd->vgm->track_name_en);
-    */
     lv_label_set_text(ctx->lbl_top, vd->vgm->track_name_en);
-    // game name label, have space 92-23=69, minus gap 5 at top, 64
-    /*
-    lv_obj_t *space = lv_obj_create(ctx->pnl_custom_ctrls);
-    lv_obj_set_size(space, 230, 64);
-    lv_obj_set_pos(space, 0, 23 + 5);
-    lv_obj_set_scrollbar_mode(space, LV_SCROLLBAR_MODE_OFF);    // never show scrollbar
-    lv_obj_t *lbl_vgm_game = lv_label_create(space);
-    lv_obj_set_width(lbl_vgm_game, 230);
-    lv_obj_set_style_text_align(lbl_vgm_game, LV_TEXT_ALIGN_CENTER, 0);
-    lv_label_set_long_mode(lbl_vgm_game, LV_LABEL_LONG_WRAP);
-    lv_label_set_text(lbl_vgm_game, vd->vgm->game_name_en);
-    lv_obj_align(lbl_vgm_game, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_refr_size(space);
-    // Check if game name label exceed game name panel. If true, cut game name text to fit
-    int hl = lv_obj_get_height(lbl_vgm_game);
-    int hr = lv_obj_get_height(space);
-    if (hl > hr)
-    {
-        lv_point_t pos;
-        pos.x = 0; pos.y = hr;
-        uint32_t index = lv_label_get_letter_on(lbl_vgm_game, &pos);
-        lv_label_cut_text(lbl_vgm_game, index, UINT32_MAX);   // Undocumented! pass in max number so lvgl will cut till end
-    }
-    */
     // Try find if there is a thumbnail image avaliable
     char temp[FF_LFN_BUF + 1], sjpg[FF_LFN_BUF + 1];
     bool have_thumb = false;
@@ -747,14 +711,14 @@ static void player_vgm_on_entry(app_t *app, player_t *ctx)
             have_thumb = true;
         }
     }
-    // 2. If there is a file named "thumb.sjpg" in the same folder as the vgm file
+    // 2. If there is a file named "VGMPlayer.sjpg" in the same folder as the vgm file
     if (!have_thumb)
     {
         if (path_concatenate("0:", ctx->file, sjpg, FF_LFN_BUF + 1, false) 
             &&
             path_get_parent(sjpg, temp, FF_LFN_BUF + 1)
             &&
-            path_concatenate(temp, "thumb.sjpg", sjpg, FF_LFN_BUF + 1, false)
+            path_concatenate(temp, "VGMPlayer.sjpg", sjpg, FF_LFN_BUF + 1, false)
         )
         {
             FIL fd;
@@ -774,6 +738,7 @@ static void player_vgm_on_entry(app_t *app, player_t *ctx)
     }
     else
     {
+        // No thumb, just display game name
         lv_obj_t *space = ctx->pnl_custom_ctrls;
         lv_obj_t *lbl_vgm_game = lv_label_create(space);
         lv_obj_set_width(lbl_vgm_game, 230);
