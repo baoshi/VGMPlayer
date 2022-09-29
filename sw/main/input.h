@@ -10,8 +10,8 @@
 #define KEY_INDEX_MAX   4
 
 // Function to button index mapping
-#define INPUT_KEY_SETTING   KEY_INDEX_NW
-#define INPUT_KEY_BACK      KEY_INDEX_SW
+#define INPUT_KEY_SETTING   KEY_INDEX_SW
+#define INPUT_KEY_BACK      KEY_INDEX_NW
 #define INPUT_KEY_PLAY      KEY_INDEX_PLAY
 #define INPUT_KEY_UP        KEY_INDEX_NE
 #define INPUT_KEY_DOWN      KEY_INDEX_SE
