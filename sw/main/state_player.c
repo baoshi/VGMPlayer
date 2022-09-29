@@ -622,19 +622,19 @@ event_t const *player_s16_handler(app_t *app, event_t const *evt)
     case EVT_BUTTON_BACK_CLICKED:
         PL_LOGD("Player_S16: back clicked\n");
         audio_stop_playback();
-        // Set navigation back, wait event EVT_AUDIO_SONG_ENDED to go back to browser_disk
+        // Set navigation back, wait event EVT_AUDIO_SONG_FINISHED to go back to browser_disk
         ctx->nav_dir = 0;
         break;
     case EVT_BUTTON_UP_CLICKED:
         PL_LOGD("Player_S16: up clicked\n");
         audio_stop_playback();
-        // Set navigation direction to -1, wait event EVT_AUDIO_SONG_ENDED to play next
+        // Set navigation direction to -1, wait event EVT_AUDIO_SONG_FINISHED to play next
         ctx->nav_dir = -1;
         break;
     case EVT_BUTTON_DOWN_CLICKED:
         PL_LOGD("Player_S16: down clicked\n");
         audio_stop_playback();
-        // Set navigation direction to 1, wait event EVT_AUDIO_SONG_ENDED to play next
+        // Set navigation direction to 1, wait event EVT_AUDIO_SONG_FINISHED to play next
         ctx->nav_dir = 1;
         break;
     case EVT_AUDIO_SONG_FINISHED:
@@ -694,8 +694,11 @@ static void player_vgm_on_entry(app_t *app, player_t *ctx)
     app->busy = false;
     MY_ASSERT(ctx->decoder == 0);
     vd = decoder_vgm_create(ctx->file);
-    MY_ASSERT(vd != NULL);
-    //TODO: Handle error
+    if (NULL == vd)
+    {
+        alert_popup(app, NULL, "Unsuported file type", 2000, EVT_AUDIO_SONG_TERMINATED);
+        return;
+    }
     // track name label
     lv_label_set_text(ctx->lbl_top, vd->vgm->track_name_en);
     // Try find if there is a thumbnail image avaliable
@@ -833,8 +836,7 @@ event_t const *player_vgm_handler(app_t *app, event_t const *evt)
         ctx->nav_dir = 1;
         break;
     case EVT_AUDIO_SONG_FINISHED:
-        PL_LOGD("Player_VGM: song finished\n");
-        PL_LOGD("Player_VGM: go to next song\n");
+        PL_LOGD("Player_VGM: song finished, go to next song\n");
         STATE_TRAN(app, &(app->player));
         EQ_QUICK_PUSH(EVT_PLAYER_PLAY_NEXT_OR_BACK);
         break;
