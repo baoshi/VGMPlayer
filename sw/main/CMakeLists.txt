@@ -47,6 +47,7 @@ add_executable(${PROJ_NAME}
     catalog.c
     input.c
     state_top.c
+    state_poweroff.c
     state_browser.c
     state_player.c
     popup.c

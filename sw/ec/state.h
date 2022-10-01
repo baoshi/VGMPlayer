@@ -17,6 +17,7 @@ enum
   MAIN_STATE_PRE_DFU,
   MAIN_STATE_MAIN,
   MAIN_STATE_DFU,
+  MAIN_STATE_TIMEOUT,
   MAIN_STATE_OFF
 };
 
@@ -44,9 +45,12 @@ void state_dfu_entry(void);
 uint8_t state_dfu_update(void);
 void state_dfu_exit(void);
 
+/* MAIN_STATE_TIMEOUT */
+void state_timeout_entry(void);
+uint8_t state_timeout_update(void);
+
 /* MAIN_STATE_OFF */
 void state_off_entry(void);
 uint8_t state_off_update(void);
-
 
 #endif /* STATE_H */

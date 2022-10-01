@@ -9,6 +9,7 @@
 #include "tick.h"
 #include "input.h"
 #include "popup.h"
+#include "ec.h"
 #include "battery.h"
 #include "app.h"
 
@@ -72,24 +73,49 @@ static void top_on_ui_update(app_t *app)
 
 event_t const *top_handler(app_t *app, event_t const *evt)
 {
+    /* Events
+        EVT_ENTRY:
+            Creat battery icon, arm update timer
+        EVT_EXIT:
+            disable update timer
+        EVT_START:
+            Start browser
+        EVT_APP_UI_UPDATE:
+            Update battery icon
+        EVT_APP_POWER_OFF:
+            Tell EC to power off
+        EVT_OPEN_BRIGHTNESS_POPUP:
+            Open brightness popup
+        EVT_CLOSE_BRIGHTNESS_POPUP:
+            Close brigntness popup
+        EVT_CLOSE_ALERT:
+            Close alert
+    */
     event_t const *r = 0;
     switch (evt->code)
     {
     case EVT_ENTRY:
+        TOP_LOGD("Top: entry\n");
         lv_obj_clear_flag(lv_layer_top(), LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
         app->img_battery = lv_img_create(lv_layer_top());
         lv_obj_set_pos(app->img_battery, 213, 7);  // battery image height 26x13, top bar has 26 pixels
         app->timer_ui_update = tick_arm_timer_event(UI_UPDATE_INTERVAL_MS, true, EVT_APP_UI_UPDATE, true);
         break;
     case EVT_EXIT:
+        TOP_LOGD("Top: exit\n");
         tick_disarm_timer_event(app->timer_ui_update);
         app->timer_ui_update = 0;
         break;
     case EVT_START:
+        TOP_LOGD("Top: start\n");
         STATE_START(app, &(app->browser));
         break;
     case EVT_APP_UI_UPDATE:
         top_on_ui_update(app);
+        break;
+    case EVT_APP_POWER_OFF:
+        TOP_LOGD("Top: power off\n");
+        ec_power_off();
         break;
     case EVT_OPEN_BRIGHTNESS_POPUP:
         brightness_popup(app);

@@ -4,6 +4,7 @@
 enum
 {
     EVT_APP_UI_UPDATE = 1,
+    EVT_APP_POWER_OFF,
     EVT_EC_FAILED,
     EVT_DISK_INSERTED,
     EVT_DISK_EJECTED,
@@ -13,6 +14,7 @@ enum
     EVT_BUTTON_UP_CLICKED,
     EVT_BUTTON_DOWN_CLICKED,
     EVT_BUTTON_BACK_CLICKED,
+    EVT_BUTTON_BACK_LONG_PRESSED,
 
     EVT_OPEN_BRIGHTNESS_POPUP,      // User pressed [SETTING] top open brightness popup (in top state)
     EVT_CLOSE_BRIGHTNESS_POPUP,     // User pressed [BACK] to close brightness popup

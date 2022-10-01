@@ -28,6 +28,7 @@ void app_ctor(app_t* app)
 {
     memset(app, 0, sizeof(app_t));
     hsm_ctor((hsm_t*)app, "app", (event_handler_t)top_handler);
+    state_ctor(&(app->poweroff), "poweroff", &((hsm_t*)app)->top, (event_handler_t)poweroff_handler);
     state_ctor(&(app->browser), "browser", &((hsm_t*)app)->top, (event_handler_t)browser_handler);
         state_ctor(&(app->browser_disk), "browser_disk", &(app->browser), (event_handler_t)browser_disk_handler);
         state_ctor(&(app->browser_nodisk), "browser_nodisk", &(app->browser), (event_handler_t)browser_nodisk_handler);
@@ -97,7 +98,6 @@ int main()
         now = tick_millis();
         if (now - last_update_tick >= SUPERLOOP_UPDATE_INTERVAL_MS)
         {
-            // EC update
             ret = ec_update(now); // return 1 if io changed
             if (ret > 0)
             {

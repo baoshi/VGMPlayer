@@ -4,7 +4,10 @@
 #include <stdint.h>
 #include "eeprom.h"
 
+#define BUTTON_LONGPRESS_TIME_MS        2000
+
 #define SUPERLOOP_UPDATE_INTERVAL_MS    10
+
 #define BACKLIGHT_IDLE_DIM_MS           10000
 
 #define TICK_GRANULARITY_MS             1

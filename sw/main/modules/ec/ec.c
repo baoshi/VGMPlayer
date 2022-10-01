@@ -31,6 +31,7 @@
 
 
 #define EC_SLAVE_ADDRESS                0x13u       // I2C slave address
+#define EC_CMD_POWER_OFF                0x0A        // Turn off main power
 #define EC_CMD_WATCHDOG_OFF             0x0C        // Turn off auto-off in MAIN state
 #define EC_CMD_WATCHDOG_ON              0x0D        // Turn on auto-off in MAIN state when TIME_I2C_LOST_TO_OFF elapsed 
 
@@ -122,6 +123,13 @@ int ec_update(uint32_t now)
             ret = -1;
     }
     return ret;
+}
+
+
+void ec_power_off(void)
+{
+    const uint8_t cmd = EC_CMD_POWER_OFF;
+    i2c_write_timeout_us(I2C_INST, EC_SLAVE_ADDRESS, &cmd, 1, false, I2C_TIMEOUT_US);
 }
 
 

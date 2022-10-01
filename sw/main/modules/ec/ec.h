@@ -20,6 +20,7 @@ extern uint8_t ec_keys;         // key states
 
 void ec_init(void);
 int  ec_update(uint32_t now);
+void ec_power_off(void);
 void ec_pause_watchdog(void);
 void ec_resume_watchdog(void);
 

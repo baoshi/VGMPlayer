@@ -1,5 +1,6 @@
 #include <lvgl.h>
 #include "my_mem.h"
+#include "sw_conf.h"
 #include "ec.h"
 #include "event_ids.h"
 #include "event_queue.h"
@@ -118,6 +119,7 @@ static void button_init()
 {
     lv_indev_drv_init(&_button_drv);
     _button_drv.type = LV_INDEV_TYPE_BUTTON;
+    _button_drv.long_press_time = BUTTON_LONGPRESS_TIME_MS;
     _button_drv.read_cb = button_read;
     indev_button = lv_indev_drv_register(&_button_drv);
     lv_indev_set_button_points(indev_button, _vbutton_coord);

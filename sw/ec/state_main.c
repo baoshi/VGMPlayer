@@ -36,6 +36,9 @@ uint8_t state_main_update(void)
     adc_update();
     io_debounce_inputs();
     i2c_track_activity();
+    // Check if host request off
+    if (global_power_off) r = MAIN_STATE_OFF;
+    // Check if I2C is alive
     if ((uint8_t)(systick - i2c_recent_activity) >= (TIME_I2C_LOST_TO_OFF / MS_PER_TICK))
     {
         // I2C communication lost may due to the host freeze or host resets at wrong time 
@@ -46,7 +49,7 @@ uint8_t state_main_update(void)
         i2c_start();
         if (i2c_watchdog)
         {
-            r = MAIN_STATE_OFF;
+            r = MAIN_STATE_TIMEOUT;
         }
     }
     return r;

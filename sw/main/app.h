@@ -20,6 +20,16 @@ event_t const *top_handler(app_t *app, event_t const *evt);
 
 
 //
+// Off
+//
+typedef struct poweroff_s
+{
+    lv_obj_t *screen;
+} poweroff_t;
+event_t const *poweroff_handler(app_t *app, event_t const *evt);
+
+
+//
 // Browser
 //
 typedef struct browser_s
@@ -106,23 +116,22 @@ typedef struct alert_s
 struct app_s
 {
     hsm_t super;
-
+    // poweroff state
+    state_t poweroff;
+    poweroff_t poweroff_ctx;
+    // browser states
     state_t browser, browser_disk, browser_nodisk, browser_baddisk;
     browser_t browser_ctx;
-
+    // player states
     state_t player, player_s16, player_vgm;
     player_t player_ctx;
-
     // popups
     brightness_t brightness_ctx;
     volume_t volume_ctx;
     alert_t alert_ctx;
-
     // on-screen objects
     lv_obj_t *img_battery;  // Battery indicator
-    
     int timer_ui_update;    // UI update time
-
     // data shared by all states
     catalog_t *catalog;
     int catalog_history_page[CATALOG_HISTORY_DEPTH];

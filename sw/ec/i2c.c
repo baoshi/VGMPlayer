@@ -106,6 +106,9 @@ void i2c_slave_ssp_isr(void)
             temp = SSP1BUF; // temp is now the written data
             switch (temp)
             {
+            case EC_CMD_POWER_OFF:
+                global_power_off = true;
+                break;
             case EC_CMD_WATCHDOG_ON:
                 i2c_watchdog = true;
                 break;

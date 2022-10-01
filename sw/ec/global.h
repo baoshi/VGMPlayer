@@ -8,10 +8,14 @@
 #ifndef GLOBAL_H
 #define	GLOBAL_H
 
+#include <stdbool.h>
+
 
 //#define _XTAL_FREQ                    1000000L
 
 #define EC_SLAVE_ADDRESS                0x13u       // I2C slave address
+
+#define EC_CMD_POWER_OFF                0x0A        // Turn off main power
 
 #define EC_CMD_WATCHDOG_OFF             0x0C        // Turn off auto-off in MAIN state
 
@@ -30,6 +34,9 @@
 
 // For OFF state
 #define TIME_NOTICE_OFF                 2000u
+
+
+extern bool global_power_off;
 
 #endif	/* GLOBAL_H */
 

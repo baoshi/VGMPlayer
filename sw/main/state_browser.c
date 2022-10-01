@@ -13,6 +13,7 @@
 #include "input.h"
 #include "catalog.h"
 #include "path_utils.h"
+#include "popup.h"
 #include "app.h"
 
 
@@ -114,7 +115,7 @@ static void browser_on_exit(browser_t *ctx)
 }
 
 
-event_t const *browser_handler(app_t *me, event_t const *evt)
+event_t const *browser_handler(app_t *app, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
@@ -125,7 +126,7 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
             Start browser_nodisk
     */
     event_t const *r = 0;
-    browser_t *ctx = &(me->browser_ctx);
+    browser_t *ctx = &(app->browser_ctx);
     switch (evt->code)
     {
     case EVT_ENTRY:
@@ -138,7 +139,7 @@ event_t const *browser_handler(app_t *me, event_t const *evt)
         break;
     case EVT_START:
         // default to nodisk state and wait card insertion
-        STATE_START(me, &me->browser_nodisk);
+        STATE_START(app, &app->browser_nodisk);
         break;
     default:
         r = evt;
@@ -355,6 +356,7 @@ static void browser_disk_setup_input(browser_t *ctx)
     input_map_button(-1, 0, 0);
     input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_OPEN_BRIGHTNESS_POPUP);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
+    input_map_button(INPUT_KEY_BACK, LV_EVENT_LONG_PRESSED, EVT_BUTTON_BACK_LONG_PRESSED);
     input_enable_button_dev();
     // Keypad
     input_disable_keypad_dev();
@@ -580,7 +582,7 @@ static void browser_disk_on_back(app_t *me, browser_t *ctx)
 }
 
 
-event_t const *browser_disk_handler(app_t *me, event_t const *evt)
+event_t const *browser_disk_handler(app_t *app, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
@@ -602,30 +604,38 @@ event_t const *browser_disk_handler(app_t *me, event_t const *evt)
         EVT_DISK_EJECTED:
             Cleaup
             Transit to browser_error state
+        EVT_BUTTON_BACK_LONG_PRESSED:
+            If we are at root dir then transit to off state
     */
     event_t const *r = 0;
-    browser_t *ctx = &(me->browser_ctx);
+    browser_t *ctx = &(app->browser_ctx);
     switch (evt->code)
     {
     case EVT_ENTRY:
         BR_LOGD("Browser_Disk: entry\n");
-        browser_disk_on_entry(me, ctx);
+        browser_disk_on_entry(app, ctx);
         break;
     case EVT_EXIT:
         browser_disk_on_exit(ctx);
         BR_LOGD("Browser_Disk: exit\n");
         break;
     case EVT_BROWSER_PLAY_CLICKED:
-        browser_disk_on_play(me, ctx, evt);
+        browser_disk_on_play(app, ctx, evt);
         break;
     case EVT_BUTTON_BACK_CLICKED:
-        browser_disk_on_back(me, ctx);
+        browser_disk_on_back(app, ctx);
         break;
     case EVT_DISK_ERROR:
-        STATE_TRAN((hsm_t *)me, &me->browser_baddisk);
+        STATE_TRAN((hsm_t *)app, &app->browser_baddisk);
         break;
     case EVT_DISK_EJECTED:
-        STATE_TRAN((hsm_t *)me, &me->browser_nodisk);
+        STATE_TRAN((hsm_t *)app, &app->browser_nodisk);
+        break;
+    case EVT_BUTTON_BACK_LONG_PRESSED:
+        if (app->catalog && path_is_root_dir(app->catalog->dir))
+        {
+            STATE_TRAN((hsm_t *)app, &app->poweroff);
+        }
         break;
     default:
         r = evt;
@@ -647,6 +657,7 @@ static void browser_nodisk_setup_input()
     input_map_button(-1, 0, 0);
     input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_OPEN_BRIGHTNESS_POPUP);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
+    input_map_button(INPUT_KEY_BACK, LV_EVENT_LONG_PRESSED, EVT_BUTTON_BACK_LONG_PRESSED);
     input_enable_button_dev();
     // Keypad
     input_disable_keypad_dev();
@@ -654,7 +665,7 @@ static void browser_nodisk_setup_input()
 }
 
 
-event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
+event_t const *browser_nodisk_handler(app_t *app, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
@@ -664,9 +675,11 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
             No action
         EVT_DISK_INSERTED:
             Transit to browser_disk state
+        EVT_BUTTON_BACK_LONG_PRESSED:
+            Transit to off state
     */
     event_t const *r = 0;
-    browser_t *ctx = &(me->browser_ctx);
+    browser_t *ctx = &(app->browser_ctx);
     switch (evt->code)
     {
     case EVT_ENTRY:
@@ -674,13 +687,16 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
         browser_nodisk_setup_input();
         lv_img_set_src(ctx->img_top, &img_microsd_empty);
         lv_label_set_text(ctx->lbl_top, "No card");
-        clean_file_list(me, ctx);
+        clean_file_list(app, ctx);
         break;
     case EVT_EXIT:
         BR_LOGD("Browser_Nodisk: exit\n");
         break;
     case EVT_DISK_INSERTED:
-        STATE_TRAN((hsm_t *)me, &me->browser_disk);
+        STATE_TRAN((hsm_t *)app, &app->browser_disk);
+        break;
+    case EVT_BUTTON_BACK_LONG_PRESSED:
+        STATE_TRAN((hsm_t *)app, &app->poweroff);
         break;
     default:
         r = evt;
@@ -695,7 +711,6 @@ event_t const *browser_nodisk_handler(app_t *me, event_t const *evt)
 // State Browser_Baddsk
 //
 
-
 static void browser_baddisk_setup_input()
 {
     // Button
@@ -703,6 +718,7 @@ static void browser_baddisk_setup_input()
     input_map_button(-1, 0, 0);
     input_map_button(INPUT_KEY_SETTING, LV_EVENT_SHORT_CLICKED, EVT_OPEN_BRIGHTNESS_POPUP);
     input_map_button(INPUT_KEY_BACK, LV_EVENT_SHORT_CLICKED, EVT_BUTTON_BACK_CLICKED);
+    input_map_button(INPUT_KEY_BACK, LV_EVENT_LONG_PRESSED, EVT_BUTTON_BACK_LONG_PRESSED);
     input_enable_button_dev();
     // Keypad
     input_disable_keypad_dev();
@@ -710,7 +726,7 @@ static void browser_baddisk_setup_input()
 }
 
 
-event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
+event_t const *browser_baddisk_handler(app_t *app, event_t const *evt)
 {
     /* Events
         EVT_ENTRY:
@@ -720,9 +736,11 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
             No action
         EVT_DISK_EJECTED:
             Transit to browser_nodisk state
+        EVT_BUTTON_BACK_LONG_PRESSED:
+            Transit to off state
     */
     event_t const *r = 0;
-    browser_t *ctx = &(me->browser_ctx);
+    browser_t *ctx = &(app->browser_ctx);
     switch (evt->code)
     {
     case EVT_ENTRY:
@@ -730,13 +748,16 @@ event_t const *browser_baddisk_handler(app_t *me, event_t const *evt)
         browser_baddisk_setup_input();
         lv_img_set_src(ctx->img_top, &img_microsd_bad);
         lv_label_set_text(ctx->lbl_top, "Card error");
-        clean_file_list(me, ctx);
+        clean_file_list(app, ctx);
         break;
     case EVT_EXIT:
         BR_LOGD("Browser_Baddisk: exit\n");
         break;
     case EVT_DISK_EJECTED:
-        STATE_TRAN((hsm_t *)me, &me->browser_nodisk);
+        STATE_TRAN((hsm_t *)app, &app->browser_nodisk);
+        break;
+    case EVT_BUTTON_BACK_LONG_PRESSED:
+        STATE_TRAN((hsm_t *)app, &app->poweroff);
         break;
     default:
         r = evt;
