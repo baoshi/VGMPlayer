@@ -27,6 +27,7 @@ add_subdirectory(lib/fatfs)
 add_subdirectory(lib/fft_q15)
 
 # modules
+add_subdirectory(modules/powerman)
 add_subdirectory(modules/battery)
 add_subdirectory(modules/ec)
 add_subdirectory(modules/backlight)
@@ -64,6 +65,7 @@ target_link_libraries(${PROJ_NAME}
     hardware_i2c
     ec
     battery
+    powerman
     backlight
     display
     disk

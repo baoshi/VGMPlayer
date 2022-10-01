@@ -1,5 +1,7 @@
 #pragma once
 
+#include <lvgl.h>
+
 // Button index. Note these are also the bit index to ec_key
 #define KEY_INDEX_MIN   0
 #define KEY_INDEX_NW    0

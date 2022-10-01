@@ -33,7 +33,6 @@ static uint32_t _idleout;
 static int8_t _current;
 static int _start, _target;
 static uint32_t _trans_start;
-static uint32_t _idle_start;
 static bool _dimmed;
 
 
@@ -51,8 +50,9 @@ static const uint16_t CIE[100] =
 };
 
 
-static void _backlight_set_internal(int8_t percentage, uint32_t transition, uint32_t now)
+static void _backlight_set_internal(int8_t percentage, uint32_t transition)
 {
+    uint32_t now = tick_millis();
     // Set brightness now or set as target and use backlight_update to change
     if (percentage != _current)
     {
@@ -70,7 +70,6 @@ static void _backlight_set_internal(int8_t percentage, uint32_t transition, uint
             _trans_start = now;
         }
     }
-    _idle_start = now;
     _dimmed = false;
 }
 
@@ -106,40 +105,31 @@ void backlight_set(int8_t percentage, uint32_t transition)
     // dimmed brightness cannot exceed set brignthess
     if (percentage < _dimmed_brightness)
         _dimmed_brightness = percentage;
-    _backlight_set_internal(percentage, transition, 0);
+    _backlight_set_internal(percentage, transition);
 }
 
 
 void backlight_set_direct(int8_t percentage)
 {
-    _backlight_set_internal(percentage, 0, 0);
+    _backlight_set_internal(percentage, 0);
 }
 
 
-void backlight_keepalive(uint32_t now)
+void backlight_restore(void)
 {
-    _idle_start = now;
-    if (_dimmed)
-    {
-        // retsore normal brightness
-        BL_LOGI("Restore @ %d\n", now);
-        _backlight_set_internal(_normal_brightness, 100, now);
-        _dimmed = false;
-    }
+    _backlight_set_internal(_normal_brightness, 100);
+}
+
+
+void backlight_dim(void)
+{
+    _backlight_set_internal(_dimmed_brightness, 100);
 }
 
 
 void backlight_update(uint32_t now)
 {
-    if (_idle_start == 0) _idle_start = now;    // _idle_start == 0 to indicate first time into update since keepalive
     if (_trans_start == 0) _trans_start = now;  // _trans_start == 0 to indicate first time into update since set
-    if ((!_dimmed) && (now - _idle_start >= _idleout))
-    {
-        // idle out, dim light
-        BL_LOGI("Dim @ %d\n", now);
-        _backlight_set_internal(_dimmed_brightness, 100, now);
-        _dimmed = true;
-    }
     if ((_transition != 0) && (_target != _current))
     {
         int t;

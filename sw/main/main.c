@@ -20,6 +20,7 @@
 #include "input.h"
 #include "splash.h"
 #include "path_utils.h"
+#include "powerman.h"
 #include "app.h"
 #include "eeprom.h"
 
@@ -71,7 +72,7 @@ int main()
     ec_pause_watchdog();
     disk_init();
     // Turn on backlight
-    backlight_init(config.backlight_brigntness_normal, config.backlight_brignthess_dimmed, BACKLIGHT_IDLE_DIM_MS);
+    backlight_init(config.backlight_brigntness_normal, config.backlight_brignthess_dimmed);
     // Manual turn on backlight
     for (int i = 0; i <= config.backlight_brigntness_normal; ++i)    
     {
@@ -85,14 +86,17 @@ int main()
     app_ctor(&app);
     hsm_on_start((hsm_t*)&app);
 
+    // Start power management
+    powerman_init();
+
     // loop timing and control flags
     now = tick_millis();
-    backlight_keepalive(now);
     uint32_t last_update_tick = now;
-    
+
     // Super Loop
     for (;;)
     {
+        bool activity = false;
         int ret;
         event_t evt;
         now = tick_millis();
@@ -101,7 +105,7 @@ int main()
             ret = ec_update(now); // return 1 if io changed
             if (ret > 0)
             {
-                backlight_keepalive(now);
+                activity |= true;
             }
             else if (ret < 0)
             {
@@ -110,13 +114,20 @@ int main()
             // Card detection
             if (disk_card_detect(now) > 0)  
             {
-                backlight_keepalive(now);
+                activity |= true;
             }
             // Jack detection
             if (audio_jack_detect(now) > 0)
             {
-                backlight_keepalive(now);
+                activity |= true;
             }
+            // Track activity
+            if (activity)
+            {
+                powerman_keepalive(now);
+            }
+            // Power manager update
+            powerman_update(now);
             // Backlight update
             backlight_update(now);
             // LVGL update

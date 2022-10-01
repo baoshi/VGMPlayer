@@ -122,7 +122,9 @@
         "ios": "c",
         "queue": "c",
         "stdexcept": "c",
-        "lv_txt.h": "c"
+        "lv_txt.h": "c",
+        "stdbool.h": "c",
+        "input.h": "c"
     },
     "cmake.configureOnOpen": true,
     "cortex-debug.variableUseNaturalFormat": false

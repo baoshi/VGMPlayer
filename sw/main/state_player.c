@@ -14,11 +14,12 @@
 #include "lvsupp.h"
 #include "lvassets.h"
 #include "lvspectrum.h"
+#include "input.h"
 #include "tick.h"
 #include "event_ids.h"
 #include "event_queue.h"
 #include "ec.h"
-#include "input.h"
+#include "powerman.h"
 #include "backlight.h"
 #include "disk.h"
 #include "path_utils.h"
@@ -379,7 +380,7 @@ static void player_on_progress(app_t *app, player_t *ctx, audio_progress_t *prog
     lv_bar_set_value(ctx->bar_progress, percent, LV_ANIM_OFF);
     //PL_LOGD("Player: %lu / %lu\n", progress->played_samples, progress->total_samples);
     // Do not dim screen when playing
-    backlight_keepalive(tick_millis());
+    powerman_keepalive(tick_millis());
     // "Trying" FFT on the sampling buffer for spectrum display
     // We lock the sampling buffer here for long time so audio module won't overwrite the samples.
     // It doesn't matter some buffer are lost since we only use these for fancy visual effects.

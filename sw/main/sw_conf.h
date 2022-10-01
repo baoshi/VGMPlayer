@@ -8,7 +8,9 @@
 
 #define SUPERLOOP_UPDATE_INTERVAL_MS    10
 
-#define BACKLIGHT_IDLE_DIM_MS           10000
+#define POWERMAN_BACKLIGHT_DIM_MS       10000
+
+#define POWERMAN_AUDO_OFF_MS            30000
 
 #define TICK_GRANULARITY_MS             1
 

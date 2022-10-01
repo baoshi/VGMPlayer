@@ -1,4 +1,3 @@
-#include <lvgl.h>
 #include "my_mem.h"
 #include "sw_conf.h"
 #include "ec.h"
