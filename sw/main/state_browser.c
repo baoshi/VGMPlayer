@@ -124,8 +124,6 @@ event_t const *browser_handler(app_t *app, event_t const *evt)
             Delete buttons
         EVT_START:
             Start browser_nodisk
-        EVT_APP_AUTO_OFF:
-            Transit to poweroff state
     */
     event_t const *r = 0;
     browser_t *ctx = &(app->browser_ctx);
@@ -142,9 +140,6 @@ event_t const *browser_handler(app_t *app, event_t const *evt)
     case EVT_START:
         // default to nodisk state and wait card insertion
         STATE_START(app, &app->browser_nodisk);
-        break;
-    case EVT_APP_AUTO_OFF:
-        STATE_TRAN((hsm_t *)app, &app->poweroff);
         break;
     default:
         r = evt;

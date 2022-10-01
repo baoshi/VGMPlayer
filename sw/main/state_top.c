@@ -82,6 +82,8 @@ event_t const *top_handler(app_t *app, event_t const *evt)
             Start browser
         EVT_APP_UI_UPDATE:
             Update battery icon
+        EVT_APP_AUTO_OFF:
+            Transit to poweroff state
         EVT_APP_POWER_OFF:
             Tell EC to power off
         EVT_OPEN_BRIGHTNESS_POPUP:
@@ -112,6 +114,9 @@ event_t const *top_handler(app_t *app, event_t const *evt)
         break;
     case EVT_APP_UI_UPDATE:
         top_on_ui_update(app);
+        break;
+    case EVT_APP_AUTO_OFF:
+        STATE_TRAN((hsm_t *)app, &app->poweroff);
         break;
     case EVT_APP_POWER_OFF:
         TOP_LOGD("Top: power off\n");
