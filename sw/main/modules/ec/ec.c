@@ -128,12 +128,12 @@ int ec_update(uint32_t now)
 void ec_pause_watchdog(void)
 {
     const uint8_t cmd = EC_CMD_WATCHDOG_OFF;
-    //i2c_write_timeout_us(I2C_INST, EC_SLAVE_ADDRESS, &cmd, 1, false, I2C_TIMEOUT_US);
+    i2c_write_timeout_us(I2C_INST, EC_SLAVE_ADDRESS, &cmd, 1, false, I2C_TIMEOUT_US);
 }
 
 
 void ec_resume_watchdog(void)
 {
     const uint8_t cmd = EC_CMD_WATCHDOG_ON;
-    //i2c_write_timeout_us(I2C_INST, EC_SLAVE_ADDRESS, &cmd, 1, false, I2C_TIMEOUT_US);
+    i2c_write_timeout_us(I2C_INST, EC_SLAVE_ADDRESS, &cmd, 1, false, I2C_TIMEOUT_US);
 }
