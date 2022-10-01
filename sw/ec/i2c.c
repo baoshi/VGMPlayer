@@ -17,7 +17,7 @@
 
 volatile uint8_t i2c_recent_activity;
 
-volatile bool i2c_watchdog = false; // For DEV
+volatile bool i2c_watchdog = true; // For DEV, set to false
 
 static bool _activity;
 
