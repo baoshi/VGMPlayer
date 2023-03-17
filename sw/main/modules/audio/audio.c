@@ -136,7 +136,7 @@ static inline unsigned int decode_samples(decoder_t *decoder, uint32_t *buf, uns
         absolute_time_t end = get_absolute_time();
         int64_t us = absolute_time_diff_us(start, end);
         if ((samples > 0) && (us > 1000000 * samples / 44100))
-            AUD_LOGD("Audio/core1: %d samples in %" PRId64 " us\n", samples, us);
+            AUD_LOGD("Audio/core1: %d samples in %lld us\n", samples, us);
     }
     return (unsigned int)samples;
 }
