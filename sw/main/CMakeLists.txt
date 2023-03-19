@@ -80,5 +80,5 @@ target_link_libraries(${PROJ_NAME}
 # Custom link script
 bsp_set_link_script(${PROJ_NAME})
 
-#pico_add_extra_outputs(${PROJ_NAME})
+pico_add_extra_outputs(${PROJ_NAME})
 
