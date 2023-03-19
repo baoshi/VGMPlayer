@@ -7,7 +7,3 @@
 [submodule "sw/main/modules/audio/vgm"]
 	path = sw/main/modules/audio/vgm
 	url = ../vgmcore.git
-[submodule "sw/main/lib/lvgl"]
-	path = sw/main/lib/lvgl
-	url = ../lvgl.git
-	branch = vgmplayer
